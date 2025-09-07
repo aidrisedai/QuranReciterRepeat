@@ -84,14 +84,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        // Start foreground playback service for background-safe playback (UHW-5).
-        Intent intent = new Intent(this, PlaybackService.class);
-        intent.setAction(PlaybackService.ACTION_START);
-        if (android.os.Build.VERSION.SDK_INT >= 26) {
-            startForegroundService(intent);
-        } else {
-            startService(intent);
-        }
+        // No auto-start; user triggers via Play or Load Ayah.
     }
 
     @Override

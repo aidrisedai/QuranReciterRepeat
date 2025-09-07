@@ -59,34 +59,10 @@ public class PlaybackManager {
 
             @Override
             public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
-                    // Each repeat transition means one play completed.
-                    if (repeatCount == -1) {
-                        Log.d(TAG, "Looped current item (∞)");
-                        return;
-                    }
-                    completedPlays++;
-                    Log.d(TAG, "Completed plays=" + completedPlays + "/" + repeatCount);
-                    if (completedPlays >= repeatCount) {
-                        // Finished required repeats
-                        player.setRepeatMode(Player.REPEAT_MODE_OFF);
-                        if (player.hasNextMediaItem()) {
-                            player.seekToNextMediaItem();
-                            completedPlays = 0;
-                            applyRepeatMode();
-                        } else {
-                            player.pause();
-                            player.seekTo(0);
-                            completedPlays = 0;
-                        }
-                        return;
-                    }
-                } else {
-                    // New media item started: reset per-item play counter
-                    completedPlays = 0;
-                    applyRepeatMode();
-                    maybeAppendMore();
-                }
+                // Media item actually changed (advanced to next). Reset counters.
+                completedPlays = 0;
+                applyRepeatMode();
+                maybeAppendMore();
             }
 
             @Override
@@ -94,7 +70,33 @@ public class PlaybackManager {
                 Log.e(TAG, "Playback error", error);
                 if (callback != null) callback.onPlaybackError(error.getMessage());
             }
-            // Keep no-op fallback for other discontinuities
+            @Override
+            public void onPositionDiscontinuity(Player.PositionInfo oldPos, Player.PositionInfo newPos, int reason) {
+                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
+                    if (oldPos.mediaItemIndex == newPos.mediaItemIndex) {
+                        // Looped same item due to REPEAT_MODE_ONE
+                        if (repeatCount == -1) return; // infinite
+                        completedPlays++;
+                        Log.d(TAG, "Completed plays=" + completedPlays + "/" + repeatCount);
+                        if (completedPlays >= repeatCount) {
+                            player.setRepeatMode(Player.REPEAT_MODE_OFF);
+                            if (player.hasNextMediaItem()) {
+                                player.seekToNextMediaItem();
+                                completedPlays = 0;
+                                applyRepeatMode();
+                            } else {
+                                player.pause();
+                                player.seekTo(0);
+                                completedPlays = 0;
+                            }
+                        }
+                    } else {
+                        // Moved to next item automatically
+                        completedPlays = 0;
+                        applyRepeatMode();
+                    }
+                }
+            }
         });
     }
 

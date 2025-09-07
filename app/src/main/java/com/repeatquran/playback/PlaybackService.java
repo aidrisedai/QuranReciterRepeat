@@ -49,6 +49,9 @@ public class PlaybackService extends Service {
     private ExoPlayer player;
     private MediaSessionCompat mediaSession;
     private PlayerNotificationManager notificationManager;
+    private int lastLoadSura = -1;
+    private int lastLoadAyah = -1;
+    private long lastLoadAtMs = 0L;
 
     @Override
     public void onCreate() {
@@ -156,6 +159,12 @@ public class PlaybackService extends Service {
         } else if (ACTION_LOAD_SINGLE.equals(action)) {
             int sura = intent.getIntExtra(EXTRA_SURA, 1);
             int ayah = intent.getIntExtra(EXTRA_AYAH, 1);
+            long now = System.currentTimeMillis();
+            if (sura == lastLoadSura && ayah == lastLoadAyah && (now - lastLoadAtMs) < 1000) {
+                Log.d("PlaybackService", "Ignoring duplicate load within 1s for " + sura + ":" + ayah);
+                return START_STICKY;
+            }
+            lastLoadSura = sura; lastLoadAyah = ayah; lastLoadAtMs = now;
             Log.d("PlaybackService", "Loading single ayah: " + sura + ":" + ayah);
             recreateManager(new SingleVerseProvider("Abdurrahmaan_As-Sudais_64kbps", sura, ayah));
             int rc = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
