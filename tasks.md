@@ -30,7 +30,7 @@
   - **Proof**: Demo video of Surah playback.  
   - **QA Note**: Test weak WiFi → no gaps allowed.  
 
-- [ ] **UHW-5: Playback Service**  
+- [x] **UHW-5: Playback Service**  
   - Foreground Service + MediaSession (always on).  
   - Support background playback & Bluetooth handoff.  
   - **Proof**: Demo video of playback persisting across app switch + Bluetooth.  

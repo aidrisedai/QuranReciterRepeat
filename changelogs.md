@@ -28,3 +28,9 @@
 - Added `VerseProvider` and a simple demo provider with placeholder MP3s.
 - Wired playback in `MainActivity` for proof capture; added INTERNET permission.
 - **Proof**: Demo video and logs stored under `docs/proof/UHW-4/`.
+
+### UHW-5: Playback Service (2025-09-07)
+- Added `PlaybackService` as a Foreground Service with `MediaSessionCompat` and `PlayerNotificationManager`.
+- Updated `MainActivity` to start the service; added INTERNET and FOREGROUND_SERVICE_MEDIA_PLAYBACK permissions.
+- Notification permission requested on Android 13+.
+- **Proof**: `docs/proof/UHW-5/background-playback-demo.mp4` and `docs/proof/UHW-5/call-interruption-log.txt`.
