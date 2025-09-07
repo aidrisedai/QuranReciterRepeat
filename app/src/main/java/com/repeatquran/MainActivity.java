@@ -41,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
         setupRepeatDropdown();
 
         findViewById(R.id.btnLoadAyah).setOnClickListener(v -> {
-            android.widget.Toast.makeText(this, "Loading ayah...", android.widget.Toast.LENGTH_SHORT).show();
             TextInputLayout surahLayout = findViewById(R.id.surahInputLayout);
             TextInputLayout ayahLayout = findViewById(R.id.ayahInputLayout);
             TextInputEditText surahEdit = findViewById(R.id.editSurah);
@@ -61,6 +60,18 @@ public class MainActivity extends AppCompatActivity {
                 showError(ayahLayout, "Enter >=1");
                 return;
             }
+
+            // Show requirements toast before loading
+            int repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            String repeatMsg = (repeatCount == -1) ? "∞" : String.valueOf(repeatCount);
+            android.widget.Toast.makeText(this,
+                    "Loading Surah " + surah + ", Ayah " + ayah + " (repeat=" + repeatMsg + ")",
+                    android.widget.Toast.LENGTH_SHORT).show();
+
+            // Disable button briefly to avoid double-tap
+            View btn = findViewById(R.id.btnLoadAyah);
+            btn.setEnabled(false);
+            btn.postDelayed(() -> btn.setEnabled(true), 800);
 
             Intent intent = new Intent(this, PlaybackService.class);
             intent.setAction(PlaybackService.ACTION_LOAD_SINGLE);

@@ -53,30 +53,17 @@ public class PlaybackManager {
 
             @Override
             public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-                // New media item started: reset per-item play counter
-                currentPlayCount = 1;
-                applyRepeatMode();
-                maybeAppendMore();
-            }
-
-            @Override
-            public void onPlayerError(com.google.android.exoplayer2.PlaybackException error) {
-                Log.e(TAG, "Playback error", error);
-                if (callback != null) callback.onPlaybackError(error.getMessage());
-            }
-
-            @Override
-            public void onPositionDiscontinuity(Player.PositionInfo oldPosition, Player.PositionInfo newPosition, int reason) {
-                // Detect automatic loop of the same media item when REPEAT_MODE_ONE is set.
-                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION
-                        && oldPosition.mediaItemIndex == newPosition.mediaItemIndex) {
+                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
+                    // Completed one loop of the same item
                     if (repeatCount == -1) {
-                        // Infinite: keep repeating
+                        // Infinite: keep looping
+                        Log.d(TAG, "Looped current item (∞)");
                         return;
                     }
                     currentPlayCount++;
+                    Log.d(TAG, "Looped current item, count=" + currentPlayCount + "/" + repeatCount);
                     if (currentPlayCount >= repeatCount) {
-                        // Completed desired repeats. If next exists, advance; else pause and seek to start.
+                        // Finished required repeats
                         player.setRepeatMode(Player.REPEAT_MODE_OFF);
                         if (player.hasNextMediaItem()) {
                             player.seekToNextMediaItem();
@@ -87,9 +74,22 @@ public class PlaybackManager {
                             player.seekTo(0);
                             currentPlayCount = 1;
                         }
+                        return;
                     }
+                } else {
+                    // New media item started: reset per-item play counter
+                    currentPlayCount = 1;
+                    applyRepeatMode();
+                    maybeAppendMore();
                 }
             }
+
+            @Override
+            public void onPlayerError(com.google.android.exoplayer2.PlaybackException error) {
+                Log.e(TAG, "Playback error", error);
+                if (callback != null) callback.onPlaybackError(error.getMessage());
+            }
+            // Keep no-op fallback for other discontinuities
         });
     }
 
