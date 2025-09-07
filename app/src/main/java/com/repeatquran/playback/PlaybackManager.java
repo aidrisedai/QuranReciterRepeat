@@ -67,16 +67,15 @@ public class PlaybackManager {
 
             @Override
             public void onPositionDiscontinuity(Player.PositionInfo oldPosition, Player.PositionInfo newPosition, int reason) {
-                // Detect loop of the same media item (position jumped back to near 0 while index unchanged)
-                if (oldPosition.mediaItemIndex == newPosition.mediaItemIndex
-                        && oldPosition.positionMs > 1000 && newPosition.positionMs < 500) {
-                    // Completed one play-through of the current item
+                // Detect automatic loop of the same media item when REPEAT_MODE_ONE is set.
+                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION
+                        && oldPosition.mediaItemIndex == newPosition.mediaItemIndex) {
                     if (repeatCount == -1) {
                         // Infinite: keep repeating
                         return;
                     }
                     currentPlayCount++;
-                    if (currentPlayCount > repeatCount) {
+                    if (currentPlayCount >= repeatCount) {
                         // Completed desired repeats. If next exists, advance; else pause and seek to start.
                         player.setRepeatMode(Player.REPEAT_MODE_OFF);
                         if (player.hasNextMediaItem()) {

@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
         setupRepeatDropdown();
 
         findViewById(R.id.btnLoadAyah).setOnClickListener(v -> {
+            android.widget.Toast.makeText(this, "Loading ayah...", android.widget.Toast.LENGTH_SHORT).show();
             TextInputLayout surahLayout = findViewById(R.id.surahInputLayout);
             TextInputLayout ayahLayout = findViewById(R.id.ayahInputLayout);
             TextInputEditText surahEdit = findViewById(R.id.editSurah);
