@@ -25,7 +25,7 @@
 ---
 
 ## Phase 2: Core Playback
-- [ ] **UHW-4: ExoPlayer Integration (Lazy-Fetch-Next)**  
+- [x] **UHW-4: ExoPlayer Integration (Lazy-Fetch-Next)**  
   - Implement queue at verse-level with 2-verse buffer.  
   - **Proof**: Demo video of Surah playback.  
   - **QA Note**: Test weak WiFi → no gaps allowed.  

@@ -22,3 +22,9 @@
 - Added JVM unit tests to instantiate each VM and assert defaults.
 - Updated dependencies: lifecycle-viewmodel (runtime) and JUnit (test).
 - **Proof**: `docs/proof/UHW-3/unit-test-log.png` (tests passing screenshot).
+
+### UHW-4: ExoPlayer Integration (2025-09-07)
+- Implemented `PlaybackManager` with lazy-fetch-next and buffer-ahead=2.
+- Added `VerseProvider` and a simple demo provider with placeholder MP3s.
+- Wired playback in `MainActivity` for proof capture; added INTERNET permission.
+- **Proof**: Demo video and logs stored under `docs/proof/UHW-4/`.
