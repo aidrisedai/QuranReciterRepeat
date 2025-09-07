@@ -41,6 +41,7 @@ dependencies {
 
     // ExoPlayer (Audio)
     implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
+    implementation 'com.google.android.exoplayer:exoplayer-ui:2.19.1'
 
     // AndroidX Lifecycle ViewModel (Java-friendly)
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.8.4'
