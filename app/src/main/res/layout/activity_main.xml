@@ -122,4 +122,92 @@
             android:text="Next" />
     </LinearLayout>
 
+    <!-- Range selection (Start Surah:Ayah -> End Surah:Ayah) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/startSurahLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Start Surah"
+        app:layout_constraintTop_toBottomOf="@id/controlsRow"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/startAyahLayout"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editStartSurah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:imeOptions="actionNext" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/startAyahLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Start Ayah"
+        app:layout_constraintTop_toBottomOf="@id/controlsRow"
+        app:layout_constraintStart_toEndOf="@id/startSurahLayout"
+        app:layout_constraintEnd_toStartOf="@+id/endSurahLayout"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editStartAyah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:imeOptions="actionNext" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/endSurahLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="End Surah"
+        app:layout_constraintTop_toBottomOf="@id/controlsRow"
+        app:layout_constraintStart_toEndOf="@id/startAyahLayout"
+        app:layout_constraintEnd_toStartOf="@+id/endAyahLayout"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editEndSurah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:imeOptions="actionNext" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/endAyahLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="End Ayah"
+        app:layout_constraintTop_toBottomOf="@id/controlsRow"
+        app:layout_constraintStart_toEndOf="@id/endSurahLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="8dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editEndAyah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:imeOptions="actionDone" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLoadRange"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Load Range"
+        app:layout_constraintTop_toBottomOf="@id/endAyahLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

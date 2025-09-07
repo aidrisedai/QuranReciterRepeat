@@ -39,6 +39,7 @@ public class PlaybackService extends Service {
     public static final String ACTION_NEXT = "com.repeatquran.action.NEXT";
     public static final String ACTION_PREV = "com.repeatquran.action.PREV";
     public static final String ACTION_LOAD_SINGLE = "com.repeatquran.action.LOAD_SINGLE";
+    public static final String ACTION_LOAD_RANGE = "com.repeatquran.action.LOAD_RANGE";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -177,8 +178,63 @@ public class PlaybackService extends Service {
             }
             player.prepare();
             player.play();
+        } else if (ACTION_LOAD_RANGE.equals(action)) {
+            int ss = intent.getIntExtra("ss", 1);
+            int sa = intent.getIntExtra("sa", 1);
+            int es = intent.getIntExtra("es", 1);
+            int ea = intent.getIntExtra("ea", 1);
+            int repeat = intent.getIntExtra("repeat",
+                    getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
+
+            // Build URLs for the inclusive range (ss:sa) -> (es:ea)
+            player.stop();
+            player.clearMediaItems();
+            playbackManager.setFeedingEnabled(false);
+
+            java.util.List<MediaItem> items = new java.util.ArrayList<>();
+            for (int s = ss; s <= es; s++) {
+                int startAyah = (s == ss) ? sa : 1;
+                int endAyah = (s == es) ? ea : getAyahCount(s);
+                for (int a = startAyah; a <= endAyah; a++) {
+                    String sss = String.format("%03d", s);
+                    String aaa = String.format("%03d", a);
+                    String url = "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/" + sss + aaa + ".mp3";
+                    items.add(MediaItem.fromUri(url));
+                }
+            }
+
+            if (repeat == -1) {
+                player.setRepeatMode(Player.REPEAT_MODE_ALL);
+                for (MediaItem mi : items) player.addMediaItem(mi);
+            } else {
+                player.setRepeatMode(Player.REPEAT_MODE_OFF);
+                int n = Math.max(1, repeat);
+                for (int i = 0; i < n; i++) {
+                    for (MediaItem mi : items) player.addMediaItem(mi);
+                }
+            }
+            player.prepare();
+            player.play();
         }
         return START_STICKY;
+    }
+
+    private int getAyahCount(int surah) {
+        final int[] AYAH_COUNTS = new int[] {
+                7, 286, 200, 176, 120, 165, 206, 75, 129, 109,
+                123, 111, 43, 52, 99, 128, 111, 110, 98, 135,
+                112, 78, 118, 64, 77, 227, 93, 88, 69, 60,
+                34, 30, 73, 54, 45, 83, 182, 88, 75, 85,
+                54, 53, 89, 59, 37, 35, 38, 29, 18, 45,
+                60, 49, 62, 55, 78, 96, 29, 22, 24, 13,
+                14, 11, 11, 18, 12, 12, 30, 52, 52, 44,
+                28, 28, 20, 56, 40, 31, 50, 40, 46, 42,
+                29, 19, 36, 25, 22, 17, 19, 26, 30, 20,
+                15, 21, 11, 8, 8, 19, 5, 8, 8, 11,
+                11, 8, 3, 9, 5, 4, 7, 3, 6, 3,
+                5, 4, 5, 6
+        };
+        return AYAH_COUNTS[surah - 1];
     }
 
     @Override

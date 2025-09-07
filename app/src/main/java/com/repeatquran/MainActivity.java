@@ -165,6 +165,68 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override public void afterTextChanged(Editable s) {}
         });
+
+        // Load Range click
+        findViewById(R.id.btnLoadRange).setOnClickListener(v -> {
+            TextInputLayout startSurahLayout = findViewById(R.id.startSurahLayout);
+            TextInputLayout startAyahLayout = findViewById(R.id.startAyahLayout);
+            TextInputLayout endSurahLayout = findViewById(R.id.endSurahLayout);
+            TextInputLayout endAyahLayout = findViewById(R.id.endAyahLayout);
+
+            TextInputEditText editStartSurah = findViewById(R.id.editStartSurah);
+            TextInputEditText editStartAyah = findViewById(R.id.editStartAyah);
+            TextInputEditText editEndSurah = findViewById(R.id.editEndSurah);
+            TextInputEditText editEndAyah = findViewById(R.id.editEndAyah);
+
+            clearError(startSurahLayout);
+            clearError(startAyahLayout);
+            clearError(endSurahLayout);
+            clearError(endAyahLayout);
+
+            int ss = parseIntSafe(editStartSurah);
+            int sa = parseIntSafe(editStartAyah);
+            int es = parseIntSafe(editEndSurah);
+            int ea = parseIntSafe(editEndAyah);
+
+            if (!validateSurahAyah(startSurahLayout, startAyahLayout, ss, sa)) return;
+            if (!validateSurahAyah(endSurahLayout, endAyahLayout, es, ea)) return;
+            if (!isStartBeforeOrEqual(ss, sa, es, ea)) {
+                showError(endSurahLayout, "End before start");
+                showError(endAyahLayout, "End before start");
+                return;
+            }
+
+            // Get current repeat
+            AutoCompleteTextView rep = findViewById(R.id.repeatDropdown);
+            String repText = rep.getText() != null ? rep.getText().toString().trim() : "";
+            int repeat;
+            if (repText.isEmpty()) {
+                showError(inputLayout, "Enter repeat or choose ∞");
+                return;
+            } else if ("∞".equals(repText)) {
+                repeat = -1;
+            } else {
+                try { repeat = Integer.parseInt(repText); } catch (Exception e) { showError(inputLayout, "Invalid repeat"); return; }
+                if (repeat < 1 || repeat > 9999) { showError(inputLayout, "1..9999 only"); return; }
+            }
+            getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("repeat.count", repeat).apply();
+
+            String msg = "Loading Range " + ss + ":" + sa + " → " + es + ":" + ea + " (repeat=" + (repeat==-1?"∞":repeat) + ")";
+            android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
+
+            View btn = findViewById(R.id.btnLoadRange);
+            btn.setEnabled(false);
+            btn.postDelayed(() -> btn.setEnabled(true), 800);
+
+            Intent intent = new Intent(this, PlaybackService.class);
+            intent.setAction(PlaybackService.ACTION_LOAD_RANGE);
+            intent.putExtra("ss", ss);
+            intent.putExtra("sa", sa);
+            intent.putExtra("es", es);
+            intent.putExtra("ea", ea);
+            intent.putExtra("repeat", repeat);
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
+        });
     }
 
     private void validateAndPersistTyped(AutoCompleteTextView dropdown, TextInputLayout inputLayout, SharedPreferences prefs) {
@@ -211,4 +273,38 @@ public class MainActivity extends AppCompatActivity {
             return -1;
         }
     }
+
+    // ---- Range validation helpers ----
+    private boolean validateSurahAyah(TextInputLayout surahL, TextInputLayout ayahL, int surah, int ayah) {
+        if (surah < 1 || surah > 114) { showError(surahL, "Surah 1..114"); return false; }
+        int maxAyah = getAyahCount(surah);
+        if (ayah < 1 || ayah > maxAyah) { showError(ayahL, "Ayah 1.." + maxAyah); return false; }
+        return true;
+    }
+
+    private boolean isStartBeforeOrEqual(int ss, int sa, int es, int ea) {
+        if (ss < es) return true;
+        if (ss > es) return false;
+        return sa <= ea;
+    }
+
+    private int getAyahCount(int surah) {
+        // Surah 1..114
+        return AYAH_COUNTS[surah - 1];
+    }
+
+    private static final int[] AYAH_COUNTS = new int[] {
+        7, 286, 200, 176, 120, 165, 206, 75, 129, 109,
+        123, 111, 43, 52, 99, 128, 111, 110, 98, 135,
+        112, 78, 118, 64, 77, 227, 93, 88, 69, 60,
+        34, 30, 73, 54, 45, 83, 182, 88, 75, 85,
+        54, 53, 89, 59, 37, 35, 38, 29, 18, 45,
+        60, 49, 62, 55, 78, 96, 29, 22, 24, 13,
+        14, 11, 11, 18, 12, 12, 30, 52, 52, 44,
+        28, 28, 20, 56, 40, 31, 50, 40, 46, 42,
+        29, 19, 36, 25, 22, 17, 19, 26, 30, 20,
+        15, 21, 11, 8, 8, 19, 5, 8, 8, 11,
+        11, 8, 3, 9, 5, 4, 7, 3, 6, 3,
+        5, 4, 5, 6
+    };
 }
