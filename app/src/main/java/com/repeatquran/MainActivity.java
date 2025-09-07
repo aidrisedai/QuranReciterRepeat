@@ -18,6 +18,7 @@ import android.text.TextWatcher;
 import android.view.inputmethod.EditorInfo;
 import android.view.KeyEvent;
 import android.view.View;
+import com.google.android.material.textfield.TextInputEditText;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -38,19 +39,41 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnPrev).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PREV));
 
         setupRepeatDropdown();
+
+        findViewById(R.id.btnLoadAyah).setOnClickListener(v -> {
+            TextInputLayout surahLayout = findViewById(R.id.surahInputLayout);
+            TextInputLayout ayahLayout = findViewById(R.id.ayahInputLayout);
+            TextInputEditText surahEdit = findViewById(R.id.editSurah);
+            TextInputEditText ayahEdit = findViewById(R.id.editAyah);
+
+            clearError(surahLayout);
+            clearError(ayahLayout);
+
+            int surah = parseIntSafe(surahEdit);
+            int ayah = parseIntSafe(ayahEdit);
+            if (surah < 1 || surah > 114) { showError(surahLayout, "Enter 1..114"); return; }
+            if (ayah < 1) { showError(ayahLayout, "Enter >=1"); return; }
+
+            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            String msg = "Loading Surah " + surah + ", Ayah " + ayah + " (repeat=" + (repeat==-1?"∞":repeat) + ")";
+            android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
+
+            View btn = findViewById(R.id.btnLoadAyah);
+            btn.setEnabled(false);
+            btn.postDelayed(() -> btn.setEnabled(true), 800);
+
+            Intent intent = new Intent(this, PlaybackService.class);
+            intent.setAction(PlaybackService.ACTION_LOAD_SINGLE);
+            intent.putExtra("sura", surah);
+            intent.putExtra("ayah", ayah);
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
+        });
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        // Start foreground playback service for background-safe playback (UHW-5).
-        Intent intent = new Intent(this, PlaybackService.class);
-        intent.setAction(PlaybackService.ACTION_START);
-        if (android.os.Build.VERSION.SDK_INT >= 26) {
-            startForegroundService(intent);
-        } else {
-            startService(intent);
-        }
+        // No auto-start; user will tap Play or Load Ayah.
     }
 
     @Override
@@ -155,5 +178,13 @@ public class MainActivity extends AppCompatActivity {
     private void clearError(TextInputLayout layout) {
         layout.setError(null);
         layout.setErrorEnabled(false);
+    }
+
+    private int parseIntSafe(TextInputEditText edit) {
+        try {
+            return Integer.parseInt(edit.getText()==null?"":edit.getText().toString().trim());
+        } catch (Exception e) {
+            return -1;
+        }
     }
 }

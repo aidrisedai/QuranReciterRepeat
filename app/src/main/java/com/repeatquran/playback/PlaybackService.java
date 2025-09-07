@@ -38,6 +38,7 @@ public class PlaybackService extends Service {
     public static final String ACTION_PAUSE = "com.repeatquran.action.PAUSE";
     public static final String ACTION_NEXT = "com.repeatquran.action.NEXT";
     public static final String ACTION_PREV = "com.repeatquran.action.PREV";
+    public static final String ACTION_LOAD_SINGLE = "com.repeatquran.action.LOAD_SINGLE";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -139,13 +140,39 @@ public class PlaybackService extends Service {
             int repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
             String repeatStr = (repeatCount == -1) ? "∞" : String.valueOf(repeatCount);
             Log.d("PlaybackService", "Starting playback with repeat count=" + repeatStr);
-            playbackManager.prepareAndStart();
+            if (player.getMediaItemCount() > 0) {
+                player.play();
+            } else {
+                playbackManager.prepareAndStart();
+            }
         } else if (ACTION_PAUSE.equals(action)) {
             if (player != null) player.pause();
         } else if (ACTION_NEXT.equals(action)) {
             if (player != null) player.seekToNextMediaItem();
         } else if (ACTION_PREV.equals(action)) {
             if (player != null) player.seekToPreviousMediaItem();
+        } else if (ACTION_LOAD_SINGLE.equals(action)) {
+            int sura = intent.getIntExtra("sura", 1);
+            int ayah = intent.getIntExtra("ayah", 1);
+            // Build exact playlist based on repeat setting
+            String sss = String.format("%03d", sura);
+            String aaa = String.format("%03d", ayah);
+            String url = "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/" + sss + aaa + ".mp3";
+            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            player.stop();
+            player.clearMediaItems();
+            if (repeat == -1) {
+                player.setRepeatMode(Player.REPEAT_MODE_ONE);
+                player.addMediaItem(MediaItem.fromUri(url));
+            } else {
+                player.setRepeatMode(Player.REPEAT_MODE_OFF);
+                int n = Math.max(1, repeat);
+                for (int i = 0; i < n; i++) {
+                    player.addMediaItem(MediaItem.fromUri(url));
+                }
+            }
+            player.prepare();
+            player.play();
         }
         return START_STICKY;
     }
