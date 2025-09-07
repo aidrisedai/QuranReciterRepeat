@@ -155,6 +155,16 @@ public class PlaybackManager {
     }
 
     private void applyRepeatMode() {
+        // In single-verse mode we own the repeat behavior explicitly.
+        if (singleVerseMode) {
+            if (repeatCount == -1) {
+                player.setRepeatMode(Player.REPEAT_MODE_ONE);
+            } else {
+                player.setRepeatMode(Player.REPEAT_MODE_OFF);
+            }
+            return;
+        }
+        // Normal multi-verse behavior (not used for single-ayah testing)
         if (repeatCount == -1 || repeatCount > 1) {
             player.setRepeatMode(Player.REPEAT_MODE_ONE);
         } else {
