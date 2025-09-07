@@ -38,6 +38,9 @@ public class PlaybackService extends Service {
     public static final String ACTION_PAUSE = "com.repeatquran.action.PAUSE";
     public static final String ACTION_NEXT = "com.repeatquran.action.NEXT";
     public static final String ACTION_PREV = "com.repeatquran.action.PREV";
+    public static final String ACTION_LOAD_SINGLE = "com.repeatquran.action.LOAD_SINGLE";
+    public static final String EXTRA_SURA = "extra.sura";
+    public static final String EXTRA_AYAH = "extra.ayah";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -150,8 +153,37 @@ public class PlaybackService extends Service {
             if (player != null) player.seekToNextMediaItem();
         } else if (ACTION_PREV.equals(action)) {
             if (player != null) player.seekToPreviousMediaItem();
+        } else if (ACTION_LOAD_SINGLE.equals(action)) {
+            int sura = intent.getIntExtra(EXTRA_SURA, 1);
+            int ayah = intent.getIntExtra(EXTRA_AYAH, 1);
+            Log.d("PlaybackService", "Loading single ayah: " + sura + ":" + ayah);
+            recreateManager(new SingleVerseProvider("Abdurrahmaan_As-Sudais_64kbps", sura, ayah));
+            int rc = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            playbackManager.setRepeatCount(rc);
+            playbackManager.prepareAndStart();
         }
         return START_STICKY;
+    }
+
+    private void recreateManager(VerseProvider provider) {
+        if (notificationManager != null && player != null) {
+            notificationManager.setPlayer(null);
+        }
+        if (playbackManager != null) {
+            playbackManager.release();
+        }
+        playbackManager = new PlaybackManager(this, provider, 2, new PlaybackManager.Callback() {
+            @Override
+            public void onBufferAppended(int index) { Log.d("PlaybackService", "Buffer appended: " + index); }
+            @Override
+            public void onPlaybackError(String message) { Log.e("PlaybackService", "Playback error: " + message); }
+            @Override
+            public void onStateChanged(int state) { }
+        });
+        player = playbackManager.getPlayer();
+        if (notificationManager != null) {
+            notificationManager.setPlayer(player);
+        }
     }
 
     @Override

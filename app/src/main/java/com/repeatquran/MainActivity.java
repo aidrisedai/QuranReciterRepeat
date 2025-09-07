@@ -18,6 +18,7 @@ import android.text.TextWatcher;
 import android.view.inputmethod.EditorInfo;
 import android.view.KeyEvent;
 import android.view.View;
+import com.google.android.material.textfield.TextInputEditText;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -38,6 +39,34 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnPrev).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PREV));
 
         setupRepeatDropdown();
+
+        findViewById(R.id.btnLoadAyah).setOnClickListener(v -> {
+            TextInputLayout surahLayout = findViewById(R.id.surahInputLayout);
+            TextInputLayout ayahLayout = findViewById(R.id.ayahInputLayout);
+            TextInputEditText surahEdit = findViewById(R.id.editSurah);
+            TextInputEditText ayahEdit = findViewById(R.id.editAyah);
+
+            clearError(surahLayout);
+            clearError(ayahLayout);
+
+            int surah = parsePositiveInt(surahEdit.getText() != null ? surahEdit.getText().toString() : "");
+            int ayah = parsePositiveInt(ayahEdit.getText() != null ? ayahEdit.getText().toString() : "");
+
+            if (surah < 1 || surah > 114) {
+                showError(surahLayout, "Enter 1..114");
+                return;
+            }
+            if (ayah < 1) {
+                showError(ayahLayout, "Enter >=1");
+                return;
+            }
+
+            Intent intent = new Intent(this, PlaybackService.class);
+            intent.setAction(PlaybackService.ACTION_LOAD_SINGLE);
+            intent.putExtra(PlaybackService.EXTRA_SURA, surah);
+            intent.putExtra(PlaybackService.EXTRA_AYAH, ayah);
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
+        });
     }
 
     @Override
@@ -155,5 +184,13 @@ public class MainActivity extends AppCompatActivity {
     private void clearError(TextInputLayout layout) {
         layout.setError(null);
         layout.setErrorEnabled(false);
+    }
+
+    private int parsePositiveInt(String s) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (Exception e) {
+            return -1;
+        }
     }
 }

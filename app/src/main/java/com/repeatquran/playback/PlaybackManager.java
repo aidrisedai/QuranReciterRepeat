@@ -77,11 +77,17 @@ public class PlaybackManager {
                     }
                     currentPlayCount++;
                     if (currentPlayCount > repeatCount) {
-                        // Move to next item and reset
+                        // Completed desired repeats. If next exists, advance; else pause and seek to start.
                         player.setRepeatMode(Player.REPEAT_MODE_OFF);
-                        player.seekToNextMediaItem();
-                        currentPlayCount = 1;
-                        applyRepeatMode();
+                        if (player.hasNextMediaItem()) {
+                            player.seekToNextMediaItem();
+                            currentPlayCount = 1;
+                            applyRepeatMode();
+                        } else {
+                            player.pause();
+                            player.seekTo(0);
+                            currentPlayCount = 1;
+                        }
                     }
                 }
             }

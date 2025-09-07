@@ -35,6 +35,54 @@
             android:imeOptions="actionDone" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/surahInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Surah (1-114)"
+        app:layout_constraintTop_toBottomOf="@id/repeatInputLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/ayahInputLayout"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="8dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editSurah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:imeOptions="actionNext" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/ayahInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Ayah (>=1)"
+        app:layout_constraintTop_toBottomOf="@id/repeatInputLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/surahInputLayout"
+        android:layout_marginTop="12dp"
+        android:layout_marginStart="8dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editAyah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:imeOptions="actionDone" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLoadAyah"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Load Ayah"
+        app:layout_constraintTop_toBottomOf="@id/ayahInputLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp" />
+
     <LinearLayout
         android:id="@+id/controlsRow"
         android:layout_width="0dp"
@@ -42,7 +90,7 @@
         android:orientation="horizontal"
         android:gravity="center"
         android:paddingTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/repeatInputLayout"
+        app:layout_constraintTop_toBottomOf="@id/btnLoadAyah"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
