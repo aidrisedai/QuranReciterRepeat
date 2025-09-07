@@ -159,7 +159,8 @@ public class PlaybackService extends Service {
             String sss = String.format("%03d", sura);
             String aaa = String.format("%03d", ayah);
             String url = "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/" + sss + aaa + ".mp3";
-            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            int repeat = intent.getIntExtra("repeat",
+                    getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false); // prevent provider from appending more items

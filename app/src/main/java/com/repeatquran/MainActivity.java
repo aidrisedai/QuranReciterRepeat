@@ -43,8 +43,10 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnLoadAyah).setOnClickListener(v -> {
             TextInputLayout surahLayout = findViewById(R.id.surahInputLayout);
             TextInputLayout ayahLayout = findViewById(R.id.ayahInputLayout);
+            TextInputLayout repeatLayout = findViewById(R.id.repeatInputLayout);
             TextInputEditText surahEdit = findViewById(R.id.editSurah);
             TextInputEditText ayahEdit = findViewById(R.id.editAyah);
+            AutoCompleteTextView repeatDropdown = findViewById(R.id.repeatDropdown);
 
             clearError(surahLayout);
             clearError(ayahLayout);
@@ -54,7 +56,28 @@ public class MainActivity extends AppCompatActivity {
             if (surah < 1 || surah > 114) { showError(surahLayout, "Enter 1..114"); return; }
             if (ayah < 1) { showError(ayahLayout, "Enter >=1"); return; }
 
-            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            // Read current repeat text and persist so the service uses the latest value
+            String repeatText = repeatDropdown.getText() != null ? repeatDropdown.getText().toString().trim() : "";
+            int repeat;
+            if (repeatText.isEmpty()) {
+                showError(repeatLayout, "Enter repeat or choose ∞");
+                return;
+            } else if ("∞".equals(repeatText)) {
+                repeat = -1;
+            } else {
+                try {
+                    repeat = Integer.parseInt(repeatText);
+                } catch (NumberFormatException e) {
+                    showError(repeatLayout, "Invalid repeat number");
+                    return;
+                }
+                if (repeat < 1 || repeat > 9999) {
+                    showError(repeatLayout, "1..9999 only");
+                    return;
+                }
+            }
+            // Persist the latest repeat selection
+            getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("repeat.count", repeat).apply();
             String msg = "Loading Surah " + surah + ", Ayah " + ayah + " (repeat=" + (repeat==-1?"∞":repeat) + ")";
             android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
 
@@ -66,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
             intent.setAction(PlaybackService.ACTION_LOAD_SINGLE);
             intent.putExtra("sura", surah);
             intent.putExtra("ayah", ayah);
+            intent.putExtra("repeat", repeat);
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
         });
     }
