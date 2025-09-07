@@ -1,0 +1,80 @@
+# 📝 Repeat Quran — Project Notes
+
+## 📌 Mid-Project Feature Requests
+- [ ] **Feature:** Voice Input for Commands  
+  - **Requested by:** CEO (future growth reflection)  
+  - **Decision:** Log for later (defer to v2)  
+  - **Changelog Reference:** Pending  
+
+- [ ] **Feature:** Alternating Playback (Reciter A → Reciter B per verse)  
+  - **Requested by:** CEO (reflection during design)  
+  - **Decision:** Log for later (advanced learners, v2)  
+  - **Changelog Reference:** Pending  
+
+- [ ] **Feature:** Adaptive Spaced Repetition  
+  - **Requested by:** CEO (growth reflection)  
+  - **Decision:** Log for later (premium feature)  
+  - **Changelog Reference:** Pending  
+
+---
+
+## ⚠️ Blind Spots Identified
+- **Area:** Cache Eviction / Storage Management  
+  - **Details:** Internal storage grows unbounded with verse files.  
+  - **Mitigation Plan:** Add UHW for cache management (auto-evict, per-surah delete) in v2.  
+  - **Status:** Open  
+
+- **Area:** Analytics Accuracy  
+  - **Details:** MVP only logs locally; no cohort insights.  
+  - **Mitigation Plan:** Add Firebase/Amplitude integration in v2.  
+  - **Status:** Open  
+
+- **Area:** Accessibility  
+  - **Details:** RTL layout, font scaling, and small-screen testing not yet planned.  
+  - **Mitigation Plan:** Add accessibility UHWs in v2.  
+  - **Status:** Open  
+
+- **Area:** Cultural Sensitivity of Streak Banner  
+  - **Details:** Encouragement tone (“🔥 X-day streak”) could clash with spiritual context.  
+  - **Mitigation Plan:** Run user testing with memorization teachers/learners in v2.  
+  - **Status:** Open  
+
+---
+
+## ⏳ Deferred Tasks
+- **Task:** Material3 (Compose) vs Material Components decision  
+  - **Reason for Defer:** MVP uses Java + XML with Material Components DayNight due to developer preference; revisit Compose Material3 in v2 if needed.  
+  - **Target Phase:** v2  
+- **Task:** Dark Mode Refinements (night-optimized theme)  
+  - **Reason for Defer:** Basic toggle only in v1; refine in v2.  
+  - **Target Phase:** v2  
+
+- **Task:** Preset Editing Robustness  
+  - **Reason for Defer:** Only basic save/edit tested in v1.  
+  - **Target Phase:** v2  
+
+---
+
+## 🧪 Regression Promises Log
+- **Promise:** App builds and launches (“Hello World”)  
+  - **Last Verified On:** Pending UHW-1 proof  
+  - **Verification Method:** Build + emulator screenshot  
+  - **Status:** ⚠️ (awaiting screenshot)  
+
+- **Promise:** Repeat dropdown selection always persists into playback  
+  - **Last Verified On:** Pending UHW-7/8  
+  - **Verification Method:** Screenshot + demo video  
+  - **Status:** ⚠️ (to be tested)  
+
+- **Promise:** Cached surahs always replay offline  
+  - **Last Verified On:** Pending UHW-16  
+  - **Verification Method:** Demo video (airplane mode)  
+  - **Status:** ⚠️ (to be tested)  
+
+---
+
+## 🔍 Reflection Entries
+- **Checkpoint:** After Verification (Pre-Execution)  
+  - **Observation:** Roadmap is complete, QA hooks embedded, blind spots logged.  
+  - **Blind Spots Surfaced:** Cache management, analytics, accessibility, cultural tone.  
+  - **Growth Action:** Defer blind spots into v2 UHWs; keep focus on v1 trust-first launch.  
