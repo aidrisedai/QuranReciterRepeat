@@ -13,6 +13,11 @@ import com.google.android.material.textfield.TextInputLayout;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.content.SharedPreferences;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.inputmethod.EditorInfo;
+import android.view.KeyEvent;
+import android.view.View;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -70,24 +75,85 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupRepeatDropdown() {
         AutoCompleteTextView dropdown = findViewById(R.id.repeatDropdown);
+        TextInputLayout inputLayout = findViewById(R.id.repeatInputLayout);
         String[] labels = getResources().getStringArray(R.array.repeat_labels);
         final int[] values = getResources().getIntArray(R.array.repeat_values);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, labels);
         dropdown.setAdapter(adapter);
+        dropdown.setThreshold(0);
 
         SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
         int selectedValue = prefs.getInt("repeat.count", 1);
-        // find index by value
-        int selIndex = 0;
-        for (int i = 0; i < values.length; i++) {
-            if (values[i] == selectedValue) { selIndex = i; break; }
-            if (selectedValue == -1 && values[i] == -1) { selIndex = i; break; }
+        if (selectedValue == -1) {
+            dropdown.setText("∞", false);
+        } else {
+            dropdown.setText(String.valueOf(selectedValue), false);
         }
-        dropdown.setText(labels[selIndex], false);
 
         dropdown.setOnItemClickListener((parent, view, position, id) -> {
             int value = values[position];
-            prefs.edit().putInt("repeat.count", value).apply();
+            persistRepeat(prefs, value);
+            clearError(inputLayout);
         });
+
+        dropdown.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                validateAndPersistTyped(dropdown, inputLayout, prefs);
+            }
+        });
+
+        dropdown.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                validateAndPersistTyped(dropdown, inputLayout, prefs);
+                return true;
+            }
+            return false;
+        });
+
+        dropdown.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Clear error while user edits
+                clearError(inputLayout);
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void validateAndPersistTyped(AutoCompleteTextView dropdown, TextInputLayout inputLayout, SharedPreferences prefs) {
+        String text = dropdown.getText() != null ? dropdown.getText().toString().trim() : "";
+        if (text.isEmpty()) {
+            showError(inputLayout, "Enter a repeat count or choose ∞");
+            return;
+        }
+        if ("∞".equals(text)) {
+            persistRepeat(prefs, -1);
+            clearError(inputLayout);
+            return;
+        }
+        try {
+            int value = Integer.parseInt(text);
+            if (value < 1 || value > 9999) {
+                showError(inputLayout, "Enter a value between 1 and 9999");
+                return;
+            }
+            persistRepeat(prefs, value);
+            clearError(inputLayout);
+        } catch (NumberFormatException e) {
+            showError(inputLayout, "Invalid number");
+        }
+    }
+
+    private void persistRepeat(SharedPreferences prefs, int value) {
+        prefs.edit().putInt("repeat.count", value).apply();
+    }
+
+    private void showError(TextInputLayout layout, String message) {
+        layout.setError(message);
+    }
+
+    private void clearError(TextInputLayout layout) {
+        layout.setError(null);
+        layout.setErrorEnabled(false);
     }
 }
