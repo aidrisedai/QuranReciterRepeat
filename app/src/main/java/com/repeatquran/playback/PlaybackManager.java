@@ -30,7 +30,7 @@ public class PlaybackManager {
 
     private int nextToAppend = 0;
     private int repeatCount = 1; // 1 = no repeat, -1 = infinite
-    private int currentPlayCount = 0; // counts plays of the current item
+    private int completedPlays = 0; // number of completed plays of the current item
 
     public PlaybackManager(Context context, VerseProvider provider, int bufferAhead, @Nullable Callback callback) {
         this.provider = provider;
@@ -49,36 +49,41 @@ public class PlaybackManager {
             public void onPlaybackStateChanged(int playbackState) {
                 if (callback != null) callback.onStateChanged(playbackState);
                 maybeAppendMore();
+                if (playbackState == Player.STATE_ENDED) {
+                    // If we reached the end (no next item). For single verse with repeat=1, ensure seek to start.
+                    if (repeatCount == 1 && !player.hasNextMediaItem()) {
+                        player.seekTo(0);
+                    }
+                }
             }
 
             @Override
             public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
-                    // Completed one loop of the same item
+                    // Each repeat transition means one play completed.
                     if (repeatCount == -1) {
-                        // Infinite: keep looping
                         Log.d(TAG, "Looped current item (∞)");
                         return;
                     }
-                    currentPlayCount++;
-                    Log.d(TAG, "Looped current item, count=" + currentPlayCount + "/" + repeatCount);
-                    if (currentPlayCount >= repeatCount) {
+                    completedPlays++;
+                    Log.d(TAG, "Completed plays=" + completedPlays + "/" + repeatCount);
+                    if (completedPlays >= repeatCount) {
                         // Finished required repeats
                         player.setRepeatMode(Player.REPEAT_MODE_OFF);
                         if (player.hasNextMediaItem()) {
                             player.seekToNextMediaItem();
-                            currentPlayCount = 1;
+                            completedPlays = 0;
                             applyRepeatMode();
                         } else {
                             player.pause();
                             player.seekTo(0);
-                            currentPlayCount = 1;
+                            completedPlays = 0;
                         }
                         return;
                     }
                 } else {
                     // New media item started: reset per-item play counter
-                    currentPlayCount = 1;
+                    completedPlays = 0;
                     applyRepeatMode();
                     maybeAppendMore();
                 }
@@ -103,7 +108,7 @@ public class PlaybackManager {
             appendNext();
         }
         // first item starting
-        currentPlayCount = 1;
+        completedPlays = 0;
         applyRepeatMode();
         player.prepare();
         player.play();
@@ -138,7 +143,7 @@ public class PlaybackManager {
     public void setRepeatCount(int count) {
         this.repeatCount = count;
         // Reset play counter for current item
-        this.currentPlayCount = Math.max(1, this.currentPlayCount);
+        this.completedPlays = Math.max(0, this.completedPlays);
         applyRepeatMode();
     }
 
