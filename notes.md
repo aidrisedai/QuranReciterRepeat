@@ -71,6 +71,11 @@
   - **Verification Method:** Dropdown screenshots + Logcat showing selected repeat in PlaybackService (docs/proof/UHW-7/)  
   - **Status:** ✅  
 
+- **Promise:** Repeat accuracy (single-verse and whole passage)  
+  - **Last Verified On:** 2025-09-07  
+  - **Verification Method:** Demo videos for 3× single-ayah, ∞ single-ayah, and 2× range; logs show exact playlist sizing  
+  - **Status:** ✅  
+
 - **Promise:** Cached surahs always replay offline  
   - **Last Verified On:** Pending UHW-16  
   - **Verification Method:** Demo video (airplane mode)  

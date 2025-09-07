@@ -46,3 +46,9 @@
 - Enabled typing custom counts (1–9999) with validation and persistence to `repeat.count`.
 - On play/start, `PlaybackService` logs the selected value for proof.
 - **Proof**: `docs/proof/UHW-7/repeat-dropdown.png`, `docs/proof/UHW-7/repeat-custom-value.png`, `docs/proof/UHW-7/repeat-log.txt`.
+
+### UHW-8: Repeat Logic (2025-09-07)
+- Single-ayah: Exact repeats by building N-duplicate playlist (repeat=OFF) or ∞ via single item (repeat=ONE). Uses current typed repeat value at click.
+- Multi-verse (whole passage): Added range loader (Start Surah:Ayah → End Surah:Ayah). Finite N duplicates whole list; ∞ loops list with REPEAT_MODE_ALL.
+- Provider feeding disabled for single-ayah/range sessions to avoid extra items; Play resumes existing queue without reseed.
+- **Proof**: `docs/proof/UHW-8/repeat-3x-demo.mp4`, `docs/proof/UHW-8/repeat-infinite-demo.mp4`, `docs/proof/UHW-8/range-2x-demo.mp4`, logs under `docs/proof/UHW-8/`.

@@ -49,7 +49,7 @@
   - **Proof**: Screenshot of dropdown.  
   - **QA Note**: Selection persists into playback + logs.  
 
-- [ ] **UHW-8: Repeat Logic**  
+- [x] **UHW-8: Repeat Logic**  
   - Implement repeat counts in ExoPlayer queue.  
   - **Proof**: Demo video of 3× repeat execution.  
   - **QA Note**: Verify dropdown selection matches playback.  
