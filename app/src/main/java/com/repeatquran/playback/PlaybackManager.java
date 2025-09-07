@@ -29,10 +29,6 @@ public class PlaybackManager {
     private final Callback callback;
 
     private int nextToAppend = 0;
-    private int repeatCount = 1; // 1 = no repeat, -1 = infinite
-    private int completedPlays = 0; // number of completed plays of the current item
-    private boolean singleVerseMode = false;
-    private boolean singleVerseReturnToStartOnEnd = false;
 
     public PlaybackManager(Context context, VerseProvider provider, int bufferAhead, @Nullable Callback callback) {
         this.provider = provider;
@@ -51,20 +47,10 @@ public class PlaybackManager {
             public void onPlaybackStateChanged(int playbackState) {
                 if (callback != null) callback.onStateChanged(playbackState);
                 maybeAppendMore();
-                if (playbackState == Player.STATE_ENDED) {
-                    // If a single-verse finite session finished, pause and seek to 0.
-                    if (singleVerseMode && singleVerseReturnToStartOnEnd) {
-                        player.pause();
-                        player.seekTo(0);
-                    }
-                }
             }
 
             @Override
             public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-                // Media item actually changed (advanced to next). Reset counters.
-                completedPlays = 0;
-                applyRepeatMode();
                 maybeAppendMore();
             }
 
@@ -73,33 +59,6 @@ public class PlaybackManager {
                 Log.e(TAG, "Playback error", error);
                 if (callback != null) callback.onPlaybackError(error.getMessage());
             }
-            @Override
-            public void onPositionDiscontinuity(Player.PositionInfo oldPos, Player.PositionInfo newPos, int reason) {
-                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) {
-                    if (oldPos.mediaItemIndex == newPos.mediaItemIndex) {
-                        // Looped same item due to REPEAT_MODE_ONE
-                        if (repeatCount == -1) return; // infinite
-                        completedPlays++;
-                        Log.d(TAG, "Completed plays=" + completedPlays + "/" + repeatCount);
-                        if (completedPlays >= repeatCount) {
-                            player.setRepeatMode(Player.REPEAT_MODE_OFF);
-                            if (player.hasNextMediaItem()) {
-                                player.seekToNextMediaItem();
-                                completedPlays = 0;
-                                applyRepeatMode();
-                            } else {
-                                player.pause();
-                                player.seekTo(0);
-                                completedPlays = 0;
-                            }
-                        }
-                    } else {
-                        // Moved to next item automatically
-                        completedPlays = 0;
-                        applyRepeatMode();
-                    }
-                }
-            }
         });
     }
 
@@ -107,16 +66,11 @@ public class PlaybackManager {
 
     public void prepareAndStart() {
         if (provider.size() == 0) return;
-        singleVerseMode = false;
-        singleVerseReturnToStartOnEnd = false;
         // Seed initial queue: current + bufferAhead
         int initial = Math.min(provider.size(), bufferAhead + 1);
         for (int i = 0; i < initial; i++) {
             appendNext();
         }
-        // first item starting
-        completedPlays = 0;
-        applyRepeatMode();
         player.prepare();
         player.play();
     }
@@ -146,55 +100,5 @@ public class PlaybackManager {
         Log.d(TAG, "Appended to buffer: index=" + nextToAppend);
         nextToAppend++;
     }
-
-    public void setRepeatCount(int count) {
-        this.repeatCount = count;
-        // Reset play counter for current item
-        this.completedPlays = Math.max(0, this.completedPlays);
-        applyRepeatMode();
-    }
-
-    private void applyRepeatMode() {
-        // In single-verse mode we own the repeat behavior explicitly.
-        if (singleVerseMode) {
-            if (repeatCount == -1) {
-                player.setRepeatMode(Player.REPEAT_MODE_ONE);
-            } else {
-                player.setRepeatMode(Player.REPEAT_MODE_OFF);
-            }
-            return;
-        }
-        // Normal multi-verse behavior (not used for single-ayah testing)
-        if (repeatCount == -1 || repeatCount > 1) {
-            player.setRepeatMode(Player.REPEAT_MODE_ONE);
-        } else {
-            player.setRepeatMode(Player.REPEAT_MODE_OFF);
-        }
-    }
-
-    /**
-     * Simplified path for single ayah testing: play a single URL repeated exactly N times (or infinitely).
-     */
-    public void playSingleUriWithRepeats(String url, int count) {
-        player.stop();
-        player.clearMediaItems();
-        singleVerseMode = true;
-        completedPlays = 0;
-        this.repeatCount = count;
-        if (count == -1) {
-            // Infinite: add once and loop current item
-            player.setRepeatMode(Player.REPEAT_MODE_ONE);
-            player.addMediaItem(new MediaItem.Builder().setUri(url).build());
-            singleVerseReturnToStartOnEnd = false;
-        } else {
-            // Finite: add N copies and do not use repeat mode. End will be ENDED.
-            player.setRepeatMode(Player.REPEAT_MODE_OFF);
-            for (int i = 0; i < Math.max(1, count); i++) {
-                player.addMediaItem(new MediaItem.Builder().setUri(url).build());
-            }
-            singleVerseReturnToStartOnEnd = true;
-        }
-        player.prepare();
-        player.play();
-    }
 }
+

@@ -38,9 +38,6 @@ public class PlaybackService extends Service {
     public static final String ACTION_PAUSE = "com.repeatquran.action.PAUSE";
     public static final String ACTION_NEXT = "com.repeatquran.action.NEXT";
     public static final String ACTION_PREV = "com.repeatquran.action.PREV";
-    public static final String ACTION_LOAD_SINGLE = "com.repeatquran.action.LOAD_SINGLE";
-    public static final String EXTRA_SURA = "extra.sura";
-    public static final String EXTRA_AYAH = "extra.ayah";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -49,10 +46,6 @@ public class PlaybackService extends Service {
     private ExoPlayer player;
     private MediaSessionCompat mediaSession;
     private PlayerNotificationManager notificationManager;
-    private int lastLoadSura = -1;
-    private int lastLoadAyah = -1;
-    private long lastLoadAtMs = 0L;
-    private boolean singleVerseActive = false;
 
     @Override
     public void onCreate() {
@@ -79,9 +72,6 @@ public class PlaybackService extends Service {
                 }
         );
         player = playbackManager.getPlayer();
-        // Initialize repeat count from prefs
-        int repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-        playbackManager.setRepeatCount(repeatCount);
 
         mediaSession = new MediaSessionCompat(this, "RepeatQuranSession");
         mediaSession.setActive(true);
@@ -149,60 +139,15 @@ public class PlaybackService extends Service {
             int repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
             String repeatStr = (repeatCount == -1) ? "∞" : String.valueOf(repeatCount);
             Log.d("PlaybackService", "Starting playback with repeat count=" + repeatStr);
-            playbackManager.setRepeatCount(repeatCount);
-            if (player != null && player.getMediaItemCount() > 0) {
-                // Resume existing queue (e.g., single-ayah already loaded)
-                player.play();
-            } else {
-                // Seed multi-verse queue only if nothing is loaded
-                singleVerseActive = false;
-                playbackManager.prepareAndStart();
-            }
+            playbackManager.prepareAndStart();
         } else if (ACTION_PAUSE.equals(action)) {
             if (player != null) player.pause();
         } else if (ACTION_NEXT.equals(action)) {
             if (player != null) player.seekToNextMediaItem();
         } else if (ACTION_PREV.equals(action)) {
             if (player != null) player.seekToPreviousMediaItem();
-        } else if (ACTION_LOAD_SINGLE.equals(action)) {
-            int sura = intent.getIntExtra(EXTRA_SURA, 1);
-            int ayah = intent.getIntExtra(EXTRA_AYAH, 1);
-            long now = System.currentTimeMillis();
-            if (sura == lastLoadSura && ayah == lastLoadAyah && (now - lastLoadAtMs) < 1000) {
-                Log.d("PlaybackService", "Ignoring duplicate load within 1s for " + sura + ":" + ayah);
-                return START_STICKY;
-            }
-            lastLoadSura = sura; lastLoadAyah = ayah; lastLoadAtMs = now;
-            Log.d("PlaybackService", "Loading single ayah: " + sura + ":" + ayah);
-            // Build the URL and directly load a finite/infinite playlist for a single verse.
-            SingleVerseProvider p = new SingleVerseProvider("Abdurrahmaan_As-Sudais_64kbps", sura, ayah);
-            String url = p.urlAt(0);
-            int rc = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-            singleVerseActive = true;
-            playbackManager.playSingleUriWithRepeats(url, rc);
         }
         return START_STICKY;
-    }
-
-    private void recreateManager(VerseProvider provider) {
-        if (notificationManager != null && player != null) {
-            notificationManager.setPlayer(null);
-        }
-        if (playbackManager != null) {
-            playbackManager.release();
-        }
-        playbackManager = new PlaybackManager(this, provider, 2, new PlaybackManager.Callback() {
-            @Override
-            public void onBufferAppended(int index) { Log.d("PlaybackService", "Buffer appended: " + index); }
-            @Override
-            public void onPlaybackError(String message) { Log.e("PlaybackService", "Playback error: " + message); }
-            @Override
-            public void onStateChanged(int state) { }
-        });
-        player = playbackManager.getPlayer();
-        if (notificationManager != null) {
-            notificationManager.setPlayer(player);
-        }
     }
 
     @Override
