@@ -166,10 +166,11 @@ public class PlaybackService extends Service {
             }
             lastLoadSura = sura; lastLoadAyah = ayah; lastLoadAtMs = now;
             Log.d("PlaybackService", "Loading single ayah: " + sura + ":" + ayah);
-            recreateManager(new SingleVerseProvider("Abdurrahmaan_As-Sudais_64kbps", sura, ayah));
+            // Build the URL and directly load a finite/infinite playlist for a single verse.
+            SingleVerseProvider p = new SingleVerseProvider("Abdurrahmaan_As-Sudais_64kbps", sura, ayah);
+            String url = p.urlAt(0);
             int rc = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-            playbackManager.setRepeatCount(rc);
-            playbackManager.prepareAndStart();
+            playbackManager.playSingleUriWithRepeats(url, rc);
         }
         return START_STICKY;
     }

@@ -31,6 +31,8 @@ public class PlaybackManager {
     private int nextToAppend = 0;
     private int repeatCount = 1; // 1 = no repeat, -1 = infinite
     private int completedPlays = 0; // number of completed plays of the current item
+    private boolean singleVerseMode = false;
+    private boolean singleVerseReturnToStartOnEnd = false;
 
     public PlaybackManager(Context context, VerseProvider provider, int bufferAhead, @Nullable Callback callback) {
         this.provider = provider;
@@ -50,8 +52,9 @@ public class PlaybackManager {
                 if (callback != null) callback.onStateChanged(playbackState);
                 maybeAppendMore();
                 if (playbackState == Player.STATE_ENDED) {
-                    // If we reached the end (no next item). For single verse with repeat=1, ensure seek to start.
-                    if (repeatCount == 1 && !player.hasNextMediaItem()) {
+                    // If a single-verse finite session finished, pause and seek to 0.
+                    if (singleVerseMode && singleVerseReturnToStartOnEnd) {
+                        player.pause();
                         player.seekTo(0);
                     }
                 }
@@ -104,6 +107,8 @@ public class PlaybackManager {
 
     public void prepareAndStart() {
         if (provider.size() == 0) return;
+        singleVerseMode = false;
+        singleVerseReturnToStartOnEnd = false;
         // Seed initial queue: current + bufferAhead
         int initial = Math.min(provider.size(), bufferAhead + 1);
         for (int i = 0; i < initial; i++) {
@@ -155,5 +160,31 @@ public class PlaybackManager {
         } else {
             player.setRepeatMode(Player.REPEAT_MODE_OFF);
         }
+    }
+
+    /**
+     * Simplified path for single ayah testing: play a single URL repeated exactly N times (or infinitely).
+     */
+    public void playSingleUriWithRepeats(String url, int count) {
+        player.stop();
+        player.clearMediaItems();
+        singleVerseMode = true;
+        completedPlays = 0;
+        this.repeatCount = count;
+        if (count == -1) {
+            // Infinite: add once and loop current item
+            player.setRepeatMode(Player.REPEAT_MODE_ONE);
+            player.addMediaItem(new MediaItem.Builder().setUri(url).build());
+            singleVerseReturnToStartOnEnd = false;
+        } else {
+            // Finite: add N copies and do not use repeat mode. End will be ENDED.
+            player.setRepeatMode(Player.REPEAT_MODE_OFF);
+            for (int i = 0; i < Math.max(1, count); i++) {
+                player.addMediaItem(new MediaItem.Builder().setUri(url).build());
+            }
+            singleVerseReturnToStartOnEnd = true;
+        }
+        player.prepare();
+        player.play();
     }
 }
