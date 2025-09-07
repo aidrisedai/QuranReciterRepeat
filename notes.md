@@ -67,9 +67,9 @@
   - **Status:** ✅  
 
 - **Promise:** Repeat dropdown selection always persists into playback  
-  - **Last Verified On:** Pending UHW-7/8  
-  - **Verification Method:** Screenshot + demo video  
-  - **Status:** ⚠️ (to be tested)  
+  - **Last Verified On:** 2025-09-07  
+  - **Verification Method:** Dropdown screenshots + Logcat showing selected repeat in PlaybackService (docs/proof/UHW-7/)  
+  - **Status:** ✅  
 
 - **Promise:** Cached surahs always replay offline  
   - **Last Verified On:** Pending UHW-16  

@@ -44,7 +44,7 @@
 ---
 
 ## Phase 3: Repetition
-- [ ] **UHW-7: Repeat Dropdown**  
+- [x] **UHW-7: Repeat Dropdown**  
   - Values = {1,3,5,10,∞}.  
   - **Proof**: Screenshot of dropdown.  
   - **QA Note**: Selection persists into playback + logs.  

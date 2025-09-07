@@ -40,3 +40,9 @@
 - Wired buttons to `PlaybackService` actions; service maps to ExoPlayer controls.
 - Verified DayNight visibility via screenshots on emulator and device.
 - **Proof**: `docs/proof/UHW-6/controls-emulator.png`, `docs/proof/UHW-6/controls-device.png` (optional dark mode screenshot).
+
+### UHW-7: Repeat Dropdown (2025-09-07)
+- Implemented Material Exposed Dropdown with suggestions {1,3,5,10,∞}.
+- Enabled typing custom counts (1–9999) with validation and persistence to `repeat.count`.
+- On play/start, `PlaybackService` logs the selected value for proof.
+- **Proof**: `docs/proof/UHW-7/repeat-dropdown.png`, `docs/proof/UHW-7/repeat-custom-value.png`, `docs/proof/UHW-7/repeat-log.txt`.
