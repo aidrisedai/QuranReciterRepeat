@@ -144,6 +144,7 @@ public class PlaybackService extends Service {
                 player.play();
             } else {
                 playbackManager.setFeedingEnabled(true);
+                playbackManager.setPassageRepeatCount(repeatCount);
                 playbackManager.prepareAndStart();
             }
         } else if (ACTION_PAUSE.equals(action)) {

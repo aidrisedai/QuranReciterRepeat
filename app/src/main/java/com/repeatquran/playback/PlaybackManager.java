@@ -30,6 +30,8 @@ public class PlaybackManager {
 
     private int nextToAppend = 0;
     private boolean feedingEnabled = true;
+    private int passageRepeatCount = 1; // 1 = play once, -1 = infinite
+    private int passageCyclesCompleted = 0; // number of full playlist replays finished
 
     public PlaybackManager(Context context, VerseProvider provider, int bufferAhead, @Nullable Callback callback) {
         this.provider = provider;
@@ -48,6 +50,17 @@ public class PlaybackManager {
             public void onPlaybackStateChanged(int playbackState) {
                 if (callback != null) callback.onStateChanged(playbackState);
                 maybeAppendMore();
+                if (playbackState == Player.STATE_ENDED) {
+                    // Whole-passage repeat handling
+                    if (passageRepeatCount == -1 || passageCyclesCompleted < Math.max(0, passageRepeatCount - 1)) {
+                        passageCyclesCompleted++;
+                        Log.d(TAG, "Passage cycle " + passageCyclesCompleted + " complete; repeating");
+                        player.seekToDefaultPosition(0);
+                        player.play();
+                    } else {
+                        Log.d(TAG, "Passage playback finished (no more repeats)");
+                    }
+                }
             }
 
             @Override
@@ -68,6 +81,7 @@ public class PlaybackManager {
     public void prepareAndStart() {
         if (provider.size() == 0) return;
         feedingEnabled = true;
+        passageCyclesCompleted = 0;
         // Seed initial queue: current + bufferAhead
         int initial = Math.min(provider.size(), bufferAhead + 1);
         for (int i = 0; i < initial; i++) {
@@ -75,6 +89,11 @@ public class PlaybackManager {
         }
         player.prepare();
         player.play();
+    }
+
+    /** Sets how many times to play the whole provider list (1 = once, -1 = infinite). */
+    public void setPassageRepeatCount(int count) {
+        this.passageRepeatCount = count;
     }
 
     public void stop() {
