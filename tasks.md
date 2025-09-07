@@ -17,7 +17,7 @@
   - Validate sync.  
   - **Proof**: Screenshot of successful Gradle sync.  
 
-- [ ] **UHW-3: Repo & ViewModel Stubs**  
+ - [x] **UHW-3: Repo & ViewModel Stubs**  
   - Create empty `SessionViewModel`, `HistoryViewModel`, `PlaybackViewModel`.  
   - Add placeholder methods.  
   - **Proof**: Unit test that instantiates each VM.  

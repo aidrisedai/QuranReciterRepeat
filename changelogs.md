@@ -16,3 +16,9 @@
 - Kept Material Components DayNight theme (Compose deferred per notes).
 - Gradle sync verified by CEO (screenshot stored under `docs/proof/UHW-2/gradle-sync.png`).
 - **Proof**: Gradle sync success screenshot.
+
+### UHW-3: Repo & ViewModel Stubs (2025-09-07)
+- Added Java ViewModels: `SessionViewModel`, `HistoryViewModel`, `PlaybackViewModel` with placeholder methods.
+- Added JVM unit tests to instantiate each VM and assert defaults.
+- Updated dependencies: lifecycle-viewmodel (runtime) and JUnit (test).
+- **Proof**: `docs/proof/UHW-3/unit-test-log.png` (tests passing screenshot).
