@@ -34,3 +34,9 @@
 - Updated `MainActivity` to start the service; added INTERNET and FOREGROUND_SERVICE_MEDIA_PLAYBACK permissions.
 - Notification permission requested on Android 13+.
 - **Proof**: `docs/proof/UHW-5/background-playback-demo.mp4` and `docs/proof/UHW-5/call-interruption-log.txt`.
+
+### UHW-6: Playback UI Controls (2025-09-07)
+- Added in-app controls (Play, Pause, Next, Prev) via Material buttons in XML.
+- Wired buttons to `PlaybackService` actions; service maps to ExoPlayer controls.
+- Verified DayNight visibility via screenshots on emulator and device.
+- **Proof**: `docs/proof/UHW-6/controls-emulator.png`, `docs/proof/UHW-6/controls-device.png` (optional dark mode screenshot).

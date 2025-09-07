@@ -36,7 +36,7 @@
   - **Proof**: Demo video of playback persisting across app switch + Bluetooth.  
   - **QA Note**: Must pause/resume after phone call.  
 
-- [ ] **UHW-6: Playback UI Controls**  
+- [x] **UHW-6: Playback UI Controls**  
   - Compose UI: Play, Pause, Next, Prev.  
   - **Proof**: Screenshot of controls on emulator + physical device.  
   - **QA Note**: Verify light + dark mode consistency.  

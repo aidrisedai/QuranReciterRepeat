@@ -61,6 +61,11 @@
   - **Verification Method:** Build + emulator screenshot (stored under docs/proof/UHW-1/)  
   - **Status:** ✅  
 
+- **Promise:** UI consistency (light/dark readability for controls)  
+  - **Last Verified On:** 2025-09-07  
+  - **Verification Method:** Screenshots of playback controls in both modes (docs/proof/UHW-6/)  
+  - **Status:** ✅  
+
 - **Promise:** Repeat dropdown selection always persists into playback  
   - **Last Verified On:** Pending UHW-7/8  
   - **Verification Method:** Screenshot + demo video  
