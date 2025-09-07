@@ -29,6 +29,7 @@ public class PlaybackManager {
     private final Callback callback;
 
     private int nextToAppend = 0;
+    private boolean feedingEnabled = true;
 
     public PlaybackManager(Context context, VerseProvider provider, int bufferAhead, @Nullable Callback callback) {
         this.provider = provider;
@@ -66,6 +67,7 @@ public class PlaybackManager {
 
     public void prepareAndStart() {
         if (provider.size() == 0) return;
+        feedingEnabled = true;
         // Seed initial queue: current + bufferAhead
         int initial = Math.min(provider.size(), bufferAhead + 1);
         for (int i = 0; i < initial; i++) {
@@ -84,6 +86,7 @@ public class PlaybackManager {
     }
 
     private void maybeAppendMore() {
+        if (!feedingEnabled) return;
         int current = player.getCurrentMediaItemIndex();
         // If we're within the buffer window from the end of the appended items, append one more.
         if (nextToAppend < provider.size() && current >= nextToAppend - bufferAhead) {
@@ -100,5 +103,12 @@ public class PlaybackManager {
         Log.d(TAG, "Appended to buffer: index=" + nextToAppend);
         nextToAppend++;
     }
-}
 
+    /**
+     * Enables or disables automatic feeding from the VerseProvider into the ExoPlayer queue.
+     * When disabled, no more items are appended automatically.
+     */
+    public void setFeedingEnabled(boolean enabled) {
+        this.feedingEnabled = enabled;
+    }
+}

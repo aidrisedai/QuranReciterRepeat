@@ -143,6 +143,7 @@ public class PlaybackService extends Service {
             if (player.getMediaItemCount() > 0) {
                 player.play();
             } else {
+                playbackManager.setFeedingEnabled(true);
                 playbackManager.prepareAndStart();
             }
         } else if (ACTION_PAUSE.equals(action)) {
@@ -161,6 +162,7 @@ public class PlaybackService extends Service {
             int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
             player.stop();
             player.clearMediaItems();
+            playbackManager.setFeedingEnabled(false); // prevent provider from appending more items
             if (repeat == -1) {
                 player.setRepeatMode(Player.REPEAT_MODE_ONE);
                 player.addMediaItem(MediaItem.fromUri(url));
