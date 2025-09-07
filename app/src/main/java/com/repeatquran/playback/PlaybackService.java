@@ -52,6 +52,7 @@ public class PlaybackService extends Service {
     private int lastLoadSura = -1;
     private int lastLoadAyah = -1;
     private long lastLoadAtMs = 0L;
+    private boolean singleVerseActive = false;
 
     @Override
     public void onCreate() {
@@ -149,7 +150,14 @@ public class PlaybackService extends Service {
             String repeatStr = (repeatCount == -1) ? "∞" : String.valueOf(repeatCount);
             Log.d("PlaybackService", "Starting playback with repeat count=" + repeatStr);
             playbackManager.setRepeatCount(repeatCount);
-            playbackManager.prepareAndStart();
+            if (player != null && player.getMediaItemCount() > 0) {
+                // Resume existing queue (e.g., single-ayah already loaded)
+                player.play();
+            } else {
+                // Seed multi-verse queue only if nothing is loaded
+                singleVerseActive = false;
+                playbackManager.prepareAndStart();
+            }
         } else if (ACTION_PAUSE.equals(action)) {
             if (player != null) player.pause();
         } else if (ACTION_NEXT.equals(action)) {
@@ -170,6 +178,7 @@ public class PlaybackService extends Service {
             SingleVerseProvider p = new SingleVerseProvider("Abdurrahmaan_As-Sudais_64kbps", sura, ayah);
             String url = p.urlAt(0);
             int rc = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            singleVerseActive = true;
             playbackManager.playSingleUriWithRepeats(url, rc);
         }
         return START_STICKY;
