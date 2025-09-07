@@ -29,6 +29,8 @@ public class PlaybackManager {
     private final Callback callback;
 
     private int nextToAppend = 0;
+    private int repeatCount = 1; // 1 = no repeat, -1 = infinite
+    private int currentPlayCount = 0; // counts plays of the current item
 
     public PlaybackManager(Context context, VerseProvider provider, int bufferAhead, @Nullable Callback callback) {
         this.provider = provider;
@@ -51,6 +53,9 @@ public class PlaybackManager {
 
             @Override
             public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
+                // New media item started: reset per-item play counter
+                currentPlayCount = 1;
+                applyRepeatMode();
                 maybeAppendMore();
             }
 
@@ -58,6 +63,27 @@ public class PlaybackManager {
             public void onPlayerError(com.google.android.exoplayer2.PlaybackException error) {
                 Log.e(TAG, "Playback error", error);
                 if (callback != null) callback.onPlaybackError(error.getMessage());
+            }
+
+            @Override
+            public void onPositionDiscontinuity(Player.PositionInfo oldPosition, Player.PositionInfo newPosition, int reason) {
+                // Detect loop of the same media item (position jumped back to near 0 while index unchanged)
+                if (oldPosition.mediaItemIndex == newPosition.mediaItemIndex
+                        && oldPosition.positionMs > 1000 && newPosition.positionMs < 500) {
+                    // Completed one play-through of the current item
+                    if (repeatCount == -1) {
+                        // Infinite: keep repeating
+                        return;
+                    }
+                    currentPlayCount++;
+                    if (currentPlayCount > repeatCount) {
+                        // Move to next item and reset
+                        player.setRepeatMode(Player.REPEAT_MODE_OFF);
+                        player.seekToNextMediaItem();
+                        currentPlayCount = 1;
+                        applyRepeatMode();
+                    }
+                }
             }
         });
     }
@@ -71,6 +97,9 @@ public class PlaybackManager {
         for (int i = 0; i < initial; i++) {
             appendNext();
         }
+        // first item starting
+        currentPlayCount = 1;
+        applyRepeatMode();
         player.prepare();
         player.play();
     }
@@ -100,5 +129,19 @@ public class PlaybackManager {
         Log.d(TAG, "Appended to buffer: index=" + nextToAppend);
         nextToAppend++;
     }
-}
 
+    public void setRepeatCount(int count) {
+        this.repeatCount = count;
+        // Reset play counter for current item
+        this.currentPlayCount = Math.max(1, this.currentPlayCount);
+        applyRepeatMode();
+    }
+
+    private void applyRepeatMode() {
+        if (repeatCount == -1 || repeatCount > 1) {
+            player.setRepeatMode(Player.REPEAT_MODE_ONE);
+        } else {
+            player.setRepeatMode(Player.REPEAT_MODE_OFF);
+        }
+    }
+}

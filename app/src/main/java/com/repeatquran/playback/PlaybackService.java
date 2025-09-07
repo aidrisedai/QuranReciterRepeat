@@ -72,6 +72,9 @@ public class PlaybackService extends Service {
                 }
         );
         player = playbackManager.getPlayer();
+        // Initialize repeat count from prefs
+        int repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+        playbackManager.setRepeatCount(repeatCount);
 
         mediaSession = new MediaSessionCompat(this, "RepeatQuranSession");
         mediaSession.setActive(true);
@@ -139,6 +142,7 @@ public class PlaybackService extends Service {
             int repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
             String repeatStr = (repeatCount == -1) ? "∞" : String.valueOf(repeatCount);
             Log.d("PlaybackService", "Starting playback with repeat count=" + repeatStr);
+            playbackManager.setRepeatCount(repeatCount);
             playbackManager.prepareAndStart();
         } else if (ACTION_PAUSE.equals(action)) {
             if (player != null) player.pause();
