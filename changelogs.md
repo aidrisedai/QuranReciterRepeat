@@ -10,3 +10,9 @@
 - Language: Java; UI: XML + Material Components DayNight (not Compose).
 - Structure: Single `app` module with package scaffolding for `core`, `playback`, `history`, `settings` (Option C hybrid).
 - **Proof**: Hello World screen + Gradle sync screenshot (to be attached under `docs/proof/UHW-1/`).
+
+### UHW-2: Dependency Setup (2025-09-07)
+- Added Hilt plugin and dependencies (hilt-android, compiler), Room (runtime, compiler), and ExoPlayer.
+- Kept Material Components DayNight theme (Compose deferred per notes).
+- Gradle sync verified by CEO (screenshot stored under `docs/proof/UHW-2/gradle-sync.png`).
+- **Proof**: Gradle sync success screenshot.

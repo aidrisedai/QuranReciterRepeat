@@ -57,9 +57,9 @@
 
 ## 🧪 Regression Promises Log
 - **Promise:** App builds and launches (“Hello World”)  
-  - **Last Verified On:** Pending UHW-1 proof  
-  - **Verification Method:** Build + emulator screenshot  
-  - **Status:** ⚠️ (awaiting screenshot)  
+  - **Last Verified On:** 2025-09-07  
+  - **Verification Method:** Build + emulator screenshot (stored under docs/proof/UHW-1/)  
+  - **Status:** ✅  
 
 - **Promise:** Repeat dropdown selection always persists into playback  
   - **Last Verified On:** Pending UHW-7/8  

@@ -12,7 +12,7 @@
   - Configure package name + min SDK.  
   - **Proof**: Screenshot of Hello World build on emulator.  
 
-- [ ] **UHW-2: Dependency Setup**  
+- [x] **UHW-2: Dependency Setup**  
   - Add Gradle deps (Hilt, Room, ExoPlayer, Material3 for dark mode).  
   - Validate sync.  
   - **Proof**: Screenshot of successful Gradle sync.  
