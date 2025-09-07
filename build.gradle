@@ -5,6 +5,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.5.2'
+        classpath 'com.google.dagger:hilt-android-gradle-plugin:2.52'
     }
 }
 
@@ -18,4 +19,3 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
-
