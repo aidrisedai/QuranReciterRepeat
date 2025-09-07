@@ -135,6 +135,10 @@ public class PlaybackService extends Service {
             return START_NOT_STICKY;
         }
         if (ACTION_PLAY.equals(action) || ACTION_START.equals(action) || action == null) {
+            // Log selected repeat count for proof in UHW-7
+            int repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            String repeatStr = (repeatCount == -1) ? "∞" : String.valueOf(repeatCount);
+            Log.d("PlaybackService", "Starting playback with repeat count=" + repeatStr);
             playbackManager.prepareAndStart();
         } else if (ACTION_PAUSE.equals(action)) {
             if (player != null) player.pause();

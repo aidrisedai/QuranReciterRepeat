@@ -9,6 +9,10 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.repeatquran.playback.PlaybackService;
+import com.google.android.material.textfield.TextInputLayout;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.content.SharedPreferences;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -27,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnPause).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PAUSE));
         findViewById(R.id.btnNext).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_NEXT));
         findViewById(R.id.btnPrev).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PREV));
+
+        setupRepeatDropdown();
     }
 
     @Override
@@ -60,5 +66,28 @@ public class MainActivity extends AppCompatActivity {
         } else {
             startService(intent);
         }
+    }
+
+    private void setupRepeatDropdown() {
+        AutoCompleteTextView dropdown = findViewById(R.id.repeatDropdown);
+        String[] labels = getResources().getStringArray(R.array.repeat_labels);
+        final int[] values = getResources().getIntArray(R.array.repeat_values);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, labels);
+        dropdown.setAdapter(adapter);
+
+        SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
+        int selectedValue = prefs.getInt("repeat.count", 1);
+        // find index by value
+        int selIndex = 0;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] == selectedValue) { selIndex = i; break; }
+            if (selectedValue == -1 && values[i] == -1) { selIndex = i; break; }
+        }
+        dropdown.setText(labels[selIndex], false);
+
+        dropdown.setOnItemClickListener((parent, view, position, id) -> {
+            int value = values[position];
+            prefs.edit().putInt("repeat.count", value).apply();
+        });
     }
 }
