@@ -9,12 +9,16 @@ import java.util.List;
  */
 public class SimpleVerseProvider implements VerseProvider {
     private final List<String> urls = Arrays.asList(
-            // Placeholder public domain sample tracks (replace with real verse URLs)
-            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
+            // Al-Fatiha (001:1–7) from everyayah.com — Abdurrahmaan As-Sudais 64kbps
+            // Pattern: https://everyayah.com/data/<RECITER>/<SSSAAA>.mp3
+            // Where SSS = surah (001) and AAA = ayah (001..nnn), zero-padded to 3 digits
+            "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/001001.mp3",
+            "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/001002.mp3",
+            "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/001003.mp3",
+            "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/001004.mp3",
+            "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/001005.mp3",
+            "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/001006.mp3",
+            "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/001007.mp3"
     );
 
     @Override
@@ -27,4 +31,3 @@ public class SimpleVerseProvider implements VerseProvider {
         return urls.get(index);
     }
 }
-
