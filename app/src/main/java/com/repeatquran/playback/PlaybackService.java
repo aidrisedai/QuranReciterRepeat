@@ -14,7 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.media.app.NotificationCompat.MediaStyle;
 import androidx.media.session.MediaButtonReceiver;
-import androidx.media.app.NotificationCompat;
+//import androidx.media.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.TaskStackBuilder;
 import androidx.media.session.MediaButtonReceiver;
@@ -34,6 +34,10 @@ import android.support.v4.media.session.MediaSessionCompat;
 public class PlaybackService extends Service {
     public static final String ACTION_START = "com.repeatquran.action.START";
     public static final String ACTION_STOP = "com.repeatquran.action.STOP";
+    public static final String ACTION_PLAY = "com.repeatquran.action.PLAY";
+    public static final String ACTION_PAUSE = "com.repeatquran.action.PAUSE";
+    public static final String ACTION_NEXT = "com.repeatquran.action.NEXT";
+    public static final String ACTION_PREV = "com.repeatquran.action.PREV";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -130,8 +134,15 @@ public class PlaybackService extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
-        // Default or ACTION_START: ensure playback is running
-        playbackManager.prepareAndStart();
+        if (ACTION_PLAY.equals(action) || ACTION_START.equals(action) || action == null) {
+            playbackManager.prepareAndStart();
+        } else if (ACTION_PAUSE.equals(action)) {
+            if (player != null) player.pause();
+        } else if (ACTION_NEXT.equals(action)) {
+            if (player != null) player.seekToNextMediaItem();
+        } else if (ACTION_PREV.equals(action)) {
+            if (player != null) player.seekToPreviousMediaItem();
+        }
         return START_STICKY;
     }
 
@@ -163,4 +174,3 @@ public class PlaybackService extends Service {
         }
     }
 }
-
