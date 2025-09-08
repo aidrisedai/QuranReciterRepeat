@@ -160,22 +160,13 @@ public class PlaybackService extends Service {
             // Build exact playlist based on repeat setting
             String sss = String.format("%03d", sura);
             String aaa = String.format("%03d", ayah);
-            String url = "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/" + sss + aaa + ".mp3";
             int repeat = intent.getIntExtra("repeat",
                     getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false); // prevent provider from appending more items
-            if (repeat == -1) {
-                player.setRepeatMode(Player.REPEAT_MODE_ONE);
-                player.addMediaItem(MediaItem.fromUri(url));
-            } else {
-                player.setRepeatMode(Player.REPEAT_MODE_OFF);
-                int n = Math.max(1, repeat);
-                for (int i = 0; i < n; i++) {
-                    player.addMediaItem(MediaItem.fromUri(url));
-                }
-            }
+            java.util.List<MediaItem> cycle = buildSingleAyahCycle(sss, aaa);
+            enqueueCycles(cycle, repeat);
             player.prepare();
             player.play();
         } else if (ACTION_LOAD_RANGE.equals(action)) {
@@ -190,29 +181,8 @@ public class PlaybackService extends Service {
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
-
-            java.util.List<MediaItem> items = new java.util.ArrayList<>();
-            for (int s = ss; s <= es; s++) {
-                int startAyah = (s == ss) ? sa : 1;
-                int endAyah = (s == es) ? ea : getAyahCount(s);
-                for (int a = startAyah; a <= endAyah; a++) {
-                    String sss = String.format("%03d", s);
-                    String aaa = String.format("%03d", a);
-                    String url = "https://everyayah.com/data/Abdurrahmaan_As-Sudais_64kbps/" + sss + aaa + ".mp3";
-                    items.add(MediaItem.fromUri(url));
-                }
-            }
-
-            if (repeat == -1) {
-                player.setRepeatMode(Player.REPEAT_MODE_ALL);
-                for (MediaItem mi : items) player.addMediaItem(mi);
-            } else {
-                player.setRepeatMode(Player.REPEAT_MODE_OFF);
-                int n = Math.max(1, repeat);
-                for (int i = 0; i < n; i++) {
-                    for (MediaItem mi : items) player.addMediaItem(mi);
-                }
-            }
+            java.util.List<MediaItem> cycle = buildRangeCycle(ss, sa, es, ea);
+            enqueueCycles(cycle, repeat);
             player.prepare();
             player.play();
         }
@@ -235,6 +205,79 @@ public class PlaybackService extends Service {
                 5, 4, 5, 6
         };
         return AYAH_COUNTS[surah - 1];
+    }
+
+    private java.util.List<String> getSelectedReciterIds() {
+        String saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        if (saved == null || saved.isEmpty()) return ids;
+        for (String s : saved.split(",")) if (!s.isEmpty()) ids.add(s);
+        return ids;
+    }
+
+    private java.util.List<MediaItem> buildSingleAyahCycle(String sss, String aaa) {
+        java.util.List<String> reciters = getSelectedReciterIds();
+        if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
+        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
+        java.util.List<String> reciterNames = getReciterNames(reciters);
+        StringBuilder orderLog = new StringBuilder("Cycle order (single ayah): ");
+        for (int i = 0; i < reciters.size(); i++) {
+            String rid = reciters.get(i);
+            String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+            cycle.add(MediaItem.fromUri(url));
+            orderLog.append(reciterNames.get(i));
+            if (i < reciters.size() - 1) orderLog.append(" -> ");
+        }
+        Log.d("PlaybackService", orderLog.toString());
+        return cycle;
+    }
+
+    private java.util.List<MediaItem> buildRangeCycle(int ss, int sa, int es, int ea) {
+        java.util.List<String> reciters = getSelectedReciterIds();
+        if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
+        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
+        java.util.List<String> reciterNames = getReciterNames(reciters);
+        StringBuilder orderLog = new StringBuilder("Cycle order (range): ");
+        for (int i = 0; i < reciters.size(); i++) {
+            String rid = reciters.get(i);
+            orderLog.append(reciterNames.get(i));
+            if (i < reciters.size() - 1) orderLog.append(" -> ");
+            for (int s = ss; s <= es; s++) {
+                int startAyah = (s == ss) ? sa : 1;
+                int endAyah = (s == es) ? ea : getAyahCount(s);
+                for (int a = startAyah; a <= endAyah; a++) {
+                    String sss = String.format("%03d", s);
+                    String aaa = String.format("%03d", a);
+                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                    cycle.add(MediaItem.fromUri(url));
+                }
+            }
+        }
+        Log.d("PlaybackService", orderLog.toString());
+        return cycle;
+    }
+
+    private void enqueueCycles(java.util.List<MediaItem> cycle, int repeat) {
+        if (repeat == -1) {
+            player.setRepeatMode(Player.REPEAT_MODE_ALL);
+            for (MediaItem mi : cycle) player.addMediaItem(mi);
+            Log.d("PlaybackService", "Enqueued 1 cycle (∞ loop), items=" + cycle.size());
+        } else {
+            player.setRepeatMode(Player.REPEAT_MODE_OFF);
+            int n = Math.max(1, repeat);
+            for (int i = 0; i < n; i++) for (MediaItem mi : cycle) player.addMediaItem(mi);
+            Log.d("PlaybackService", "Enqueued " + n + " cycles, itemsPerCycle=" + cycle.size() + ", total=" + (n * cycle.size()));
+        }
+    }
+
+    private java.util.List<String> getReciterNames(java.util.List<String> ids) {
+        String[] names = getResources().getStringArray(R.array.reciter_names);
+        String[] allIds = getResources().getStringArray(R.array.reciter_ids);
+        java.util.Map<String, String> idToName = new java.util.HashMap<>();
+        for (int i = 0; i < allIds.length; i++) idToName.put(allIds[i], names[i]);
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String id : ids) out.add(idToName.getOrDefault(id, id));
+        return out;
     }
 
     @Override
