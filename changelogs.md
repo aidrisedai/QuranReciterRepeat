@@ -52,3 +52,15 @@
 - Multi-verse (whole passage): Added range loader (Start Surah:Ayah → End Surah:Ayah). Finite N duplicates whole list; ∞ loops list with REPEAT_MODE_ALL.
 - Provider feeding disabled for single-ayah/range sessions to avoid extra items; Play resumes existing queue without reseed.
 - **Proof**: `docs/proof/UHW-8/repeat-3x-demo.mp4`, `docs/proof/UHW-8/repeat-infinite-demo.mp4`, `docs/proof/UHW-8/range-2x-demo.mp4`, logs under `docs/proof/UHW-8/`.
+
+### UHW-9: Multi-Select Reciters (2025-09-07)
+- Added multi-choice dialog to select reciters; prevents duplicates and preserves saved order with numbered rendering.
+- Reciter list curated to style variants only (Murattal/Mujawwad/Teacher), no bitrate duplication; entries map to real everyayah folder IDs.
+- Alphabetically sorted dialog for better scanning; saved order used for playback.
+- **Proof**: `docs/proof/UHW-9/reciters-dialog.png`, `docs/proof/UHW-9/reciters-selected.png`.
+
+### UHW-10: Nested Sequential Playback (2025-09-07)
+- Implemented per-cycle playback across selected reciters in saved order for both single ayah and verse ranges.
+- Finite N: enqueue N cycles with REPEAT_MODE_OFF; ∞: enqueue one cycle with REPEAT_MODE_ALL.
+- Disabled provider feeding for explicit queues; logs record cycle order and queue sizing for proof.
+- **Proof**: `docs/proof/UHW-10/nested-cycle-demo.mp4`, `docs/proof/UHW-10/logs.txt`.

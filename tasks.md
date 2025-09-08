@@ -61,7 +61,7 @@
   - Prevent duplicates. Number reciters in selection.  
   - **Proof**: Screenshot of dropdown with multiple selected.  
 
-- [ ] **UHW-10: Nested Sequential Playback**  
+- [x] **UHW-10: Nested Sequential Playback**  
   - Order = Reciter A → Reciter B → repeat whole cycle.  
   - **Proof**: Demo video showing nested loop.  
   - **QA Note**: Logs must show order matches playback.  
