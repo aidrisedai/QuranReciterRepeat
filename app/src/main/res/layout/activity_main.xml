@@ -210,4 +210,52 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="12dp" />
+
+    <!-- Page selection (1..604) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/pageInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Page (1–604)"
+        app:layout_constraintTop_toBottomOf="@id/btnLoadRange"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editPage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:imeOptions="actionDone" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLoadPage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Load Page"
+        app:layout_constraintTop_toBottomOf="@id/pageInputLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnChooseReciters"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Choose Reciters"
+        app:layout_constraintTop_toBottomOf="@id/btnLoadPage"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/txtReciters"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Selected reciters: (none)"
+        app:layout_constraintTop_toBottomOf="@id/btnChooseReciters"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

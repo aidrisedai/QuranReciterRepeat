@@ -56,7 +56,23 @@
 
 ---
 
-## Phase 4: Multi-Reciter
+## Phase 4: Pages (Priority Next)
+- [x] **UHW-26: Page Dataset (Schema + Seeder)**  
+  - Add Room table `page_segments` with rows: (page, order, surah, startAyah, endAyah).  
+  - Bundle assets JSON for Madani pages; seed DB on first run.  
+  - **Proof**: Instrumented test asserting known pages load with correct segment counts/order.  
+
+- [x] **UHW-27: Page Selection UI**  
+  - Add page input (1–604) with validation + “Load Page” button.  
+  - **Proof**: Screenshot of UI; invalid input shows inline error.  
+
+- [ ] **UHW-28: Page Playback Integration**  
+  - ACTION_LOAD_PAGE: Build ayah list from `page_segments`, apply nested reciter cycle + repeat N/∞.  
+  - **Proof**: Demo video of page playback; logs show cycle order + item counts.  
+
+---
+
+## Phase 5: Multi-Reciter
 - [ ] **UHW-9: Multi-Select Dropdown**  
   - Prevent duplicates. Number reciters in selection.  
   - **Proof**: Screenshot of dropdown with multiple selected.  

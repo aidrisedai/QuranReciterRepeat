@@ -53,6 +53,18 @@
 - Provider feeding disabled for single-ayah/range sessions to avoid extra items; Play resumes existing queue without reseed.
 - **Proof**: `docs/proof/UHW-8/repeat-3x-demo.mp4`, `docs/proof/UHW-8/repeat-infinite-demo.mp4`, `docs/proof/UHW-8/range-2x-demo.mp4`, logs under `docs/proof/UHW-8/`.
 
+## Phase 4: Pages (Priority Next)
+
+### UHW-26: Page Dataset (Schema + Seeder) (2025-09-07)
+- Added Room table `page_segments` and assets `pages.json` with segments per page.
+- Seeder runs on first app launch; instrumented test validates sample pages.
+- **Proof**: Android test screenshot; seed log in Logcat.
+
+### UHW-27: Page Selection UI (2025-09-07)
+- Added page input (1–604) and “Load Page” button with validation and last-page persistence.
+- Playback wiring deferred to UHW-28.
+- **Proof**: Screenshot of the UI with valid/invalid input behavior.
+
 ### UHW-9: Multi-Select Reciters (2025-09-07)
 - Added multi-choice dialog to select reciters; prevents duplicates and preserves saved order with numbered rendering.
 - Reciter list curated to style variants only (Murattal/Mujawwad/Teacher), no bitrate duplication; entries map to real everyayah folder IDs.

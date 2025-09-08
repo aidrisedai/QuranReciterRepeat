@@ -19,6 +19,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.KeyEvent;
 import android.view.View;
 import com.google.android.material.textfield.TextInputEditText;
+import androidx.appcompat.app.AlertDialog;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -227,6 +228,28 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("repeat", repeat);
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
         });
+
+        // Choose Reciters (multi-select with ordered numbering)
+        findViewById(R.id.btnChooseReciters).setOnClickListener(v -> showReciterPicker());
+        renderSelectedReciters();
+
+        // Page input: preload last page
+        TextInputEditText editPage = findViewById(R.id.editPage);
+        int lastPage = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("last.page", 1);
+        editPage.setText(String.valueOf(lastPage));
+
+        // Load Page button (UI + validation only; playback wiring in UHW-28)
+        findViewById(R.id.btnLoadPage).setOnClickListener(v -> {
+            TextInputLayout pageLayout = findViewById(R.id.pageInputLayout);
+            clearError(pageLayout);
+            int page = parseIntSafe(editPage);
+            if (page < 1 || page > 604) {
+                showError(pageLayout, "Enter 1–604");
+                return;
+            }
+            getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("last.page", page).apply();
+            android.widget.Toast.makeText(this, "Page " + page + " ready (playback in next step)", android.widget.Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void validateAndPersistTyped(AutoCompleteTextView dropdown, TextInputLayout inputLayout, SharedPreferences prefs) {
@@ -307,4 +330,70 @@ public class MainActivity extends AppCompatActivity {
         11, 8, 3, 9, 5, 4, 7, 3, 6, 3,
         5, 4, 5, 6
     };
+
+    // ---- Reciter multi-select ----
+    private void showReciterPicker() {
+        String[] names = getResources().getStringArray(R.array.reciter_names);
+        String[] ids = getResources().getStringArray(R.array.reciter_ids);
+        SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
+        String saved = prefs.getString("reciters.order", "");
+        java.util.List<String> order = new java.util.ArrayList<>();
+        if (!saved.isEmpty()) {
+            for (String s : saved.split(",")) if (!s.isEmpty()) order.add(s);
+        }
+
+        // Build a sorted view by name (case-insensitive), while preserving mapping to ids
+        Integer[] idx = new Integer[names.length];
+        for (int i = 0; i < names.length; i++) idx[i] = i;
+        java.util.Arrays.sort(idx, (a, b) -> names[a].compareToIgnoreCase(names[b]));
+        String[] sortedNames = new String[names.length];
+        String[] sortedIds = new String[ids.length];
+        for (int i = 0; i < idx.length; i++) { sortedNames[i] = names[idx[i]]; sortedIds[i] = ids[idx[i]]; }
+
+        boolean[] checked = new boolean[sortedIds.length];
+        java.util.Set<String> selectedSet = new java.util.HashSet<>(order);
+        for (int i = 0; i < sortedIds.length; i++) checked[i] = selectedSet.contains(sortedIds[i]);
+
+        java.util.List<String> working = new java.util.ArrayList<>(order);
+        new AlertDialog.Builder(this)
+                .setTitle("Select Reciters")
+                .setMultiChoiceItems(sortedNames, checked, (dialog, which, isChecked) -> {
+                    String id = sortedIds[which];
+                    if (isChecked) {
+                        if (!working.contains(id)) working.add(id);
+                    } else {
+                        working.remove(id);
+                    }
+                })
+                .setPositiveButton("Save", (d, w) -> {
+                    String joined = android.text.TextUtils.join(",", working);
+                    prefs.edit().putString("reciters.order", joined).apply();
+                    renderSelectedReciters();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void renderSelectedReciters() {
+        String[] names = getResources().getStringArray(R.array.reciter_names);
+        String[] ids = getResources().getStringArray(R.array.reciter_ids);
+        java.util.Map<String, String> idToName = new java.util.HashMap<>();
+        for (int i = 0; i < ids.length; i++) idToName.put(ids[i], names[i]);
+        SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
+        String saved = prefs.getString("reciters.order", "");
+        StringBuilder sb = new StringBuilder();
+        if (saved.isEmpty()) {
+            sb.append("Selected reciters: (none)");
+        } else {
+            String[] parts = saved.split(",");
+            sb.append("Selected reciters:\n");
+            int n = 1;
+            for (String id : parts) {
+                String label = idToName.getOrDefault(id, id);
+                sb.append(n++).append(". ").append(label).append("\n");
+            }
+        }
+        android.widget.TextView tv = findViewById(R.id.txtReciters);
+        tv.setText(sb.toString().trim());
+    }
 }
