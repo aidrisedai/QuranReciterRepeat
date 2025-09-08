@@ -20,6 +20,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import com.google.android.material.textfield.TextInputEditText;
 import androidx.appcompat.app.AlertDialog;
+import android.widget.Filterable;
 
 public class MainActivity extends AppCompatActivity {
     @Override
@@ -263,6 +264,10 @@ public class MainActivity extends AppCompatActivity {
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
             android.widget.Toast.makeText(this, "Loading page " + page + " (repeat=" + (repeat==-1?"∞":repeat) + ")", android.widget.Toast.LENGTH_SHORT).show();
         });
+
+        // Surah dropdown setup
+        setupSurahDropdown();
+        findViewById(R.id.btnLoadSurah).setOnClickListener(v -> onLoadSurah());
     }
 
     private void validateAndPersistTyped(AutoCompleteTextView dropdown, TextInputLayout inputLayout, SharedPreferences prefs) {
@@ -343,6 +348,49 @@ public class MainActivity extends AppCompatActivity {
         11, 8, 3, 9, 5, 4, 7, 3, 6, 3,
         5, 4, 5, 6
     };
+
+    // ---- Surah selection ----
+    private void setupSurahDropdown() {
+        AutoCompleteTextView dd = findViewById(R.id.surahDropdown);
+        String[] nums = getResources().getStringArray(R.array.surah_numbers);
+        String[] names = getResources().getStringArray(R.array.surah_names_en);
+        String[] display = new String[nums.length];
+        for (int i = 0; i < nums.length; i++) display[i] = nums[i] + " — " + names[i];
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, display);
+        dd.setAdapter(adapter);
+        dd.setThreshold(0);
+        // preload last surah
+        int last = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("last.surah", 1);
+        if (last >= 1 && last <= 114) dd.setText(display[last - 1], false);
+    }
+
+    private void onLoadSurah() {
+        TextInputLayout layout = findViewById(R.id.surahSelectLayout);
+        AutoCompleteTextView dd = findViewById(R.id.surahDropdown);
+        clearError(layout);
+        String txt = dd.getText() != null ? dd.getText().toString() : "";
+        if (txt.isEmpty() || txt.length() < 3) { showError(layout, "Select a surah"); return; }
+        // Extract number prefix
+        String numStr = txt.substring(0, 3);
+        int surah;
+        try { surah = Integer.parseInt(numStr); } catch (Exception e) { showError(layout, "Select a surah"); return; }
+        if (surah < 1 || surah > 114) { showError(layout, "Invalid surah"); return; }
+        getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("last.surah", surah).apply();
+        // Read repeat now
+        AutoCompleteTextView rep = findViewById(R.id.repeatDropdown);
+        String repText = rep.getText() != null ? rep.getText().toString().trim() : "";
+        int repeat = -1;
+        if (!"∞".equals(repText)) {
+            try { repeat = Integer.parseInt(repText); } catch (Exception e) { repeat = 1; }
+            if (repeat < 1) repeat = 1;
+        }
+        Intent intent = new Intent(this, com.repeatquran.playback.PlaybackService.class);
+        intent.setAction(com.repeatquran.playback.PlaybackService.ACTION_LOAD_SURAH);
+        intent.putExtra("surah", surah);
+        intent.putExtra("repeat", repeat);
+        if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
+        android.widget.Toast.makeText(this, "Loading surah " + numStr + " (repeat=" + (repeat==-1?"∞":repeat) + ")", android.widget.Toast.LENGTH_SHORT).show();
+    }
 
     // ---- Reciter multi-select ----
     private void showReciterPicker() {

@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -57,6 +59,8 @@ public class PlaybackService extends Service {
     private SessionRepository sessionRepo;
     private Long currentSessionId = null;
     private Integer currentCyclesRequested = null;
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private Handler mainHandler;
 
     @Override
     public void onCreate() {
@@ -84,6 +88,8 @@ public class PlaybackService extends Service {
         );
         player = playbackManager.getPlayer();
         sessionRepo = new SessionRepository(this);
+        ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        mainHandler = new Handler(Looper.getMainLooper());
 
         player.addListener(new Player.Listener() {
             @Override
@@ -170,15 +176,17 @@ public class PlaybackService extends Service {
                 playbackManager.setFeedingEnabled(true);
                 playbackManager.setPassageRepeatCount(repeatCount);
                 playbackManager.prepareAndStart();
-                // Log provider-based session start
-                SessionEntity e = new SessionEntity();
-                e.startedAt = System.currentTimeMillis();
-                e.sourceType = "provider";
-                e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
-                e.repeatCount = repeatCount;
-                e.cyclesRequested = repeatCount;
+                // Log provider-based session start (off main thread)
                 currentCyclesRequested = repeatCount;
-                currentSessionId = sessionRepo.insert(e);
+                ioExecutor.execute(() -> {
+                    SessionEntity e = new SessionEntity();
+                    e.startedAt = System.currentTimeMillis();
+                    e.sourceType = "provider";
+                    e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+                    e.repeatCount = repeatCount;
+                    e.cyclesRequested = repeatCount;
+                    currentSessionId = sessionRepo.insert(e);
+                });
             }
         } else if (ACTION_PAUSE.equals(action)) {
             if (player != null) player.pause();
@@ -198,19 +206,23 @@ public class PlaybackService extends Service {
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false); // prevent provider from appending more items
             java.util.List<MediaItem> cycle = buildSingleAyahCycle(sss, aaa);
-            enqueueCycles(cycle, repeat);
-            player.prepare();
-            player.play();
-            SessionEntity e = new SessionEntity();
-            e.startedAt = System.currentTimeMillis();
-            e.sourceType = "single";
-            e.startSurah = sura;
-            e.startAyah = ayah;
-            e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
-            e.repeatCount = repeat;
-            e.cyclesRequested = repeat;
+            mainHandler.post(() -> {
+                enqueueCycles(cycle, repeat);
+                player.prepare();
+                player.play();
+            });
             currentCyclesRequested = repeat;
-            currentSessionId = sessionRepo.insert(e);
+            ioExecutor.execute(() -> {
+                SessionEntity e = new SessionEntity();
+                e.startedAt = System.currentTimeMillis();
+                e.sourceType = "single";
+                e.startSurah = sura;
+                e.startAyah = ayah;
+                e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+                e.repeatCount = repeat;
+                e.cyclesRequested = repeat;
+                currentSessionId = sessionRepo.insert(e);
+            });
         } else if (ACTION_LOAD_RANGE.equals(action)) {
             int ss = intent.getIntExtra("ss", 1);
             int sa = intent.getIntExtra("sa", 1);
@@ -224,21 +236,25 @@ public class PlaybackService extends Service {
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
             java.util.List<MediaItem> cycle = buildRangeCycle(ss, sa, es, ea);
-            enqueueCycles(cycle, repeat);
-            player.prepare();
-            player.play();
-            SessionEntity e = new SessionEntity();
-            e.startedAt = System.currentTimeMillis();
-            e.sourceType = "range";
-            e.startSurah = ss;
-            e.startAyah = sa;
-            e.endSurah = es;
-            e.endAyah = ea;
-            e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
-            e.repeatCount = repeat;
-            e.cyclesRequested = repeat;
+            mainHandler.post(() -> {
+                enqueueCycles(cycle, repeat);
+                player.prepare();
+                player.play();
+            });
             currentCyclesRequested = repeat;
-            currentSessionId = sessionRepo.insert(e);
+            ioExecutor.execute(() -> {
+                SessionEntity e = new SessionEntity();
+                e.startedAt = System.currentTimeMillis();
+                e.sourceType = "range";
+                e.startSurah = ss;
+                e.startAyah = sa;
+                e.endSurah = es;
+                e.endAyah = ea;
+                e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+                e.repeatCount = repeat;
+                e.cyclesRequested = repeat;
+                currentSessionId = sessionRepo.insert(e);
+            });
         } else if (ACTION_LOAD_PAGE.equals(action)) {
             int page = intent.getIntExtra("page", -1);
             int repeat = intent.getIntExtra("repeat",
@@ -247,22 +263,28 @@ public class PlaybackService extends Service {
                 Log.e("PlaybackService", "Invalid page: " + page);
                 return START_STICKY;
             }
+            // Query and build cycle off main, then enqueue on main; insert session off main
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
-            java.util.List<MediaItem> cycle = buildPageCycle(page);
-            enqueueCycles(cycle, repeat);
-            player.prepare();
-            player.play();
-
-            SessionEntity e = new SessionEntity();
-            e.startedAt = System.currentTimeMillis();
-            e.sourceType = "page";
-            e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
-            e.repeatCount = repeat;
-            e.cyclesRequested = repeat;
+            ioExecutor.execute(() -> {
+                java.util.List<MediaItem> cycle = buildPageCycle(page);
+                mainHandler.post(() -> {
+                    enqueueCycles(cycle, repeat);
+                    player.prepare();
+                    player.play();
+                });
+            });
             currentCyclesRequested = repeat;
-            currentSessionId = sessionRepo.insert(e);
+            ioExecutor.execute(() -> {
+                SessionEntity e = new SessionEntity();
+                e.startedAt = System.currentTimeMillis();
+                e.sourceType = "page";
+                e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+                e.repeatCount = repeat;
+                e.cyclesRequested = repeat;
+                currentSessionId = sessionRepo.insert(e);
+            });
         }
         return START_STICKY;
     }
@@ -384,6 +406,55 @@ public class PlaybackService extends Service {
         return cycle;
     }
 
+    private java.util.List<MediaItem> buildSurahCycle(int surah) {
+        java.util.List<String> reciters = getSelectedReciterIds();
+        if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
+        java.util.List<String> reciterNames = getReciterNames(reciters);
+        int maxAyah = getAyahCount(surah);
+        StringBuilder orderLog = new StringBuilder("Cycle order (surah ").append(String.format("%03d", surah)).append("): ");
+        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
+        for (int i = 0; i < reciters.size(); i++) {
+            String rid = reciters.get(i);
+            orderLog.append(reciterNames.get(i));
+            if (i < reciters.size() - 1) orderLog.append(" -> ");
+            String sss = String.format("%03d", surah);
+            for (int a = 1; a <= maxAyah; a++) {
+                String aaa = String.format("%03d", a);
+                String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                cycle.add(MediaItem.fromUri(url));
+            }
+        }
+        Log.d("PlaybackService", orderLog.toString());
+        Log.d("PlaybackService", "Surah " + surah + " itemsPerCycle=" + cycle.size());
+        return cycle;
+    }
+
+    private java.util.List<MediaItem> buildPageCycle(int page) {
+        PageSegmentDao dao = RepeatQuranDatabase.get(this).pageSegmentDao();
+        java.util.List<PageSegmentEntity> segs = dao.segmentsForPage(page);
+        java.util.List<String> reciters = getSelectedReciterIds();
+        if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
+        java.util.List<String> reciterNames = getReciterNames(reciters);
+        StringBuilder orderLog = new StringBuilder("Cycle order (page ").append(page).append("): ");
+        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
+        for (int i = 0; i < reciters.size(); i++) {
+            String rid = reciters.get(i);
+            orderLog.append(reciterNames.get(i));
+            if (i < reciters.size() - 1) orderLog.append(" -> ");
+            for (PageSegmentEntity s : segs) {
+                for (int a = s.startAyah; a <= s.endAyah; a++) {
+                    String sss = String.format("%03d", s.surah);
+                    String aaa = String.format("%03d", a);
+                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                    cycle.add(MediaItem.fromUri(url));
+                }
+            }
+        }
+        Log.d("PlaybackService", orderLog.toString());
+        Log.d("PlaybackService", "Page " + page + " itemsPerCycle=" + cycle.size());
+        return cycle;
+    }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -391,6 +462,7 @@ public class PlaybackService extends Service {
         mediaSession.setActive(false);
         mediaSession.release();
         playbackManager.release();
+        if (ioExecutor != null) ioExecutor.shutdownNow();
     }
 
     @Nullable

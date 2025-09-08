@@ -240,12 +240,41 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="12dp" />
 
+    <!-- Surah selection -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/surahSelectLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Surah"
+        app:layout_constraintTop_toBottomOf="@id/btnLoadPage"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp">
+        <AutoCompleteTextView
+            android:id="@+id/surahDropdown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:importantForAutofill="no" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLoadSurah"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Load Surah"
+        app:layout_constraintTop_toBottomOf="@id/surahSelectLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnChooseReciters"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Choose Reciters"
-        app:layout_constraintTop_toBottomOf="@id/btnLoadPage"
+        app:layout_constraintTop_toBottomOf="@id/btnLoadSurah"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="16dp" />
 
