@@ -238,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
         int lastPage = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("last.page", 1);
         editPage.setText(String.valueOf(lastPage));
 
-        // Load Page button (UI + validation only; playback wiring in UHW-28)
+        // Load Page button (wires to service in UHW-28)
         findViewById(R.id.btnLoadPage).setOnClickListener(v -> {
             TextInputLayout pageLayout = findViewById(R.id.pageInputLayout);
             clearError(pageLayout);
@@ -248,7 +248,20 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("last.page", page).apply();
-            android.widget.Toast.makeText(this, "Page " + page + " ready (playback in next step)", android.widget.Toast.LENGTH_SHORT).show();
+            // Read repeat now
+            AutoCompleteTextView rep = findViewById(R.id.repeatDropdown);
+            String repText = rep.getText() != null ? rep.getText().toString().trim() : "";
+            int repeat = -1;
+            if (!"∞".equals(repText)) {
+                try { repeat = Integer.parseInt(repText); } catch (Exception e) { repeat = 1; }
+                if (repeat < 1) repeat = 1;
+            }
+            Intent intent = new Intent(this, com.repeatquran.playback.PlaybackService.class);
+            intent.setAction(com.repeatquran.playback.PlaybackService.ACTION_LOAD_PAGE);
+            intent.putExtra("page", page);
+            intent.putExtra("repeat", repeat);
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
+            android.widget.Toast.makeText(this, "Loading page " + page + " (repeat=" + (repeat==-1?"∞":repeat) + ")", android.widget.Toast.LENGTH_SHORT).show();
         });
     }
 

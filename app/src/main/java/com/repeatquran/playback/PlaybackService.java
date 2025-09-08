@@ -30,6 +30,9 @@ import com.repeatquran.MainActivity;
 import com.repeatquran.R;
 import com.repeatquran.data.SessionRepository;
 import com.repeatquran.data.db.SessionEntity;
+import com.repeatquran.data.db.RepeatQuranDatabase;
+import com.repeatquran.data.db.PageSegmentDao;
+import com.repeatquran.data.db.PageSegmentEntity;
 
 import android.support.v4.media.session.MediaSessionCompat;
 
@@ -42,6 +45,7 @@ public class PlaybackService extends Service {
     public static final String ACTION_PREV = "com.repeatquran.action.PREV";
     public static final String ACTION_LOAD_SINGLE = "com.repeatquran.action.LOAD_SINGLE";
     public static final String ACTION_LOAD_RANGE = "com.repeatquran.action.LOAD_RANGE";
+    public static final String ACTION_LOAD_PAGE = "com.repeatquran.action.LOAD_PAGE";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -235,6 +239,30 @@ public class PlaybackService extends Service {
             e.cyclesRequested = repeat;
             currentCyclesRequested = repeat;
             currentSessionId = sessionRepo.insert(e);
+        } else if (ACTION_LOAD_PAGE.equals(action)) {
+            int page = intent.getIntExtra("page", -1);
+            int repeat = intent.getIntExtra("repeat",
+                    getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
+            if (page < 1 || page > 604) {
+                Log.e("PlaybackService", "Invalid page: " + page);
+                return START_STICKY;
+            }
+            player.stop();
+            player.clearMediaItems();
+            playbackManager.setFeedingEnabled(false);
+            java.util.List<MediaItem> cycle = buildPageCycle(page);
+            enqueueCycles(cycle, repeat);
+            player.prepare();
+            player.play();
+
+            SessionEntity e = new SessionEntity();
+            e.startedAt = System.currentTimeMillis();
+            e.sourceType = "page";
+            e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+            e.repeatCount = repeat;
+            e.cyclesRequested = repeat;
+            currentCyclesRequested = repeat;
+            currentSessionId = sessionRepo.insert(e);
         }
         return START_STICKY;
     }
@@ -328,6 +356,32 @@ public class PlaybackService extends Service {
         java.util.List<String> out = new java.util.ArrayList<>();
         for (String id : ids) out.add(idToName.getOrDefault(id, id));
         return out;
+    }
+
+    private java.util.List<MediaItem> buildPageCycle(int page) {
+        PageSegmentDao dao = RepeatQuranDatabase.get(this).pageSegmentDao();
+        java.util.List<PageSegmentEntity> segs = dao.segmentsForPage(page);
+        java.util.List<String> reciters = getSelectedReciterIds();
+        if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
+        java.util.List<String> reciterNames = getReciterNames(reciters);
+        StringBuilder orderLog = new StringBuilder("Cycle order (page ").append(page).append("): ");
+        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
+        for (int i = 0; i < reciters.size(); i++) {
+            String rid = reciters.get(i);
+            orderLog.append(reciterNames.get(i));
+            if (i < reciters.size() - 1) orderLog.append(" -> ");
+            for (PageSegmentEntity s : segs) {
+                for (int a = s.startAyah; a <= s.endAyah; a++) {
+                    String sss = String.format("%03d", s.surah);
+                    String aaa = String.format("%03d", a);
+                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                    cycle.add(MediaItem.fromUri(url));
+                }
+            }
+        }
+        Log.d("PlaybackService", orderLog.toString());
+        Log.d("PlaybackService", "Page " + page + " itemsPerCycle=" + cycle.size());
+        return cycle;
     }
 
     @Override
