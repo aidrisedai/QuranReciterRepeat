@@ -306,6 +306,12 @@ public class MainActivity extends AppCompatActivity {
         setupSurahDropdown();
         setupSingleSurahDropdown();
         findViewById(R.id.btnLoadSurah).setOnClickListener(v -> onLoadSurah());
+
+        // Open Downloads screen
+        findViewById(R.id.btnOpenDownloads).setOnClickListener(v -> {
+            android.content.Intent i = new android.content.Intent(this, com.repeatquran.downloads.DownloadsActivity.class);
+            startActivity(i);
+        });
     }
 
     private void validateAndPersistTyped(AutoCompleteTextView dropdown, TextInputLayout inputLayout, SharedPreferences prefs) {

@@ -109,9 +109,10 @@
   - Scope: single verse, ranges, pages, and full surahs (per-reciter).  
   - **Proof**: Device file explorer screenshot under `files/audio/<reciterId>/<SSS><AAA>.mp3` + Logcat `CacheManager` lines.  
 
-- [ ] **UHW-15: Downloads Tab**  
+- [x] **UHW-15: Downloads Tab**  
   - ✅ if all verses cached, else ⬇️.  
-  - **Proof**: Screenshot of Downloads tab.  
+  - Implemented as Downloads screen: per-reciter, check/download/clear for Surah and Page.  
+  - **Proof**: Screenshot of Downloads screen with status; Clear then Check shows updated status.  
   - **QA Note**: Clear cached file → status updates correctly.  
 
 - [ ] **UHW-16: Offline Playback (With Online Fallback)**  

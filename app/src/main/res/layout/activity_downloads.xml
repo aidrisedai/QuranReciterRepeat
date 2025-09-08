@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/titleDownloads"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Downloads"
+            android:textSize="20sp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/reciterInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Reciter"
+            android:layout_marginTop="12dp">
+            <AutoCompleteTextView
+                android:id="@+id/reciterDropdown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Surah Section -->
+        <TextView
+            android:id="@+id/surahSectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Surah"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/surahSelectLayoutDl"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Surah (001–114)"
+            android:layout_marginTop="8dp">
+            <AutoCompleteTextView
+                android:id="@+id/surahDropdownDl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:id="@+id/txtSurahStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Status: -"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCheckSurah"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Check" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDownloadSurah"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Download Missing"
+                android:layout_marginStart="8dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnClearSurah"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Clear"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- Page Section -->
+        <TextView
+            android:id="@+id/pageSectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Page"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/pageInputLayoutDl"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Page (1–604)"
+            android:layout_marginTop="8dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editPageDl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:id="@+id/txtPageStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Status: -"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCheckPage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Check" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDownloadPage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Download Missing"
+                android:layout_marginStart="8dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnClearPage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Clear"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>
+

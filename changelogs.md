@@ -85,3 +85,9 @@
 - Playback prefers cached files (file URI) and otherwise streams while caching in the background (`cacheAsync`). Per‑reciter isolation maintained by folder.
 - Verified by playing a page and a surah; files appear in Device File Explorer; replays show no new cache downloads in Logcat (`CacheManager`).
 - **Proof**: `docs/proof/UHW-14/cache-screenshot.png`, `docs/proof/UHW-14/cache-log.txt`.
+
+### UHW-15: Downloads Tab (2025-09-08)
+- Added a simple Downloads screen (Java + XML) navigable from Home.
+- Features: pick reciter; check Surah/Page cache status (✅ or ⬇️ with X/Y count); Download Missing (enqueue `cacheAsync` for missing items); Clear (delete local files and refresh).
+- Page status uses `page_segments` via Room DAO to enumerate ayahs; Surah status uses static ayah counts.
+- Proof: `docs/proof/UHW-15/downloads-screenshot.png` showing statuses before and after Clear/Download; steps documented in README.

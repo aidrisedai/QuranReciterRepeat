@@ -289,6 +289,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />
 
+    <!-- Downloads navigation -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnOpenDownloads"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Downloads"
+        app:layout_constraintTop_toBottomOf="@id/txtReciters"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
     <!-- Recent Sessions -->
     <TextView
         android:id="@+id/historyTitle"
@@ -296,7 +306,7 @@
         android:layout_height="wrap_content"
         android:text="Recent Sessions"
         android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/txtReciters"
+        app:layout_constraintTop_toBottomOf="@id/btnOpenDownloads"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="16dp" />
 

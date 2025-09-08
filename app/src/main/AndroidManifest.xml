@@ -16,6 +16,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RepeatQuran">
+        <activity android:name=".downloads.DownloadsActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
