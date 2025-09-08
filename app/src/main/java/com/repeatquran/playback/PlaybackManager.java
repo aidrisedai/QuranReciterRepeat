@@ -50,8 +50,8 @@ public class PlaybackManager {
             public void onPlaybackStateChanged(int playbackState) {
                 if (callback != null) callback.onStateChanged(playbackState);
                 maybeAppendMore();
-                if (playbackState == Player.STATE_ENDED) {
-                    // Whole-passage repeat handling
+                if (playbackState == Player.STATE_ENDED && feedingEnabled) {
+                    // Only auto-repeat provider-driven passages when feeding is enabled
                     if (passageRepeatCount == -1 || passageCyclesCompleted < Math.max(0, passageRepeatCount - 1)) {
                         passageCyclesCompleted++;
                         Log.d(TAG, "Passage cycle " + passageCyclesCompleted + " complete; repeating");

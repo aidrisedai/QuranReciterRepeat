@@ -35,6 +35,7 @@ import com.repeatquran.data.db.SessionEntity;
 import com.repeatquran.data.db.RepeatQuranDatabase;
 import com.repeatquran.data.db.PageSegmentDao;
 import com.repeatquran.data.db.PageSegmentEntity;
+import com.repeatquran.data.CacheManager;
 
 import android.support.v4.media.session.MediaSessionCompat;
 
@@ -48,6 +49,7 @@ public class PlaybackService extends Service {
     public static final String ACTION_LOAD_SINGLE = "com.repeatquran.action.LOAD_SINGLE";
     public static final String ACTION_LOAD_RANGE = "com.repeatquran.action.LOAD_RANGE";
     public static final String ACTION_LOAD_PAGE = "com.repeatquran.action.LOAD_PAGE";
+    public static final String ACTION_LOAD_SURAH = "com.repeatquran.action.LOAD_SURAH";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -61,6 +63,7 @@ public class PlaybackService extends Service {
     private Integer currentCyclesRequested = null;
     private java.util.concurrent.ExecutorService ioExecutor;
     private Handler mainHandler;
+    private CacheManager cacheManager;
 
     @Override
     public void onCreate() {
@@ -90,16 +93,17 @@ public class PlaybackService extends Service {
         sessionRepo = new SessionRepository(this);
         ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
         mainHandler = new Handler(Looper.getMainLooper());
+        cacheManager = CacheManager.get(this);
 
         player.addListener(new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(int state) {
                 if (state == Player.STATE_ENDED && currentSessionId != null) {
-                    // Mark session ended
-                    long now = System.currentTimeMillis();
-                    sessionRepo.markEnded(currentSessionId, now, currentCyclesRequested);
+                    final long id = currentSessionId;
+                    final Integer cycles = currentCyclesRequested;
                     currentSessionId = null;
                     currentCyclesRequested = null;
+                    ioExecutor.execute(() -> sessionRepo.markEnded(id, System.currentTimeMillis(), cycles));
                 }
             }
         });
@@ -165,28 +169,16 @@ public class PlaybackService extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
-        if (ACTION_PLAY.equals(action) || ACTION_START.equals(action) || action == null) {
-            // Log selected repeat count for proof in UHW-7
-            int repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-            String repeatStr = (repeatCount == -1) ? "∞" : String.valueOf(repeatCount);
-            Log.d("PlaybackService", "Starting playback with repeat count=" + repeatStr);
+        if (ACTION_PLAY.equals(action)) {
             if (player.getMediaItemCount() > 0) {
                 player.play();
             } else {
-                playbackManager.setFeedingEnabled(true);
-                playbackManager.setPassageRepeatCount(repeatCount);
-                playbackManager.prepareAndStart();
-                // Log provider-based session start (off main thread)
-                currentCyclesRequested = repeatCount;
-                ioExecutor.execute(() -> {
-                    SessionEntity e = new SessionEntity();
-                    e.startedAt = System.currentTimeMillis();
-                    e.sourceType = "provider";
-                    e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
-                    e.repeatCount = repeatCount;
-                    e.cyclesRequested = repeatCount;
-                    currentSessionId = sessionRepo.insert(e);
-                });
+                Log.d("PlaybackService", "Play pressed with empty queue; not seeding provider.");
+            }
+        } else if (ACTION_START.equals(action) || action == null) {
+            // No auto-seeding on start; only resume if something is already queued
+            if (player.getMediaItemCount() > 0) {
+                player.play();
             }
         } else if (ACTION_PAUSE.equals(action)) {
             if (player != null) player.pause();
@@ -202,6 +194,7 @@ public class PlaybackService extends Service {
             String aaa = String.format("%03d", ayah);
             int repeat = intent.getIntExtra("repeat",
                     getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
+            Log.d("PlaybackService", "Load Single: Surah " + sss + " — " + surahName(sura) + ", Ayah " + ayah + ", Repeat=" + (repeat==-1?"∞":repeat));
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false); // prevent provider from appending more items
@@ -230,6 +223,8 @@ public class PlaybackService extends Service {
             int ea = intent.getIntExtra("ea", 1);
             int repeat = intent.getIntExtra("repeat",
                     getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
+            Log.d("PlaybackService", "Load Range: " + String.format("%03d", ss) + " — " + surahName(ss) + ":" + sa +
+                    " → " + String.format("%03d", es) + " — " + surahName(es) + ":" + ea + ", Repeat=" + (repeat==-1?"∞":repeat));
 
             // Build URLs for the inclusive range (ss:sa) -> (es:ea)
             player.stop();
@@ -259,6 +254,7 @@ public class PlaybackService extends Service {
             int page = intent.getIntExtra("page", -1);
             int repeat = intent.getIntExtra("repeat",
                     getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
+            Log.d("PlaybackService", "Load Page: " + page + ", Repeat=" + (repeat==-1?"∞":repeat));
             if (page < 1 || page > 604) {
                 Log.e("PlaybackService", "Invalid page: " + page);
                 return START_STICKY;
@@ -284,6 +280,37 @@ public class PlaybackService extends Service {
                 e.repeatCount = repeat;
                 e.cyclesRequested = repeat;
                 currentSessionId = sessionRepo.insert(e);
+            });
+        } else if (ACTION_LOAD_SURAH.equals(action)) {
+            int surah = intent.getIntExtra("surah", -1);
+            int repeat = intent.getIntExtra("repeat",
+                    getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
+            Log.d("PlaybackService", "Load Surah: " + String.format("%03d", surah) + " — " + surahName(surah) + ", Repeat=" + (repeat==-1?"∞":repeat));
+            if (surah < 1 || surah > 114) {
+                Log.e("PlaybackService", "Invalid surah: " + surah);
+                return START_STICKY;
+            }
+            player.stop();
+            player.clearMediaItems();
+            playbackManager.setFeedingEnabled(false);
+            ioExecutor.execute(() -> {
+                java.util.List<MediaItem> cycle = buildSurahCycle(surah);
+                mainHandler.post(() -> {
+                    enqueueCycles(cycle, repeat);
+                    player.prepare();
+                    player.play();
+                });
+            });
+            currentCyclesRequested = repeat;
+            ioExecutor.execute(() -> {
+                SessionEntity se = new SessionEntity();
+                se.startedAt = System.currentTimeMillis();
+                se.sourceType = "surah";
+                se.startSurah = surah;
+                se.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+                se.repeatCount = repeat;
+                se.cyclesRequested = repeat;
+                currentSessionId = sessionRepo.insert(se);
             });
         }
         return START_STICKY;
@@ -324,7 +351,13 @@ public class PlaybackService extends Service {
         for (int i = 0; i < reciters.size(); i++) {
             String rid = reciters.get(i);
             String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-            cycle.add(MediaItem.fromUri(url));
+            java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+            if (cached.exists()) {
+                cycle.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+            } else {
+                cycle.add(MediaItem.fromUri(url));
+                cacheManager.cacheAsync(url, rid, sss, aaa);
+            }
             orderLog.append(reciterNames.get(i));
             if (i < reciters.size() - 1) orderLog.append(" -> ");
         }
@@ -349,7 +382,13 @@ public class PlaybackService extends Service {
                     String sss = String.format("%03d", s);
                     String aaa = String.format("%03d", a);
                     String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-                    cycle.add(MediaItem.fromUri(url));
+                    java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                    if (cached.exists()) {
+                        cycle.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                    } else {
+                        cycle.add(MediaItem.fromUri(url));
+                        cacheManager.cacheAsync(url, rid, sss, aaa);
+                    }
                 }
             }
         }
@@ -376,8 +415,31 @@ public class PlaybackService extends Service {
         java.util.Map<String, String> idToName = new java.util.HashMap<>();
         for (int i = 0; i < allIds.length; i++) idToName.put(allIds[i], names[i]);
         java.util.List<String> out = new java.util.ArrayList<>();
-        for (String id : ids) out.add(idToName.getOrDefault(id, id));
+        for (String id : ids) {
+            String name = idToName.get(id);
+            out.add(name != null ? name : id);
+        }
         return out;
+    }
+
+    private static final String[] SURAH_NAMES_EN = new String[] {
+            "Al-Fatihah", "Al-Baqarah", "Aal Imran", "An-Nisa", "Al-Maidah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah", "Yunus",
+            "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Ta-Ha",
+            "Al-Anbiya", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum",
+            "Luqman", "As-Sajdah", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir",
+            "Fussilat", "Ash-Shura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiyah", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf",
+            "Adh-Dhariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid", "Al-Mujadila", "Al-Hashr", "Al-Mumtahanah",
+            "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij",
+            "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat", "An-Naba", "An-Nazi'at", "Abasa",
+            "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghashiyah", "Al-Fajr", "Al-Balad",
+            "Ash-Shams", "Al-Layl", "Ad-Duha", "Ash-Sharh", "At-Tin", "Al-Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-Adiyat",
+            "Al-Qari'ah", "At-Takathur", "Al-Asr", "Al-Humazah", "Al-Fil", "Quraysh", "Al-Ma'un", "Al-Kawthar", "Al-Kafirun", "An-Nasr",
+            "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas"
+    };
+
+    private String surahName(int surah) {
+        if (surah >= 1 && surah <= SURAH_NAMES_EN.length) return SURAH_NAMES_EN[surah - 1];
+        return "";
     }
 
     private java.util.List<MediaItem> buildPageCycle(int page) {
@@ -397,7 +459,13 @@ public class PlaybackService extends Service {
                     String sss = String.format("%03d", s.surah);
                     String aaa = String.format("%03d", a);
                     String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-                    cycle.add(MediaItem.fromUri(url));
+                    java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                    if (cached.exists()) {
+                        cycle.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                    } else {
+                        cycle.add(MediaItem.fromUri(url));
+                        cacheManager.cacheAsync(url, rid, sss, aaa);
+                    }
                 }
             }
         }
@@ -420,8 +488,14 @@ public class PlaybackService extends Service {
             String sss = String.format("%03d", surah);
             for (int a = 1; a <= maxAyah; a++) {
                 String aaa = String.format("%03d", a);
-                String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-                cycle.add(MediaItem.fromUri(url));
+                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                    java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                    if (cached.exists()) {
+                        cycle.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                    } else {
+                        cycle.add(MediaItem.fromUri(url));
+                        cacheManager.cacheAsync(url, rid, sss, aaa);
+                    }
             }
         }
         Log.d("PlaybackService", orderLog.toString());
@@ -429,31 +503,7 @@ public class PlaybackService extends Service {
         return cycle;
     }
 
-    private java.util.List<MediaItem> buildPageCycle(int page) {
-        PageSegmentDao dao = RepeatQuranDatabase.get(this).pageSegmentDao();
-        java.util.List<PageSegmentEntity> segs = dao.segmentsForPage(page);
-        java.util.List<String> reciters = getSelectedReciterIds();
-        if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
-        java.util.List<String> reciterNames = getReciterNames(reciters);
-        StringBuilder orderLog = new StringBuilder("Cycle order (page ").append(page).append("): ");
-        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
-        for (int i = 0; i < reciters.size(); i++) {
-            String rid = reciters.get(i);
-            orderLog.append(reciterNames.get(i));
-            if (i < reciters.size() - 1) orderLog.append(" -> ");
-            for (PageSegmentEntity s : segs) {
-                for (int a = s.startAyah; a <= s.endAyah; a++) {
-                    String sss = String.format("%03d", s.surah);
-                    String aaa = String.format("%03d", a);
-                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-                    cycle.add(MediaItem.fromUri(url));
-                }
-            }
-        }
-        Log.d("PlaybackService", orderLog.toString());
-        Log.d("PlaybackService", "Page " + page + " itemsPerCycle=" + cycle.size());
-        return cycle;
-    }
+    
 
     @Override
     public void onDestroy() {

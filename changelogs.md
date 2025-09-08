@@ -76,3 +76,12 @@
 - Finite N: enqueue N cycles with REPEAT_MODE_OFF; ∞: enqueue one cycle with REPEAT_MODE_ALL.
 - Disabled provider feeding for explicit queues; logs record cycle order and queue sizing for proof.
 - **Proof**: `docs/proof/UHW-10/nested-cycle-demo.mp4`, `docs/proof/UHW-10/logs.txt`.
+
+## Phase 6: Offline & Downloads
+
+### UHW-14: Progressive Caching (2025-09-08)
+- Implemented progressive caching across all playback sources: single verse, verse ranges, pages (via `page_segments`), and full surahs.
+- Uses `CacheManager` to save files to internal storage at `files/audio/<reciterId>/<SSS><AAA>.mp3` with atomic `.part` rename on completion.
+- Playback prefers cached files (file URI) and otherwise streams while caching in the background (`cacheAsync`). Per‑reciter isolation maintained by folder.
+- Verified by playing a page and a surah; files appear in Device File Explorer; replays show no new cache downloads in Logcat (`CacheManager`).
+- **Proof**: `docs/proof/UHW-14/cache-screenshot.png`, `docs/proof/UHW-14/cache-log.txt`.

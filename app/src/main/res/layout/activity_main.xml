@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
 
     <TextView
         android:id="@+id/titleText"
@@ -37,21 +42,21 @@
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/surahInputLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Surah (1-114)"
+        android:hint="Surah"
         app:layout_constraintTop_toBottomOf="@id/repeatInputLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/ayahInputLayout"
         android:layout_marginTop="12dp"
         android:layout_marginEnd="8dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editSurah"
+        <AutoCompleteTextView
+            android:id="@+id/surahSingleDropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:imeOptions="actionNext" />
+            android:inputType="none"
+            android:importantForAutofill="no" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -125,21 +130,21 @@
     <!-- Range selection (Start Surah:Ayah -> End Surah:Ayah) -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/startSurahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Start Surah"
         app:layout_constraintTop_toBottomOf="@id/controlsRow"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/startAyahLayout"
+        app:layout_constraintEnd_toStartOf="@+id/endSurahLayout"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="8dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editStartSurah"
+        <AutoCompleteTextView
+            android:id="@+id/startSurahDropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:imeOptions="actionNext" />
+            android:inputType="none"
+            android:importantForAutofill="no" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -148,12 +153,10 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Start Ayah"
-        app:layout_constraintTop_toBottomOf="@id/controlsRow"
-        app:layout_constraintStart_toEndOf="@id/startSurahLayout"
-        app:layout_constraintEnd_toStartOf="@+id/endSurahLayout"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp">
+        app:layout_constraintTop_toBottomOf="@id/startSurahLayout"
+        app:layout_constraintStart_toStartOf="@id/startSurahLayout"
+        app:layout_constraintEnd_toEndOf="@id/startSurahLayout"
+        android:layout_marginTop="8dp">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/editStartAyah"
             android:layout_width="match_parent"
@@ -164,22 +167,21 @@
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/endSurahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="End Surah"
         app:layout_constraintTop_toBottomOf="@id/controlsRow"
-        app:layout_constraintStart_toEndOf="@id/startAyahLayout"
-        app:layout_constraintEnd_toStartOf="@+id/endAyahLayout"
+        app:layout_constraintStart_toEndOf="@id/startSurahLayout"
+        app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editEndSurah"
+        android:layout_marginStart="8dp">
+        <AutoCompleteTextView
+            android:id="@+id/endSurahDropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:imeOptions="actionNext" />
+            android:inputType="none"
+            android:importantForAutofill="no" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -188,11 +190,10 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="End Ayah"
-        app:layout_constraintTop_toBottomOf="@id/controlsRow"
-        app:layout_constraintStart_toEndOf="@id/endSurahLayout"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="8dp">
+        app:layout_constraintTop_toBottomOf="@id/endSurahLayout"
+        app:layout_constraintStart_toStartOf="@id/endSurahLayout"
+        app:layout_constraintEnd_toEndOf="@id/endSurahLayout"
+        android:layout_marginTop="8dp">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/editEndAyah"
             android:layout_width="match_parent"
@@ -287,4 +288,26 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Recent Sessions -->
+    <TextView
+        android:id="@+id/historyTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Recent Sessions"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/txtReciters"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <LinearLayout
+        android:id="@+id/historyContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintTop_toBottomOf="@id/historyTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

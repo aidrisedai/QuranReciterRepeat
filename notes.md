@@ -81,6 +81,11 @@
   - **Verification Method:** Demo video (airplane mode)  
   - **Status:** ⚠️ (to be tested)  
 
+- **Promise:** Progressive caching writes files for all sources (single, range, page, surah)  
+  - **Last Verified On:** 2025-09-08  
+  - **Verification Method:** Device File Explorer shows `files/audio/<reciterId>/<SSS><AAA>.mp3` after playback; Logcat `CacheManager` logs on first play, none on replay  
+  - **Status:** ✅  
+
 ---
 
 ## 🔍 Reflection Entries

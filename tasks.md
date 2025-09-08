@@ -69,6 +69,8 @@
 - [ ] **UHW-28: Page Playback Integration**  
   - ACTION_LOAD_PAGE: Build ayah list from `page_segments`, apply nested reciter cycle + repeat N/∞.  
   - **Proof**: Demo video of page playback; logs show cycle order + item counts.  
+  
+- [x] Implemented: wired UI Load Page to service; service builds cycle from DB and enqueues N/∞ cycles; logs order and sizes.  
 
 ---
 
@@ -102,9 +104,10 @@
 ---
 
 ## Phase 6: Offline & Downloads
-- [ ] **UHW-14: Progressive Caching**  
+- [x] **UHW-14: Progressive Caching**  
   - Save verse files in internal storage.  
-  - **Proof**: Device file explorer screenshot.  
+  - Scope: single verse, ranges, pages, and full surahs (per-reciter).  
+  - **Proof**: Device file explorer screenshot under `files/audio/<reciterId>/<SSS><AAA>.mp3` + Logcat `CacheManager` lines.  
 
 - [ ] **UHW-15: Downloads Tab**  
   - ✅ if all verses cached, else ⬇️.  

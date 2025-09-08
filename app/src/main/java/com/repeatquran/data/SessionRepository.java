@@ -20,5 +20,8 @@ public class SessionRepository {
     public void markEnded(long id, long endedAt, Integer cyclesCompleted) {
         dao.markEnded(id, endedAt, cyclesCompleted);
     }
-}
 
+    public java.util.List<SessionEntity> getLastSessions(int n) {
+        return dao.getLastN(n);
+    }
+}

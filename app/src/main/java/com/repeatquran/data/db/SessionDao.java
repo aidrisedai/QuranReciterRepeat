@@ -20,5 +20,7 @@ public interface SessionDao {
 
     @Query("SELECT * FROM session ORDER BY startedAt DESC")
     List<SessionEntity> getAllOrdered();
-}
 
+    @Query("SELECT * FROM session ORDER BY startedAt DESC LIMIT :limit")
+    List<SessionEntity> getLastN(int limit);
+}
