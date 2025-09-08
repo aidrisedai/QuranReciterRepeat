@@ -28,6 +28,8 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ui.PlayerNotificationManager;
 import com.repeatquran.MainActivity;
 import com.repeatquran.R;
+import com.repeatquran.data.SessionRepository;
+import com.repeatquran.data.db.SessionEntity;
 
 import android.support.v4.media.session.MediaSessionCompat;
 
@@ -48,6 +50,9 @@ public class PlaybackService extends Service {
     private ExoPlayer player;
     private MediaSessionCompat mediaSession;
     private PlayerNotificationManager notificationManager;
+    private SessionRepository sessionRepo;
+    private Long currentSessionId = null;
+    private Integer currentCyclesRequested = null;
 
     @Override
     public void onCreate() {
@@ -74,6 +79,20 @@ public class PlaybackService extends Service {
                 }
         );
         player = playbackManager.getPlayer();
+        sessionRepo = new SessionRepository(this);
+
+        player.addListener(new Player.Listener() {
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                if (state == Player.STATE_ENDED && currentSessionId != null) {
+                    // Mark session ended
+                    long now = System.currentTimeMillis();
+                    sessionRepo.markEnded(currentSessionId, now, currentCyclesRequested);
+                    currentSessionId = null;
+                    currentCyclesRequested = null;
+                }
+            }
+        });
 
         mediaSession = new MediaSessionCompat(this, "RepeatQuranSession");
         mediaSession.setActive(true);
@@ -147,6 +166,15 @@ public class PlaybackService extends Service {
                 playbackManager.setFeedingEnabled(true);
                 playbackManager.setPassageRepeatCount(repeatCount);
                 playbackManager.prepareAndStart();
+                // Log provider-based session start
+                SessionEntity e = new SessionEntity();
+                e.startedAt = System.currentTimeMillis();
+                e.sourceType = "provider";
+                e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+                e.repeatCount = repeatCount;
+                e.cyclesRequested = repeatCount;
+                currentCyclesRequested = repeatCount;
+                currentSessionId = sessionRepo.insert(e);
             }
         } else if (ACTION_PAUSE.equals(action)) {
             if (player != null) player.pause();
@@ -169,6 +197,16 @@ public class PlaybackService extends Service {
             enqueueCycles(cycle, repeat);
             player.prepare();
             player.play();
+            SessionEntity e = new SessionEntity();
+            e.startedAt = System.currentTimeMillis();
+            e.sourceType = "single";
+            e.startSurah = sura;
+            e.startAyah = ayah;
+            e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+            e.repeatCount = repeat;
+            e.cyclesRequested = repeat;
+            currentCyclesRequested = repeat;
+            currentSessionId = sessionRepo.insert(e);
         } else if (ACTION_LOAD_RANGE.equals(action)) {
             int ss = intent.getIntExtra("ss", 1);
             int sa = intent.getIntExtra("sa", 1);
@@ -185,6 +223,18 @@ public class PlaybackService extends Service {
             enqueueCycles(cycle, repeat);
             player.prepare();
             player.play();
+            SessionEntity e = new SessionEntity();
+            e.startedAt = System.currentTimeMillis();
+            e.sourceType = "range";
+            e.startSurah = ss;
+            e.startAyah = sa;
+            e.endSurah = es;
+            e.endAyah = ea;
+            e.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+            e.repeatCount = repeat;
+            e.cyclesRequested = repeat;
+            currentCyclesRequested = repeat;
+            currentSessionId = sessionRepo.insert(e);
         }
         return START_STICKY;
     }
