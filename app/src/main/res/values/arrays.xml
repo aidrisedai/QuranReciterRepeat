@@ -16,88 +16,58 @@
     </integer-array>
 
     <string-array name="reciter_names">
-        <item>Abdurrahmaan As-Sudais (64kbps)</item>
-        <item>Abdurrahmaan As-Sudais (192kbps)</item>
-        <item>Mishary Rashid Alafasy (64kbps)</item>
-        <item>Mishary Rashid Alafasy (128kbps)</item>
-        <item>Maher Al Muaiqly (64kbps)</item>
-        <item>Maher Al Muaiqly (128kbps)</item>
-        <item>Abu Bakr Ash-Shaatree (64kbps)</item>
-        <item>Abu Bakr Ash-Shaatree (128kbps)</item>
-        <item>Saood ash-Shuraym (64kbps)</item>
-        <item>Saood ash-Shuraym (128kbps)</item>
-        <item>Ali Jaber (64kbps)</item>
-        <item>Hani Rifai (64kbps)</item>
-        <item>Hani Rifai (192kbps)</item>
-        <item>Hudhaify (64kbps)</item>
-        <item>Hudhaify (128kbps)</item>
-        <item>Husary (64kbps)</item>
-        <item>Husary Mujawwad (64kbps)</item>
-        <item>Husary Mujawwad (128kbps)</item>
-        <item>Husary Muallim (128kbps)</item>
-        <item>Abdul Basit (Murattal, 64kbps)</item>
-        <item>Abdul Basit (Murattal, 192kbps)</item>
-        <item>Abdul Basit (Mujawwad, 128kbps)</item>
-        <item>Menshawi (16kbps)</item>
-        <item>Menshawi (32kbps)</item>
-        <item>Minshawy Mujawwad (64kbps)</item>
-        <item>Minshawy Mujawwad (192kbps)</item>
-        <item>Minshawy Murattal (128kbps)</item>
-        <item>Minshawy Teacher (128kbps)</item>
-        <item>Muhammad Ayyoub (64kbps)</item>
-        <item>Muhammad Ayyoub (128kbps)</item>
-        <item>Muhammad Jibreel (64kbps)</item>
-        <item>Muhammad Jibreel (128kbps)</item>
-        <item>Nasser Alqatami (128kbps)</item>
-        <item>Salah Al Budair (128kbps)</item>
-        <item>Salaah AbdulRahman Bukhatir (128kbps)</item>
-        <item>Yasser Ad-Dussary (128kbps)</item>
-        <item>Yaser Salamah (128kbps)</item>
-        <item>Fares Abbad (64kbps)</item>
-        <item>Ibrahim Akhdar (64kbps)</item>
-        <item>Abdullah Basfar (64kbps)</item>
-        <item>Abdullah Basfar (192kbps)</item>
-        <item>Abdullah Matroud (128kbps)</item>
-        <item>Karim Mansoori (40kbps)</item>
-        <item>Mahmoud Ali Al Banna (32kbps)</item>
-        <item>khalefa al tunaiji (64kbps)</item>
-        <item>aziz alili (128kbps)</item>
-        <item>ahmed ibn ali al ajamy (128kbps)</item>
+        <item>Abdurrahmaan As-Sudais</item>
+        <item>Mishary Rashid Alafasy</item>
+        <item>Maher Al Muaiqly</item>
+        <item>Saood ash-Shuraym</item>
+        <item>Abu Bakr Ash-Shaatree</item>
+        <item>Ali Jaber</item>
+        <item>Hani Rifai</item>
+        <item>Hudhaify</item>
+        <item>Husary (Murattal)</item>
+        <item>Husary (Mujawwad)</item>
+        <item>Husary (Muallim)</item>
+        <item>Abdul Basit (Murattal)</item>
+        <item>Abdul Basit (Mujawwad)</item>
+        <item>Minshawy (Mujawwad)</item>
+        <item>Minshawy (Murattal)</item>
+        <item>Minshawy (Teacher)</item>
+        <item>Muhammad Ayyoub</item>
+        <item>Muhammad Jibreel</item>
+        <item>Nasser Alqatami</item>
+        <item>Salah Al Budair</item>
+        <item>Salaah AbdulRahman Bukhatir</item>
+        <item>Yasser Ad-Dussary</item>
+        <item>Yaser Salamah</item>
+        <item>Fares Abbad</item>
+        <item>Ibrahim Akhdar</item>
+        <item>Abdullah Basfar</item>
+        <item>Abdullah Matroud</item>
+        <item>Karim Mansoori</item>
+        <item>Khalefa Al Tunaiji</item>
+        <item>Aziz Alili</item>
+        <item>Ahmed ibn Ali al Ajamy</item>
     </string-array>
 
     <string-array name="reciter_ids">
         <item>Abdurrahmaan_As-Sudais_64kbps</item>
-        <item>Abdurrahmaan_As-Sudais_192kbps</item>
         <item>Alafasy_64kbps</item>
-        <item>Alafasy_128kbps</item>
         <item>Maher_AlMuaiqly_64kbps</item>
-        <item>MaherAlMuaiqly128kbps</item>
-        <item>Abu_Bakr_Ash-Shaatree_64kbps</item>
-        <item>Abu_Bakr_Ash-Shaatree_128kbps</item>
         <item>Saood_ash-Shuraym_64kbps</item>
-        <item>Saood_ash-Shuraym_128kbps</item>
+        <item>Abu_Bakr_Ash-Shaatree_64kbps</item>
         <item>Ali_Jaber_64kbps</item>
         <item>Hani_Rifai_64kbps</item>
-        <item>Hani_Rifai_192kbps</item>
         <item>Hudhaify_64kbps</item>
-        <item>Hudhaify_128kbps</item>
         <item>Husary_64kbps</item>
         <item>Husary_Mujawwad_64kbps</item>
-        <item>Husary_128kbps_Mujawwad</item>
         <item>Husary_Muallim_128kbps</item>
         <item>Abdul_Basit_Murattal_64kbps</item>
-        <item>Abdul_Basit_Murattal_192kbps</item>
         <item>Abdul_Basit_Mujawwad_128kbps</item>
-        <item>Menshawi_16kbps</item>
-        <item>Menshawi_32kbps</item>
         <item>Minshawy_Mujawwad_64kbps</item>
-        <item>Minshawy_Mujawwad_192kbps</item>
         <item>Minshawy_Murattal_128kbps</item>
         <item>Minshawy_Teacher_128kbps</item>
         <item>Muhammad_Ayyoub_64kbps</item>
-        <item>Muhammad_Ayyoub_128kbps</item>
         <item>Muhammad_Jibreel_64kbps</item>
-        <item>Muhammad_Jibreel_128kbps</item>
         <item>Nasser_Alqatami_128kbps</item>
         <item>Salah_Al_Budair_128kbps</item>
         <item>Salaah_AbdulRahman_Bukhatir_128kbps</item>
@@ -106,10 +76,8 @@
         <item>Fares_Abbad_64kbps</item>
         <item>Ibrahim_Akhdar_64kbps</item>
         <item>Abdullah_Basfar_64kbps</item>
-        <item>Abdullah_Basfar_192kbps</item>
         <item>Abdullah_Matroud_128kbps</item>
         <item>Karim_Mansoori_40kbps</item>
-        <item>mahmoud_ali_al_banna_32kbps</item>
         <item>khalefa_al_tunaiji_64kbps</item>
         <item>aziz_alili_128kbps</item>
         <item>ahmed_ibn_ali_al_ajamy_128kbps</item>
