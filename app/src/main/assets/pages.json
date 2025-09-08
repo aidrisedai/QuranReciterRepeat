@@ -1,0 +1,8 @@
+{
+  "pages": [
+    { "page": 1, "segments": [ { "surah": 1, "startAyah": 1, "endAyah": 7 } ] },
+    { "page": 2, "segments": [ { "surah": 2, "startAyah": 1, "endAyah": 5 } ] },
+    { "page": 3, "segments": [ { "surah": 2, "startAyah": 6, "endAyah": 16 } ] }
+  ]
+}
+
