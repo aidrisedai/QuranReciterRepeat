@@ -334,6 +334,8 @@ public class MainActivity extends AppCompatActivity {
         }
         android.content.IntentFilter f = new android.content.IntentFilter(PlaybackService.ACTION_PLAYBACK_STATE);
         registerReceiver(playbackStateReceiver, f);
+        // Also refresh recent history list
+        renderRecentHistory();
     }
 
     @Override
@@ -504,11 +506,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ---- Quick History UI (last 4 sessions) ----
-    @Override
-    protected void onResume() {
-        super.onResume();
-        renderRecentHistory();
-    }
 
     private void renderRecentHistory() {
         View container = findViewById(R.id.historyContainer);
