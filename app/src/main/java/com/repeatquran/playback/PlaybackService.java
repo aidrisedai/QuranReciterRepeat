@@ -52,6 +52,7 @@ public class PlaybackService extends Service {
     public static final String ACTION_LOAD_PAGE = "com.repeatquran.action.LOAD_PAGE";
     public static final String ACTION_LOAD_SURAH = "com.repeatquran.action.LOAD_SURAH";
     public static final String ACTION_RESUME = "com.repeatquran.action.RESUME";
+    public static final String ACTION_PLAYBACK_STATE = "com.repeatquran.action.PLAYBACK_STATE";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -125,6 +126,7 @@ public class PlaybackService extends Service {
                     currentCyclesRequested = null;
                     ioExecutor.execute(() -> sessionRepo.markEnded(id, System.currentTimeMillis(), cycles));
                 }
+                broadcastState();
             }
 
             @Override
@@ -146,6 +148,7 @@ public class PlaybackService extends Service {
                         if (player.hasNextMediaItem()) player.seekToNextMediaItem(); else player.stop();
                     });
                 }
+                broadcastState();
             }
         });
 
@@ -203,6 +206,7 @@ public class PlaybackService extends Service {
 
         // Start periodic saver
         mainHandler.postDelayed(resumeSaver, 2000);
+        broadcastState();
     }
 
     @Override
@@ -211,6 +215,7 @@ public class PlaybackService extends Service {
         if (ACTION_STOP.equals(action)) {
             stopForeground(true);
             stopSelf();
+            broadcastState();
             return START_NOT_STICKY;
         }
         if (ACTION_RESUME.equals(action)) {
@@ -231,17 +236,22 @@ public class PlaybackService extends Service {
             } else {
                 Log.d("PlaybackService", "Play pressed with empty queue; not seeding provider.");
             }
+            broadcastState();
         } else if (ACTION_START.equals(action) || action == null) {
             // No auto-seeding on start; only resume if something is already queued
             if (player.getMediaItemCount() > 0) {
                 player.play();
             }
+            broadcastState();
         } else if (ACTION_PAUSE.equals(action)) {
             if (player != null) player.pause();
+            broadcastState();
         } else if (ACTION_NEXT.equals(action)) {
             if (player != null) player.seekToNextMediaItem();
+            broadcastState();
         } else if (ACTION_PREV.equals(action)) {
             if (player != null) player.seekToPreviousMediaItem();
+            broadcastState();
         } else if (ACTION_LOAD_SINGLE.equals(action)) {
             int sura = intent.getIntExtra("sura", 1);
             int ayah = intent.getIntExtra("ayah", 1);
@@ -265,6 +275,7 @@ public class PlaybackService extends Service {
                 enqueueCycles(cycle.items, repeat);
                 player.prepare();
                 player.play();
+                broadcastState();
             });
             currentCyclesRequested = repeat;
             ioExecutor.execute(() -> {
@@ -303,6 +314,7 @@ public class PlaybackService extends Service {
                 enqueueCycles(cycle.items, repeat);
                 player.prepare();
                 player.play();
+                broadcastState();
             });
             currentCyclesRequested = repeat;
             ioExecutor.execute(() -> {
@@ -343,6 +355,7 @@ public class PlaybackService extends Service {
                     enqueueCycles(cycle.items, repeat);
                     player.prepare();
                     player.play();
+                    broadcastState();
                 });
             });
             currentCyclesRequested = repeat;
@@ -379,6 +392,7 @@ public class PlaybackService extends Service {
                     enqueueCycles(cycle.items, repeat);
                     player.prepare();
                     player.play();
+                    broadcastState();
                 });
             });
             currentCyclesRequested = repeat;
@@ -629,6 +643,19 @@ public class PlaybackService extends Service {
             NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             manager.createNotificationChannel(channel);
         }
+    }
+
+    private void broadcastState() {
+        try {
+            boolean hasQueue = player != null && player.getMediaItemCount() > 0;
+            int state = player != null ? player.getPlaybackState() : Player.STATE_IDLE;
+            boolean active = hasQueue && state != Player.STATE_ENDED;
+            android.content.Intent i = new android.content.Intent(ACTION_PLAYBACK_STATE);
+            i.putExtra("hasQueue", hasQueue);
+            i.putExtra("state", state);
+            i.putExtra("active", active);
+            sendBroadcast(i);
+        } catch (Exception ignored) {}
     }
 
     private void captureSelectionForResume(String sourceType, Integer page, Integer ss, Integer sa, Integer es, Integer ea, Integer repeat) {
