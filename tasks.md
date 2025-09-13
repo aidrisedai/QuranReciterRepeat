@@ -118,6 +118,8 @@
 - [ ] **UHW-16: Offline Playback (With Online Fallback)**  
   - If not cached → fetch online; if offline → error message.  
   - **Proof**: Demo video in airplane mode.  
+  
+  Implemented: per-item skip with toast + logs when offline; upfront warning when zero cached in a selection; no playback stalls.  
 
 ---
 

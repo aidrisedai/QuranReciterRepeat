@@ -91,3 +91,9 @@
 - Features: pick reciter; check Surah/Page cache status (✅ or ⬇️ with X/Y count); Download Missing (enqueue `cacheAsync` for missing items); Clear (delete local files and refresh).
 - Page status uses `page_segments` via Room DAO to enumerate ayahs; Surah status uses static ayah counts.
 - Proof: `docs/proof/UHW-15/downloads-screenshot.png` showing statuses before and after Clear/Download; steps documented in README.
+
+### UHW-16: Offline Playback (With Online Fallback) (2025-09-08)
+- Added offline handling: when offline, cached items play; uncached items are skipped gracefully with a clear toast and logs, avoiding playback stalls.
+- Player-level per-item handling via `onPlayerError` detects offline and advances to next item; upfront warning if an entire selection has zero cached items while offline.
+- Manifest: added `ACCESS_NETWORK_STATE`; utility: `NetworkUtil.isOnline()`.
+- Proof: Demo video in airplane mode showing cached clips playing and uncached items skipping with message; log export `docs/proof/UHW-16/offline-log.txt`.
