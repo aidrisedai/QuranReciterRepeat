@@ -25,6 +25,7 @@ import com.repeatquran.data.SessionRepository;
 import com.repeatquran.data.db.SessionEntity;
 
 public class MainActivity extends AppCompatActivity {
+    private android.content.BroadcastReceiver playbackStateReceiver;
     private static final String[] SURAH_NAMES_EN = new String[] {
             "Al-Fatihah", "Al-Baqarah", "Aal Imran", "An-Nisa", "Al-Maidah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah", "Yunus",
             "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Ta-Ha",
@@ -60,6 +61,11 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnPause).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PAUSE));
         findViewById(R.id.btnNext).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_NEXT));
         findViewById(R.id.btnPrev).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PREV));
+        findViewById(R.id.btnResume).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_RESUME));
+
+        // Default: enable Resume; receiver will disable when active playback is present
+        android.view.View btnResume = findViewById(R.id.btnResume);
+        btnResume.setEnabled(true);
 
         setupRepeatDropdown();
 
@@ -314,6 +320,36 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (playbackStateReceiver == null) {
+            playbackStateReceiver = new android.content.BroadcastReceiver() {
+                @Override public void onReceive(android.content.Context context, android.content.Intent intent) {
+                    boolean active = intent.getBooleanExtra("active", false);
+                    android.view.View btn = findViewById(R.id.btnResume);
+                    if (btn != null) btn.setEnabled(!active);
+                }
+            };
+        }
+        android.content.IntentFilter f = new android.content.IntentFilter(PlaybackService.ACTION_PLAYBACK_STATE);
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(playbackStateReceiver, f, android.content.Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(playbackStateReceiver, f);
+        }
+        // Also refresh recent history list
+        renderRecentHistory();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (playbackStateReceiver != null) {
+            try { unregisterReceiver(playbackStateReceiver); } catch (Exception ignored) {}
+        }
+    }
+
     private void validateAndPersistTyped(AutoCompleteTextView dropdown, TextInputLayout inputLayout, SharedPreferences prefs) {
         String text = dropdown.getText() != null ? dropdown.getText().toString().trim() : "";
         if (text.isEmpty()) {
@@ -474,11 +510,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ---- Quick History UI (last 4 sessions) ----
-    @Override
-    protected void onResume() {
-        super.onResume();
-        renderRecentHistory();
-    }
 
     private void renderRecentHistory() {
         View container = findViewById(R.id.historyContainer);
