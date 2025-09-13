@@ -706,14 +706,28 @@ public class PlaybackService extends Service {
             }
             enqueueCycles(cycle.items, repeat);
         } else if ("page".equals(st)) {
-            int page = prefs.getInt("resume.page", 1);
-            CycleResult cycle = buildPageCycle(page);
-            if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
-                android.widget.Toast.makeText(this, "Offline: no cached audio to resume", android.widget.Toast.LENGTH_LONG).show();
-                recitersOverride = null;
-                return;
-            }
-            enqueueCycles(cycle.items, repeat);
+            final int page = prefs.getInt("resume.page", 1);
+            final int fRepeat = repeat;
+            final int fMediaIndex = mediaIndex;
+            final long fPositionMs = positionMs;
+            ioExecutor.execute(() -> {
+                CycleResult cycle = buildPageCycle(page); // DB access off main thread
+                if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cycle.cachedCount == 0) {
+                    mainHandler.post(() -> {
+                        android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio to resume", android.widget.Toast.LENGTH_LONG).show();
+                        recitersOverride = null;
+                    });
+                    return;
+                }
+                mainHandler.post(() -> {
+                    enqueueCycles(cycle.items, fRepeat);
+                    recitersOverride = null;
+                    player.prepare();
+                    if (fMediaIndex >= 0) player.seekTo(fMediaIndex, Math.max(0, fPositionMs));
+                    player.play();
+                });
+            });
+            return;
         } else if ("surah".equals(st)) {
             int ss = prefs.getInt("resume.startSurah", 1);
             CycleResult cycle = buildSurahCycle(ss);
