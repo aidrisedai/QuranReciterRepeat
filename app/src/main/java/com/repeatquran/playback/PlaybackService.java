@@ -214,6 +214,14 @@ public class PlaybackService extends Service {
             return START_NOT_STICKY;
         }
         if (ACTION_RESUME.equals(action)) {
+            int state = player.getPlaybackState();
+            if (player.getMediaItemCount() > 0 && state != Player.STATE_ENDED) {
+                // Already have an active queue; avoid disruptive jump backwards
+                mainHandler.post(() -> android.widget.Toast.makeText(this, "Already playing — Resume not needed", android.widget.Toast.LENGTH_SHORT).show());
+                // Refresh saved position to current for future resumes
+                saveResumeStateNow();
+                return START_STICKY;
+            }
             onResumeRequested();
             return START_STICKY;
         }
@@ -661,6 +669,8 @@ public class PlaybackService extends Service {
     }
 
     private void onResumeRequested() {
+        // Snapshot the most current position before reading prefs
+        saveResumeStateNow();
         android.content.SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
         String st = prefs.getString("resume.sourceType", null);
         if (st == null) {
