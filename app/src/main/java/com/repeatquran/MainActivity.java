@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnPause).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PAUSE));
         findViewById(R.id.btnNext).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_NEXT));
         findViewById(R.id.btnPrev).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PREV));
+        findViewById(R.id.btnResume).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_RESUME));
 
         setupRepeatDropdown();
 

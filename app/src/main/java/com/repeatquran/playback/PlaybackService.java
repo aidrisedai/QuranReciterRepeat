@@ -51,6 +51,7 @@ public class PlaybackService extends Service {
     public static final String ACTION_LOAD_RANGE = "com.repeatquran.action.LOAD_RANGE";
     public static final String ACTION_LOAD_PAGE = "com.repeatquran.action.LOAD_PAGE";
     public static final String ACTION_LOAD_SURAH = "com.repeatquran.action.LOAD_SURAH";
+    public static final String ACTION_RESUME = "com.repeatquran.action.RESUME";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -65,6 +66,24 @@ public class PlaybackService extends Service {
     private java.util.concurrent.ExecutorService ioExecutor;
     private Handler mainHandler;
     private CacheManager cacheManager;
+
+    // Resume state tracking
+    private String lastSourceType = null; // single | range | page | surah
+    private Integer lastPage = null;
+    private Integer lastStartSurah = null;
+    private Integer lastStartAyah = null;
+    private Integer lastEndSurah = null;
+    private Integer lastEndAyah = null;
+    private Integer lastRepeat = null; // -1 for infinite
+    private String lastRecitersCsv = null; // saved selection for fidelity
+    private java.util.List<String> recitersOverride = null; // used during resume build
+    private final Runnable resumeSaver = new Runnable() {
+        @Override public void run() {
+            try { saveResumeStatePeriodic(); } catch (Exception ignored) {}
+            // Re-post every 2s
+            if (mainHandler != null) mainHandler.postDelayed(this, 2000);
+        }
+    };
 
     @Override
     public void onCreate() {
@@ -181,6 +200,9 @@ public class PlaybackService extends Service {
         notificationManager.setMediaSessionToken(mediaSession.getSessionToken());
         notificationManager.setSmallIcon(R.drawable.ic_launcher_foreground);
         notificationManager.setPlayer(player);
+
+        // Start periodic saver
+        mainHandler.postDelayed(resumeSaver, 2000);
     }
 
     @Override
@@ -190,6 +212,10 @@ public class PlaybackService extends Service {
             stopForeground(true);
             stopSelf();
             return START_NOT_STICKY;
+        }
+        if (ACTION_RESUME.equals(action)) {
+            onResumeRequested();
+            return START_STICKY;
         }
         if (ACTION_PLAY.equals(action)) {
             if (player.getMediaItemCount() > 0) {
@@ -217,6 +243,7 @@ public class PlaybackService extends Service {
             int repeat = intent.getIntExtra("repeat",
                     getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
             Log.d("PlaybackService", "Load Single: Surah " + sss + " — " + surahName(sura) + ", Ayah " + ayah + ", Repeat=" + (repeat==-1?"∞":repeat));
+            captureSelectionForResume("single", null, sura, ayah, null, null, repeat);
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false); // prevent provider from appending more items
@@ -252,6 +279,7 @@ public class PlaybackService extends Service {
                     getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
             Log.d("PlaybackService", "Load Range: " + String.format("%03d", ss) + " — " + surahName(ss) + ":" + sa +
                     " → " + String.format("%03d", es) + " — " + surahName(es) + ":" + ea + ", Repeat=" + (repeat==-1?"∞":repeat));
+            captureSelectionForResume("range", null, ss, sa, es, ea, repeat);
 
             // Build URLs for the inclusive range (ss:sa) -> (es:ea)
             player.stop();
@@ -291,6 +319,7 @@ public class PlaybackService extends Service {
                 Log.e("PlaybackService", "Invalid page: " + page);
                 return START_STICKY;
             }
+            captureSelectionForResume("page", page, null, null, null, null, repeat);
             // Query and build cycle off main, then enqueue on main; insert session off main
             player.stop();
             player.clearMediaItems();
@@ -327,6 +356,7 @@ public class PlaybackService extends Service {
                 Log.e("PlaybackService", "Invalid surah: " + surah);
                 return START_STICKY;
             }
+            captureSelectionForResume("surah", null, surah, null, null, null, repeat);
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
@@ -377,6 +407,9 @@ public class PlaybackService extends Service {
     }
 
     private java.util.List<String> getSelectedReciterIds() {
+        if (recitersOverride != null && !recitersOverride.isEmpty()) {
+            return new java.util.ArrayList<>(recitersOverride);
+        }
         String saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
         java.util.List<String> ids = new java.util.ArrayList<>();
         if (saved == null || saved.isEmpty()) return ids;
@@ -588,5 +621,117 @@ public class PlaybackService extends Service {
             NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             manager.createNotificationChannel(channel);
         }
+    }
+
+    private void captureSelectionForResume(String sourceType, Integer page, Integer ss, Integer sa, Integer es, Integer ea, Integer repeat) {
+        lastSourceType = sourceType;
+        lastPage = page;
+        lastStartSurah = ss;
+        lastStartAyah = sa;
+        lastEndSurah = es;
+        lastEndAyah = ea;
+        lastRepeat = repeat;
+        lastRecitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+        saveResumeStateNow();
+    }
+
+    private void saveResumeStatePeriodic() {
+        if (player == null) return;
+        if (player.getMediaItemCount() == 0) return;
+        saveResumeStateNow();
+    }
+
+    private void saveResumeStateNow() {
+        try {
+            android.content.SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
+            android.content.SharedPreferences.Editor ed = prefs.edit();
+            if (lastSourceType != null) ed.putString("resume.sourceType", lastSourceType);
+            if (lastPage != null) ed.putInt("resume.page", lastPage);
+            if (lastStartSurah != null) ed.putInt("resume.startSurah", lastStartSurah);
+            if (lastStartAyah != null) ed.putInt("resume.startAyah", lastStartAyah);
+            if (lastEndSurah != null) ed.putInt("resume.endSurah", lastEndSurah);
+            if (lastEndAyah != null) ed.putInt("resume.endAyah", lastEndAyah);
+            if (lastRepeat != null) ed.putInt("resume.repeat", lastRepeat);
+            if (lastRecitersCsv != null) ed.putString("resume.recitersCsv", lastRecitersCsv);
+            ed.putInt("resume.mediaIndex", player.getCurrentMediaItemIndex());
+            ed.putLong("resume.positionMs", Math.max(0, player.getCurrentPosition()));
+            ed.putLong("resume.timestamp", System.currentTimeMillis());
+            ed.apply();
+        } catch (Exception ignored) {}
+    }
+
+    private void onResumeRequested() {
+        android.content.SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
+        String st = prefs.getString("resume.sourceType", null);
+        if (st == null) {
+            android.widget.Toast.makeText(this, "No recent session to resume", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int mediaIndex = prefs.getInt("resume.mediaIndex", -1);
+        long positionMs = prefs.getLong("resume.positionMs", 0);
+        int repeat = prefs.getInt("resume.repeat", 1);
+        String recitersCsv = prefs.getString("resume.recitersCsv", "");
+        java.util.List<String> reciters = new java.util.ArrayList<>();
+        if (recitersCsv != null && !recitersCsv.isEmpty()) {
+            for (String s : recitersCsv.split(",")) if (!s.isEmpty()) reciters.add(s);
+        }
+
+        player.stop();
+        player.clearMediaItems();
+        playbackManager.setFeedingEnabled(false);
+
+        // Use saved reciters for fidelity
+        recitersOverride = reciters;
+
+        if ("single".equals(st)) {
+            int ss = prefs.getInt("resume.startSurah", 1);
+            int sa = prefs.getInt("resume.startAyah", 1);
+            CycleResult cycle = buildSingleAyahCycle(String.format("%03d", ss), String.format("%03d", sa));
+            if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
+                android.widget.Toast.makeText(this, "Offline: no cached audio to resume", android.widget.Toast.LENGTH_LONG).show();
+                recitersOverride = null;
+                return;
+            }
+            enqueueCycles(cycle.items, repeat);
+        } else if ("range".equals(st)) {
+            int ss = prefs.getInt("resume.startSurah", 1);
+            int sa = prefs.getInt("resume.startAyah", 1);
+            int es = prefs.getInt("resume.endSurah", ss);
+            int ea = prefs.getInt("resume.endAyah", sa);
+            CycleResult cycle = buildRangeCycle(ss, sa, es, ea);
+            if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
+                android.widget.Toast.makeText(this, "Offline: no cached audio to resume", android.widget.Toast.LENGTH_LONG).show();
+                recitersOverride = null;
+                return;
+            }
+            enqueueCycles(cycle.items, repeat);
+        } else if ("page".equals(st)) {
+            int page = prefs.getInt("resume.page", 1);
+            CycleResult cycle = buildPageCycle(page);
+            if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
+                android.widget.Toast.makeText(this, "Offline: no cached audio to resume", android.widget.Toast.LENGTH_LONG).show();
+                recitersOverride = null;
+                return;
+            }
+            enqueueCycles(cycle.items, repeat);
+        } else if ("surah".equals(st)) {
+            int ss = prefs.getInt("resume.startSurah", 1);
+            CycleResult cycle = buildSurahCycle(ss);
+            if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
+                android.widget.Toast.makeText(this, "Offline: no cached audio to resume", android.widget.Toast.LENGTH_LONG).show();
+                recitersOverride = null;
+                return;
+            }
+            enqueueCycles(cycle.items, repeat);
+        } else {
+            android.widget.Toast.makeText(this, "Nothing to resume", android.widget.Toast.LENGTH_SHORT).show();
+            recitersOverride = null;
+            return;
+        }
+
+        recitersOverride = null;
+        player.prepare();
+        if (mediaIndex >= 0) player.seekTo(mediaIndex, Math.max(0, positionMs));
+        player.play();
     }
 }

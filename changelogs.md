@@ -97,3 +97,11 @@
 - Player-level per-item handling via `onPlayerError` detects offline and advances to next item; upfront warning if an entire selection has zero cached items while offline.
 - Manifest: added `ACCESS_NETWORK_STATE`; utility: `NetworkUtil.isOnline()`.
 - Proof: Demo video in airplane mode showing cached clips playing and uncached items skipping with message; log export `docs/proof/UHW-16/offline-log.txt`.
+
+## Phase 7: Resume & Error Handling
+
+### UHW-17: Session Resume (Exact Position) (2025-09-08)
+- Added exact resume: periodically persists session context (source, range/page/surah, repeat, reciters, current media index and positionMs).
+- Home “Resume” button sends ACTION_RESUME to rebuild the queue and seek to the exact millisecond within the ayah.
+- Works for single, range, page, and surah; respects saved reciters and repeat; integrates with offline behavior (skips uncached when offline).
+- Proof: `docs/proof/UHW-17/resume-demo.mp4`.

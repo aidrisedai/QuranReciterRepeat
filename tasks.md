@@ -124,9 +124,10 @@
 ---
 
 ## Phase 7: Resume & Error Handling
-- [ ] **UHW-17: Session Resume (Exact Position)**  
+- [x] **UHW-17: Session Resume (Exact Position)**  
   - Save ExoPlayer millisecond state.  
-  - **Proof**: Demo video showing resume mid-verse.  
+  - Implemented: periodic save of source context + media index + ms position; Resume action rebuilds queue and seeks to exact position for single/range/page/surah with saved reciters and repeat.  
+  - **Proof**: Demo video showing resume mid-verse across sources.  
 
 - [ ] **UHW-18: Error Handling (Retry Once + Actionable)**  
   - Retry failed verse once. Show “Retry / Skip” if still failing.  
