@@ -77,9 +77,9 @@
   - **Status:** ✅  
 
 - **Promise:** Cached surahs always replay offline  
-  - **Last Verified On:** Pending UHW-16  
-  - **Verification Method:** Demo video (airplane mode)  
-  - **Status:** ⚠️ (to be tested)  
+  - **Last Verified On:** 2025-09-08  
+  - **Verification Method:** Demo video (airplane mode); uncached items skip with message; logs captured  
+  - **Status:** ✅  
 
 - **Promise:** Progressive caching writes files for all sources (single, range, page, surah)  
   - **Last Verified On:** 2025-09-08  

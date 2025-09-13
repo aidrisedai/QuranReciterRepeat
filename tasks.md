@@ -115,9 +115,11 @@
   - **Proof**: Screenshot of Downloads screen with status; Clear then Check shows updated status.  
   - **QA Note**: Clear cached file → status updates correctly.  
 
-- [ ] **UHW-16: Offline Playback (With Online Fallback)**  
+- [x] **UHW-16: Offline Playback (With Online Fallback)**  
   - If not cached → fetch online; if offline → error message.  
-  - **Proof**: Demo video in airplane mode.  
+  - **Proof**: Demo video in airplane mode showing cached playback and uncached skips + log export.  
+  
+  Implemented: per-item skip with toast + logs when offline; upfront warning when zero cached in a selection; no playback stalls.  
 
 ---
 

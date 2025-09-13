@@ -26,6 +26,7 @@ import android.app.Service;
 
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ui.PlayerNotificationManager;
 import com.repeatquran.MainActivity;
@@ -104,6 +105,27 @@ public class PlaybackService extends Service {
                     currentSessionId = null;
                     currentCyclesRequested = null;
                     ioExecutor.execute(() -> sessionRepo.markEnded(id, System.currentTimeMillis(), cycles));
+                }
+            }
+
+            @Override
+            public void onPlayerError(@NonNull PlaybackException error) {
+                boolean online = com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this);
+                MediaItem mi = player.getCurrentMediaItem();
+                String uriStr = mi != null && mi.playbackProperties != null && mi.playbackProperties.uri != null ? mi.playbackProperties.uri.toString() : "";
+                if (!online) {
+                    Log.w("PlaybackService", "Offline playback error; skipping item: " + uriStr);
+                    mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: skipping uncached item", android.widget.Toast.LENGTH_SHORT).show());
+                    // Skip to next item when offline and current failed
+                    mainHandler.post(() -> {
+                        if (player.hasNextMediaItem()) player.seekToNextMediaItem(); else player.stop();
+                    });
+                } else {
+                    Log.e("PlaybackService", "Playback error online: " + error.getMessage());
+                    // Move forward to avoid stalls
+                    mainHandler.post(() -> {
+                        if (player.hasNextMediaItem()) player.seekToNextMediaItem(); else player.stop();
+                    });
                 }
             }
         });
@@ -198,9 +220,14 @@ public class PlaybackService extends Service {
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false); // prevent provider from appending more items
-            java.util.List<MediaItem> cycle = buildSingleAyahCycle(sss, aaa);
+            CycleResult cycle = buildSingleAyahCycle(sss, aaa);
+            if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
+                Log.w("PlaybackService", "Offline with no cached audio for selection (single)");
+                mainHandler.post(() -> android.widget.Toast.makeText(this, "Offline: no cached audio for this ayah", android.widget.Toast.LENGTH_LONG).show());
+                return START_STICKY;
+            }
             mainHandler.post(() -> {
-                enqueueCycles(cycle, repeat);
+                enqueueCycles(cycle.items, repeat);
                 player.prepare();
                 player.play();
             });
@@ -230,9 +257,14 @@ public class PlaybackService extends Service {
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
-            java.util.List<MediaItem> cycle = buildRangeCycle(ss, sa, es, ea);
+            CycleResult cycle = buildRangeCycle(ss, sa, es, ea);
+            if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
+                Log.w("PlaybackService", "Offline with no cached audio for selection (range)");
+                mainHandler.post(() -> android.widget.Toast.makeText(this, "Offline: no cached audio for this range", android.widget.Toast.LENGTH_LONG).show());
+                return START_STICKY;
+            }
             mainHandler.post(() -> {
-                enqueueCycles(cycle, repeat);
+                enqueueCycles(cycle.items, repeat);
                 player.prepare();
                 player.play();
             });
@@ -264,9 +296,14 @@ public class PlaybackService extends Service {
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
             ioExecutor.execute(() -> {
-                java.util.List<MediaItem> cycle = buildPageCycle(page);
+                CycleResult cycle = buildPageCycle(page);
+                if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cycle.cachedCount == 0) {
+                    Log.w("PlaybackService", "Offline with no cached audio for selection (page)");
+                    mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this page", android.widget.Toast.LENGTH_LONG).show());
+                    return;
+                }
                 mainHandler.post(() -> {
-                    enqueueCycles(cycle, repeat);
+                    enqueueCycles(cycle.items, repeat);
                     player.prepare();
                     player.play();
                 });
@@ -294,9 +331,14 @@ public class PlaybackService extends Service {
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
             ioExecutor.execute(() -> {
-                java.util.List<MediaItem> cycle = buildSurahCycle(surah);
+                CycleResult cycle = buildSurahCycle(surah);
+                if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cycle.cachedCount == 0) {
+                    Log.w("PlaybackService", "Offline with no cached audio for selection (surah)");
+                    mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this surah", android.widget.Toast.LENGTH_LONG).show());
+                    return;
+                }
                 mainHandler.post(() -> {
-                    enqueueCycles(cycle, repeat);
+                    enqueueCycles(cycle.items, repeat);
                     player.prepare();
                     player.play();
                 });
@@ -342,10 +384,16 @@ public class PlaybackService extends Service {
         return ids;
     }
 
-    private java.util.List<MediaItem> buildSingleAyahCycle(String sss, String aaa) {
+    private static class CycleResult {
+        java.util.List<MediaItem> items = new java.util.ArrayList<>();
+        int cachedCount;
+        int totalCount;
+    }
+
+    private CycleResult buildSingleAyahCycle(String sss, String aaa) {
         java.util.List<String> reciters = getSelectedReciterIds();
         if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
-        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
+        CycleResult out = new CycleResult();
         java.util.List<String> reciterNames = getReciterNames(reciters);
         StringBuilder orderLog = new StringBuilder("Cycle order (single ayah): ");
         for (int i = 0; i < reciters.size(); i++) {
@@ -353,22 +401,24 @@ public class PlaybackService extends Service {
             String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
             java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
             if (cached.exists()) {
-                cycle.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                out.cachedCount++;
             } else {
-                cycle.add(MediaItem.fromUri(url));
+                out.items.add(MediaItem.fromUri(url));
                 cacheManager.cacheAsync(url, rid, sss, aaa);
             }
+            out.totalCount++;
             orderLog.append(reciterNames.get(i));
             if (i < reciters.size() - 1) orderLog.append(" -> ");
         }
         Log.d("PlaybackService", orderLog.toString());
-        return cycle;
+        return out;
     }
 
-    private java.util.List<MediaItem> buildRangeCycle(int ss, int sa, int es, int ea) {
+    private CycleResult buildRangeCycle(int ss, int sa, int es, int ea) {
         java.util.List<String> reciters = getSelectedReciterIds();
         if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
-        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
+        CycleResult out = new CycleResult();
         java.util.List<String> reciterNames = getReciterNames(reciters);
         StringBuilder orderLog = new StringBuilder("Cycle order (range): ");
         for (int i = 0; i < reciters.size(); i++) {
@@ -384,16 +434,18 @@ public class PlaybackService extends Service {
                     String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
                     java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
                     if (cached.exists()) {
-                        cycle.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                        out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                        out.cachedCount++;
                     } else {
-                        cycle.add(MediaItem.fromUri(url));
+                        out.items.add(MediaItem.fromUri(url));
                         cacheManager.cacheAsync(url, rid, sss, aaa);
                     }
+                    out.totalCount++;
                 }
             }
         }
         Log.d("PlaybackService", orderLog.toString());
-        return cycle;
+        return out;
     }
 
     private void enqueueCycles(java.util.List<MediaItem> cycle, int repeat) {
@@ -442,14 +494,14 @@ public class PlaybackService extends Service {
         return "";
     }
 
-    private java.util.List<MediaItem> buildPageCycle(int page) {
+    private CycleResult buildPageCycle(int page) {
         PageSegmentDao dao = RepeatQuranDatabase.get(this).pageSegmentDao();
         java.util.List<PageSegmentEntity> segs = dao.segmentsForPage(page);
         java.util.List<String> reciters = getSelectedReciterIds();
         if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
         java.util.List<String> reciterNames = getReciterNames(reciters);
         StringBuilder orderLog = new StringBuilder("Cycle order (page ").append(page).append("): ");
-        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
+        CycleResult out = new CycleResult();
         for (int i = 0; i < reciters.size(); i++) {
             String rid = reciters.get(i);
             orderLog.append(reciterNames.get(i));
@@ -461,26 +513,28 @@ public class PlaybackService extends Service {
                     String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
                     java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
                     if (cached.exists()) {
-                        cycle.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                        out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                        out.cachedCount++;
                     } else {
-                        cycle.add(MediaItem.fromUri(url));
+                        out.items.add(MediaItem.fromUri(url));
                         cacheManager.cacheAsync(url, rid, sss, aaa);
                     }
+                    out.totalCount++;
                 }
             }
         }
         Log.d("PlaybackService", orderLog.toString());
-        Log.d("PlaybackService", "Page " + page + " itemsPerCycle=" + cycle.size());
-        return cycle;
+        Log.d("PlaybackService", "Page " + page + " itemsPerCycle=" + out.items.size());
+        return out;
     }
 
-    private java.util.List<MediaItem> buildSurahCycle(int surah) {
+    private CycleResult buildSurahCycle(int surah) {
         java.util.List<String> reciters = getSelectedReciterIds();
         if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
         java.util.List<String> reciterNames = getReciterNames(reciters);
         int maxAyah = getAyahCount(surah);
         StringBuilder orderLog = new StringBuilder("Cycle order (surah ").append(String.format("%03d", surah)).append("): ");
-        java.util.List<MediaItem> cycle = new java.util.ArrayList<>();
+        CycleResult out = new CycleResult();
         for (int i = 0; i < reciters.size(); i++) {
             String rid = reciters.get(i);
             orderLog.append(reciterNames.get(i));
@@ -488,19 +542,21 @@ public class PlaybackService extends Service {
             String sss = String.format("%03d", surah);
             for (int a = 1; a <= maxAyah; a++) {
                 String aaa = String.format("%03d", a);
-                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-                    java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
-                    if (cached.exists()) {
-                        cycle.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
-                    } else {
-                        cycle.add(MediaItem.fromUri(url));
-                        cacheManager.cacheAsync(url, rid, sss, aaa);
-                    }
+                String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                if (cached.exists()) {
+                    out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                    out.cachedCount++;
+                } else {
+                    out.items.add(MediaItem.fromUri(url));
+                    cacheManager.cacheAsync(url, rid, sss, aaa);
+                }
+                out.totalCount++;
             }
         }
         Log.d("PlaybackService", orderLog.toString());
-        Log.d("PlaybackService", "Surah " + surah + " itemsPerCycle=" + cycle.size());
-        return cycle;
+        Log.d("PlaybackService", "Surah " + surah + " itemsPerCycle=" + out.items.size());
+        return out;
     }
 
     
