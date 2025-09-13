@@ -53,6 +53,8 @@ public class PlaybackService extends Service {
     public static final String ACTION_LOAD_SURAH = "com.repeatquran.action.LOAD_SURAH";
     public static final String ACTION_RESUME = "com.repeatquran.action.RESUME";
     public static final String ACTION_PLAYBACK_STATE = "com.repeatquran.action.PLAYBACK_STATE";
+    public static final String ACTION_RETRY_ITEM = "com.repeatquran.action.RETRY_ITEM";
+    public static final String ACTION_SKIP_ITEM = "com.repeatquran.action.SKIP_ITEM";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -67,6 +69,8 @@ public class PlaybackService extends Service {
     private java.util.concurrent.ExecutorService ioExecutor;
     private Handler mainHandler;
     private CacheManager cacheManager;
+    private java.util.Map<String, Integer> retryCounts = new java.util.HashMap<>();
+    private static final int ERROR_NOTIFICATION_ID = 2002;
 
     // Resume state tracking
     private String lastSourceType = null; // single | range | page | surah
@@ -140,13 +144,29 @@ public class PlaybackService extends Service {
                     // Skip to next item when offline and current failed
                     mainHandler.post(() -> {
                         if (player.hasNextMediaItem()) player.seekToNextMediaItem(); else player.stop();
+                        cancelErrorNotification();
                     });
                 } else {
                     Log.e("PlaybackService", "Playback error online: " + error.getMessage());
-                    // Move forward to avoid stalls
-                    mainHandler.post(() -> {
-                        if (player.hasNextMediaItem()) player.seekToNextMediaItem(); else player.stop();
-                    });
+                    int count = retryCounts.getOrDefault(uriStr, 0);
+                    if (count < 1) {
+                        retryCounts.put(uriStr, count + 1);
+                        int idx = player.getCurrentMediaItemIndex();
+                        Log.w("PlaybackService", "Retrying item once: index=" + idx + ", uri=" + uriStr);
+                        mainHandler.post(() -> {
+                            try {
+                                player.seekTo(Math.max(idx, 0), 0);
+                                player.prepare();
+                                player.play();
+                            } catch (Exception e) {
+                                Log.e("PlaybackService", "Retry failed to start", e);
+                                if (player.hasNextMediaItem()) player.seekToNextMediaItem(); else player.stop();
+                            }
+                        });
+                    } else {
+                        Log.e("PlaybackService", "Item failed after retry; showing actions");
+                        showErrorNotification("Playback failed", "Retry this ayah or skip to next");
+                    }
                 }
                 broadcastState();
             }
@@ -217,6 +237,26 @@ public class PlaybackService extends Service {
             stopSelf();
             broadcastState();
             return START_NOT_STICKY;
+        }
+        if (ACTION_RETRY_ITEM.equals(action)) {
+            cancelErrorNotification();
+            MediaItem mi = player.getCurrentMediaItem();
+            String uriStr = mi != null && mi.playbackProperties != null && mi.playbackProperties.uri != null ? mi.playbackProperties.uri.toString() : "";
+            retryCounts.remove(uriStr); // allow another auto-retry sequence
+            int idx = player.getCurrentMediaItemIndex();
+            mainHandler.post(() -> {
+                player.seekTo(Math.max(idx, 0), 0);
+                player.prepare();
+                player.play();
+            });
+            return START_STICKY;
+        }
+        if (ACTION_SKIP_ITEM.equals(action)) {
+            cancelErrorNotification();
+            mainHandler.post(() -> {
+                if (player.hasNextMediaItem()) player.seekToNextMediaItem(); else player.stop();
+            });
+            return START_STICKY;
         }
         if (ACTION_RESUME.equals(action)) {
             int state = player.getPlaybackState();
@@ -642,6 +682,14 @@ public class PlaybackService extends Service {
             channel.setDescription("Audio playback");
             NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             manager.createNotificationChannel(channel);
+            // Create a separate channel for errors with default importance
+            NotificationChannel err = new NotificationChannel(
+                    "errors",
+                    "Playback Errors",
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+            err.setDescription("Playback error actions");
+            manager.createNotificationChannel(err);
         }
     }
 
@@ -656,6 +704,29 @@ public class PlaybackService extends Service {
             i.putExtra("active", active);
             sendBroadcast(i);
         } catch (Exception ignored) {}
+    }
+
+    private void showErrorNotification(String title, String text) {
+        Intent retry = new Intent(this, PlaybackService.class);
+        retry.setAction(ACTION_RETRY_ITEM);
+        PendingIntent piRetry = PendingIntent.getService(this, 3001, retry, Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0);
+
+        Intent skip = new Intent(this, PlaybackService.class);
+        skip.setAction(ACTION_SKIP_ITEM);
+        PendingIntent piSkip = PendingIntent.getService(this, 3002, skip, Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0);
+
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this, Build.VERSION.SDK_INT >= 26 ? "errors" : CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setAutoCancel(true)
+                .addAction(new NotificationCompat.Action(0, "Retry", piRetry))
+                .addAction(new NotificationCompat.Action(0, "Skip", piSkip));
+        NotificationManagerCompat.from(this).notify(ERROR_NOTIFICATION_ID, b.build());
+    }
+
+    private void cancelErrorNotification() {
+        NotificationManagerCompat.from(this).cancel(ERROR_NOTIFICATION_ID);
     }
 
     private void captureSelectionForResume(String sourceType, Integer page, Integer ss, Integer sa, Integer es, Integer ea, Integer repeat) {

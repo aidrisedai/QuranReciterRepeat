@@ -105,3 +105,15 @@
 - Home “Resume” button sends ACTION_RESUME to rebuild the queue and seek to the exact millisecond within the ayah.
 - Works for single, range, page, and surah; respects saved reciters and repeat; integrates with offline behavior (skips uncached when offline).
 - Proof: `docs/proof/UHW-17/resume-demo.mp4`.
+
+### UHW-18: Error Handling (Retry Once + Actionable) (2025-09-13)
+- Implemented single auto-retry for online playback errors. If a verse fails again, a notification presents “Retry” and “Skip” actions handled by the service.
+- Offline behavior unchanged (skips uncached with toast per UHW-16). Error notifications cancel automatically when skipping/continuing succeeds.
+- Proof: `docs/proof/UHW-18/error-retry-log.txt` with steps and logs of retry/skip.
+
+## Phase 8: QA Harness
+
+### UHW-19: Unit Tests (Core + Edge Cases) (2025-09-13)
+- Added Robolectric tests covering: enqueue count for repeat=3 (single ayah), history DB last sessions ordering, CacheManager path and cache hit, and resume state capture via service intents.
+- Test deps added: robolectric, room-testing, mockito (future expansion). Run locally via `./gradlew testDebugUnitTest`.
+- Proof: `docs/proof/UHW-19/test-report.png` or test log snippet.
