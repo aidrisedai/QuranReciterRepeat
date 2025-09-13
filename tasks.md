@@ -129,9 +129,10 @@
   - Implemented: periodic save of source context + media index + ms position; Resume action rebuilds queue and seeks to exact position for single/range/page/surah with saved reciters and repeat.  
   - **Proof**: Demo video showing resume mid-verse across sources.  
 
-- [ ] **UHW-18: Error Handling (Retry Once + Actionable)**  
+- [x] **UHW-18: Error Handling (Retry Once + Actionable)**  
   - Retry failed verse once. Show “Retry / Skip” if still failing.  
-  - **Proof**: Manual test log.  
+  - Implemented: per-item retry map; on online error → auto-retry once; on second failure → notification actions “Retry / Skip” handled by service; offline path unchanged (skip with toast).  
+  - **Proof**: Manual test log with failure, retry, and actionable step.  
 
 ---
 
