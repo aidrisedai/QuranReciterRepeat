@@ -333,7 +333,11 @@ public class MainActivity extends AppCompatActivity {
             };
         }
         android.content.IntentFilter f = new android.content.IntentFilter(PlaybackService.ACTION_PLAYBACK_STATE);
-        registerReceiver(playbackStateReceiver, f);
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(playbackStateReceiver, f, android.content.Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(playbackStateReceiver, f);
+        }
         // Also refresh recent history list
         renderRecentHistory();
     }
