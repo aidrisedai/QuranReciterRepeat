@@ -134,3 +134,10 @@
 - Added `AnalyticsLogger` to emit structured events to Logcat and rotating files under app internal storage.
 - Events: app_open, repeat_set, load_single/range/page/surah, error_playback, error_retry, error_actionable.
 - Proof: Logcat screenshot and `analytics-0.log` snippet added under `docs/proof/UHW-22/`.
+
+## Phase 10: Presets & Release
+
+### UHW-23: Preset Management (Save/Edit) (2025-09-13)
+- Added Room-backed presets with save from current inputs, list on Home, play, rename/edit repeat, and delete.
+- Uses saved reciters and repeat; maps to existing playback actions (single/range/page/surah).
+- Proof: `docs/proof/UHW-23/presets-screenshot.png` and play_request logs when replaying.
