@@ -23,6 +23,8 @@ import androidx.appcompat.app.AlertDialog;
 import android.widget.Filterable;
 import com.repeatquran.data.SessionRepository;
 import com.repeatquran.data.db.SessionEntity;
+import com.repeatquran.data.PresetRepository;
+import com.repeatquran.data.db.PresetEntity;
 
 public class MainActivity extends AppCompatActivity {
     private android.content.BroadcastReceiver playbackStateReceiver;
@@ -350,6 +352,8 @@ public class MainActivity extends AppCompatActivity {
         } else {
             btnQA.setVisibility(View.GONE);
         }
+
+        findViewById(R.id.btnSavePreset).setOnClickListener(v -> onSavePreset());
     }
 
     @Override
@@ -372,6 +376,7 @@ public class MainActivity extends AppCompatActivity {
         }
         // Also refresh recent history list
         renderRecentHistory();
+        renderPresets();
     }
 
     @Override
@@ -567,6 +572,177 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }).start();
+    }
+
+    private void renderPresets() {
+        View container = findViewById(R.id.presetContainer);
+        if (!(container instanceof android.widget.LinearLayout)) return;
+        android.widget.LinearLayout ll = (android.widget.LinearLayout) container;
+        ll.removeAllViews();
+        new Thread(() -> {
+            PresetRepository repo = new PresetRepository(this);
+            java.util.List<PresetEntity> presets = repo.getAll();
+            runOnUiThread(() -> {
+                if (presets == null || presets.isEmpty()) {
+                    android.widget.TextView tv = new android.widget.TextView(this);
+                    tv.setText("No presets yet");
+                    ll.addView(tv);
+                } else {
+                    for (PresetEntity p : presets) {
+                        ll.addView(buildPresetItemView(p));
+                    }
+                }
+            });
+        }).start();
+    }
+
+    private View buildPresetItemView(PresetEntity p) {
+        android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+        row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        row.setPadding(8, 8, 8, 8);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        android.widget.TextView name = new android.widget.TextView(this);
+        name.setText(p.name + "  (" + p.sourceType + ")");
+        name.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        row.addView(name);
+        android.widget.Button btnPlay = new android.widget.Button(this);
+        btnPlay.setText("Play");
+        btnPlay.setOnClickListener(v -> playPreset(p));
+        row.addView(btnPlay);
+        android.widget.Button btnEdit = new android.widget.Button(this);
+        btnEdit.setText("Edit");
+        btnEdit.setOnClickListener(v -> editPreset(p));
+        row.addView(btnEdit);
+        android.widget.Button btnDel = new android.widget.Button(this);
+        btnDel.setText("Del");
+        btnDel.setOnClickListener(v -> deletePreset(p));
+        row.addView(btnDel);
+        return row;
+    }
+
+    private void playPreset(PresetEntity p) {
+        Intent intent = new Intent(this, PlaybackService.class);
+        if ("single".equals(p.sourceType) && p.startSurah != null && p.startAyah != null) {
+            intent.setAction(PlaybackService.ACTION_LOAD_SINGLE);
+            intent.putExtra("sura", p.startSurah);
+            intent.putExtra("ayah", p.startAyah);
+        } else if ("range".equals(p.sourceType) && p.startSurah != null && p.startAyah != null && p.endSurah != null && p.endAyah != null) {
+            intent.setAction(PlaybackService.ACTION_LOAD_RANGE);
+            intent.putExtra("ss", p.startSurah);
+            intent.putExtra("sa", p.startAyah);
+            intent.putExtra("es", p.endSurah);
+            intent.putExtra("ea", p.endAyah);
+        } else if ("page".equals(p.sourceType) && p.page != null) {
+            intent.setAction(PlaybackService.ACTION_LOAD_PAGE);
+            intent.putExtra("page", p.page);
+        } else if ("surah".equals(p.sourceType) && p.startSurah != null) {
+            intent.setAction(PlaybackService.ACTION_LOAD_SURAH);
+            intent.putExtra("surah", p.startSurah);
+        } else {
+            return;
+        }
+        intent.putExtra("repeat", p.repeatCount);
+        // Use saved reciters
+        if (p.recitersCsv != null) getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putString("reciters.order", p.recitersCsv).apply();
+        if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
+    }
+
+    private void editPreset(PresetEntity p) {
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setText(p.name);
+        input.setHint("Name");
+        final android.widget.EditText repeat = new android.widget.EditText(this);
+        repeat.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_SIGNED);
+        repeat.setHint("Repeat (-1 = ∞)");
+        repeat.setText(String.valueOf(p.repeatCount));
+        android.widget.LinearLayout ll = new android.widget.LinearLayout(this);
+        ll.setOrientation(android.widget.LinearLayout.VERTICAL);
+        ll.setPadding(24, 16, 24, 0);
+        ll.addView(input);
+        ll.addView(repeat);
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Edit Preset")
+                .setView(ll)
+                .setPositiveButton("Save", (d, w) -> {
+                    p.name = input.getText() == null ? p.name : input.getText().toString().trim();
+                    try { p.repeatCount = Integer.parseInt(repeat.getText()==null?String.valueOf(p.repeatCount):repeat.getText().toString().trim()); } catch (Exception ignored) {}
+                    p.updatedAt = System.currentTimeMillis();
+                    new Thread(() -> { new PresetRepository(this).update(p); runOnUiThread(this::renderPresets); }).start();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void deletePreset(PresetEntity p) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Delete preset?")
+                .setMessage(p.name)
+                .setPositiveButton("Delete", (d, w) -> new Thread(() -> { new PresetRepository(this).delete(p); runOnUiThread(this::renderPresets); }).start())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void onSavePreset() {
+        String[] types = new String[]{"single", "range", "page", "surah"};
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Save Preset")
+                .setItems(types, (dialog, which) -> doSavePreset(types[which]))
+                .show();
+    }
+
+    private void doSavePreset(String type) {
+        PresetEntity p = new PresetEntity();
+        p.name = "Preset " + android.text.format.DateFormat.format("MM-dd HH:mm", System.currentTimeMillis());
+        p.sourceType = type;
+        p.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+        p.repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+        p.createdAt = p.updatedAt = System.currentTimeMillis();
+        boolean ok = false;
+        if ("single".equals(type)) {
+            AutoCompleteTextView surahDd = findViewById(R.id.surahSingleDropdown);
+            com.google.android.material.textfield.TextInputEditText ayahEdit = findViewById(R.id.editAyah);
+            String text = surahDd.getText() != null ? surahDd.getText().toString().trim() : "";
+            if (text.length() >= 3) try { p.startSurah = Integer.parseInt(text.substring(0,3)); } catch (Exception ignored) {}
+            try { p.startAyah = Integer.parseInt(ayahEdit.getText()==null?"":ayahEdit.getText().toString().trim()); } catch (Exception ignored) {}
+            ok = p.startSurah != null && p.startAyah != null && p.startSurah >=1 && p.startSurah<=114 && p.startAyah>=1;
+        } else if ("range".equals(type)) {
+            AutoCompleteTextView s1 = findViewById(R.id.startSurahDropdown);
+            AutoCompleteTextView s2 = findViewById(R.id.endSurahDropdown);
+            com.google.android.material.textfield.TextInputEditText a1 = findViewById(R.id.editStartAyah);
+            com.google.android.material.textfield.TextInputEditText a2 = findViewById(R.id.editEndAyah);
+            String t1 = s1.getText() != null ? s1.getText().toString().trim() : "";
+            String t2 = s2.getText() != null ? s2.getText().toString().trim() : "";
+            if (t1.length()>=3) try { p.startSurah = Integer.parseInt(t1.substring(0,3)); } catch (Exception ignored) {}
+            if (t2.length()>=3) try { p.endSurah = Integer.parseInt(t2.substring(0,3)); } catch (Exception ignored) {}
+            try { p.startAyah = Integer.parseInt(a1.getText()==null?"":a1.getText().toString().trim()); } catch (Exception ignored) {}
+            try { p.endAyah = Integer.parseInt(a2.getText()==null?"":a2.getText().toString().trim()); } catch (Exception ignored) {}
+            ok = p.startSurah != null && p.endSurah != null && p.startAyah != null && p.endAyah != null;
+        } else if ("page".equals(type)) {
+            com.google.android.material.textfield.TextInputEditText editPage = findViewById(R.id.editPage);
+            try { p.page = Integer.parseInt(editPage.getText()==null?"":editPage.getText().toString().trim()); } catch (Exception ignored) {}
+            ok = p.page != null && p.page >= 1 && p.page <= 604;
+        } else if ("surah".equals(type)) {
+            AutoCompleteTextView dd = findViewById(R.id.surahDropdown);
+            String txt = dd.getText() != null ? dd.getText().toString().trim() : "";
+            if (txt.length()>=3) try { p.startSurah = Integer.parseInt(txt.substring(0,3)); } catch (Exception ignored) {}
+            ok = p.startSurah != null && p.startSurah >= 1 && p.startSurah <= 114;
+        }
+        if (!ok) {
+            android.widget.Toast.makeText(this, "Incomplete inputs for " + type, android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final android.widget.EditText name = new android.widget.EditText(this);
+        name.setHint("Name (optional)");
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Name Preset")
+                .setView(name)
+                .setPositiveButton("Save", (d,w) -> {
+                    String n = name.getText()==null?"":name.getText().toString().trim();
+                    if (!n.isEmpty()) p.name = n;
+                    new Thread(() -> { new PresetRepository(this).insert(p); runOnUiThread(this::renderPresets); }).start();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private View buildHistoryItemView(SessionEntity e) {

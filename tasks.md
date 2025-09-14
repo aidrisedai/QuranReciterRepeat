@@ -166,9 +166,10 @@
 ---
 
 ## Phase 10: Presets & Release
-- [ ] **UHW-23: Preset Management (Save/Edit)**  
-  - Save, edit, replay presets in History tab.  
-  - **Proof**: Screenshot + playback log.  
+- [x] **UHW-23: Preset Management (Save/Edit)**  
+  - Room-backed presets: save from current inputs, list, play, rename/edit repeat, delete.  
+  - UI: Presets section on Home with actions; uses saved reciters and repeat.  
+  - **Proof**: Screenshot + playback log (play_request from preset).  
 
 - [ ] **UHW-24: APK Packaging (Sideload)**  
   - Generate signed APK, share with testers.  

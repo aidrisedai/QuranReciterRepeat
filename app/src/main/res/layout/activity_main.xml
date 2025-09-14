@@ -296,6 +296,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSavePreset"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Save Preset"
+        app:layout_constraintTop_toBottomOf="@id/txtReciters"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="12dp" />
+
     <!-- Downloads navigation -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnOpenDownloads"
@@ -333,6 +342,27 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintTop_toBottomOf="@id/historyTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <!-- Presets -->
+    <TextView
+        android:id="@+id/presetsTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Presets"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/historyContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <LinearLayout
+        android:id="@+id/presetContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintTop_toBottomOf="@id/presetsTitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />
