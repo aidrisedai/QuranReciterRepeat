@@ -86,7 +86,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Reciter & Soak"/>
+            android:text="Reciter &amp; Soak"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSwitchReciters"
@@ -104,4 +104,3 @@
     </LinearLayout>
 
 </ScrollView>
-

@@ -154,6 +154,11 @@
   - Skips on subsequent launches (persisted in `onboarding.seen`).  
   - **Proof**: Screenshot in docs/proof/UHW-21/.  
 
+- [x] **UHW-22: Minimal Analytics Logs**  
+  - Log play, pause, repeat, errors (local only).  
+  - Implemented: `AnalyticsLogger` writes structured events to Logcat and rotating files under `files/logs/analytics-*.log`. Hooked into app_open, repeat_set, load_* actions, and error paths.  
+  - **Proof**: Logcat screenshot and a snippet from `analytics-0.log` in docs/proof/UHW-22/.  
+
 - [ ] **UHW-22: Minimal Analytics Logs**  
   - Log play, pause, repeat, errors (local only).  
   - **Proof**: Logcat screenshot.  
