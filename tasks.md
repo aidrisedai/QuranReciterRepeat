@@ -193,6 +193,8 @@
 - [ ] **UHW-UI-2: Iconography + Header Polish**  
   - Update header/iconography, spacing, dividers; keep layout.  
   - Proof: Before/after screenshot.  
+  
+  Implemented: Added Material top app bar, section heading style, and subtle dividers/margins.  
 
 - [ ] **UHW-UI-3: Tabs Navigation (Verse | Range | Page | Surah)**  
   - Add TabLayout + ViewPager2 skeleton with 4 tabs.  
