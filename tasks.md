@@ -174,3 +174,10 @@
 - [ ] **UHW-25: Dark Mode Toggle**  
   - Add toggle in settings; persist preference.  
   - **Proof**: Screenshots of all tabs in both modes.  
+
+---
+
+## Phase 8: QA Harness
+- [x] **UHW-20: Stress Test Playback**  
+  - Add QA screen to simulate rapid controls, focus loss/gain, reciter switch, and ∞ soak.  
+  - **Proof**: Logcat export under `docs/proof/UHW-20/stress-log.txt` and optional short clips.  

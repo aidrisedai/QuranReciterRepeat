@@ -81,6 +81,16 @@
   - **Verification Method:** Demo video (airplane mode); uncached items skip with message; logs captured  
   - **Status:** ✅  
 
+- **Promise:** Resume mid‑ayah preserves exact position  
+  - **Last Verified On:** 2025-09-13  
+  - **Verification Method:** Resume demo across single/range/page/surah  
+  - **Status:** ✅  
+
+- **Promise:** Error handling never stalls playback  
+  - **Last Verified On:** 2025-09-13  
+  - **Verification Method:** Manual log with auto‑retry then actionable Retry/Skip  
+  - **Status:** ✅  
+
 - **Promise:** Progressive caching writes files for all sources (single, range, page, surah)  
   - **Last Verified On:** 2025-09-08  
   - **Verification Method:** Device File Explorer shows `files/audio/<reciterId>/<SSS><AAA>.mp3` after playback; Logcat `CacheManager` logs on first play, none on replay  

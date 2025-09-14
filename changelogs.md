@@ -117,3 +117,8 @@
 - Added Robolectric tests covering: enqueue count for repeat=3 (single ayah), history DB last sessions ordering, CacheManager path and cache hit, and resume state capture via service intents.
 - Test deps added: robolectric, room-testing, mockito (future expansion). Run locally via `./gradlew testDebugUnitTest`.
 - Proof: `docs/proof/UHW-19/test-report.png` or test log snippet.
+
+### UHW-20: Stress Test Playback (2025-09-13)
+- Added a debug‑only QA screen to simulate rapid control spamming, focus loss/gain (simulated), mid‑play reciter switching, and ∞ repeat soak.
+- Logs integrated in PlaybackService for state and error paths; QA actions drive service intents to validate stability under stress.
+- Proof: `docs/proof/UHW-20/stress-log.txt` and optional short videos.
