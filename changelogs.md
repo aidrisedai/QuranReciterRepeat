@@ -129,3 +129,8 @@
 - Added a one-time fullscreen onboarding activity with title, brief bullets, and “Get Started”.
 - Shows only on first launch; persists `onboarding.seen` and returns to Home.
 - Proof: `docs/proof/UHW-21/onboarding-screenshot.png`.
+
+### UHW-22: Minimal Analytics Logs (2025-09-13)
+- Added `AnalyticsLogger` to emit structured events to Logcat and rotating files under app internal storage.
+- Events: app_open, repeat_set, load_single/range/page/surah, error_playback, error_retry, error_actionable.
+- Proof: Logcat screenshot and `analytics-0.log` snippet added under `docs/proof/UHW-22/`.

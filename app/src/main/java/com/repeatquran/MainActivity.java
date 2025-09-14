@@ -76,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
         btnResume.setEnabled(true);
 
         setupRepeatDropdown();
+        // Analytics: app open
+        com.repeatquran.analytics.AnalyticsLogger.get(this).log("app_open", java.util.Collections.emptyMap());
 
         findViewById(R.id.btnLoadAyah).setOnClickListener(v -> {
             TextInputLayout surahLayout = findViewById(R.id.surahInputLayout);
@@ -258,6 +260,11 @@ public class MainActivity extends AppCompatActivity {
                     .putInt("last.surah.range.start", ss)
                     .putInt("last.surah.range.end", es)
                     .apply();
+            java.util.Map<String, Object> ev = new java.util.HashMap<>();
+            ev.put("repeat", repeat);
+            ev.put("type", "range");
+            ev.put("ss", ss); ev.put("sa", sa); ev.put("es", es); ev.put("ea", ea);
+            com.repeatquran.analytics.AnalyticsLogger.get(this).log("load_range", ev);
 
             String msg = "Loading Range " + String.format("%03d", ss) + " — " + surahName(ss) + ":" + sa +
                     " → " + String.format("%03d", es) + " — " + surahName(es) + ":" + ea +
@@ -314,6 +321,10 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("repeat", repeat);
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
             android.widget.Toast.makeText(this, "Loading page " + page + " (repeat=" + (repeat==-1?"∞":repeat) + ")", android.widget.Toast.LENGTH_SHORT).show();
+            java.util.Map<String, Object> ev = new java.util.HashMap<>();
+            ev.put("repeat", repeat);
+            ev.put("page", page);
+            com.repeatquran.analytics.AnalyticsLogger.get(this).log("load_page", ev);
         });
 
         // Surah dropdown setup
@@ -329,7 +340,8 @@ public class MainActivity extends AppCompatActivity {
 
         // QA button only visible in debug builds
         View btnQA = findViewById(R.id.btnOpenQA);
-        if (BuildConfig.DEBUG) {
+        boolean isDebug = (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        if (isDebug) {
             btnQA.setVisibility(View.VISIBLE);
             btnQA.setOnClickListener(v -> {
                 android.content.Intent i = new android.content.Intent(this, com.repeatquran.qa.QAActivity.class);
@@ -396,6 +408,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void persistRepeat(SharedPreferences prefs, int value) {
         prefs.edit().putInt("repeat.count", value).apply();
+        java.util.Map<String, Object> ev = new java.util.HashMap<>();
+        ev.put("repeat", value);
+        com.repeatquran.analytics.AnalyticsLogger.get(this).log("repeat_set", ev);
     }
 
     private void showError(TextInputLayout layout, String message) {
@@ -666,6 +681,10 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra("repeat", repeat);
         if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
         android.widget.Toast.makeText(this, "Loading surah " + numStr + " (repeat=" + (repeat==-1?"∞":repeat) + ")", android.widget.Toast.LENGTH_SHORT).show();
+        java.util.Map<String, Object> ev = new java.util.HashMap<>();
+        ev.put("repeat", repeat);
+        ev.put("surah", surah);
+        com.repeatquran.analytics.AnalyticsLogger.get(this).log("load_surah", ev);
     }
 
     // ---- Reciter multi-select ----

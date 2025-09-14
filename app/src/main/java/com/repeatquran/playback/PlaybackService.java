@@ -140,6 +140,13 @@ public class PlaybackService extends Service {
                 boolean online = com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this);
                 MediaItem mi = player.getCurrentMediaItem();
                 String uriStr = mi != null && mi.playbackProperties != null && mi.playbackProperties.uri != null ? mi.playbackProperties.uri.toString() : "";
+                {
+                    java.util.Map<String, Object> evErr = new java.util.HashMap<>();
+                    evErr.put("online", online);
+                    evErr.put("uri", uriStr);
+                    evErr.put("message", error.getMessage());
+                    com.repeatquran.analytics.AnalyticsLogger.get(PlaybackService.this).log("error_playback", evErr);
+                }
                 if (!online) {
                     Log.w("PlaybackService", "Offline playback error; skipping item: " + uriStr);
                     mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: skipping uncached item", android.widget.Toast.LENGTH_SHORT).show());
@@ -153,6 +160,7 @@ public class PlaybackService extends Service {
                     int count = retryCounts.getOrDefault(uriStr, 0);
                     if (count < 1) {
                         retryCounts.put(uriStr, count + 1);
+                        com.repeatquran.analytics.AnalyticsLogger.get(PlaybackService.this).log("error_retry", java.util.Collections.singletonMap("uri", uriStr));
                         int idx = player.getCurrentMediaItemIndex();
                         Log.w("PlaybackService", "Retrying item once: index=" + idx + ", uri=" + uriStr);
                         mainHandler.post(() -> {
@@ -167,6 +175,7 @@ public class PlaybackService extends Service {
                         });
                     } else {
                         Log.e("PlaybackService", "Item failed after retry; showing actions");
+                        com.repeatquran.analytics.AnalyticsLogger.get(PlaybackService.this).log("error_actionable", java.util.Collections.singletonMap("uri", uriStr));
                         showErrorNotification("Playback failed", "Retry this ayah or skip to next");
                     }
                 }
@@ -316,6 +325,11 @@ public class PlaybackService extends Service {
                     getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
             Log.d("PlaybackService", "Load Single: Surah " + sss + " — " + surahName(sura) + ", Ayah " + ayah + ", Repeat=" + (repeat==-1?"∞":repeat));
             captureSelectionForResume("single", null, sura, ayah, null, null, repeat);
+            {
+                java.util.Map<String, Object> ev = new java.util.HashMap<>();
+                ev.put("type", "single"); ev.put("surah", sura); ev.put("ayah", ayah); ev.put("repeat", repeat);
+                com.repeatquran.analytics.AnalyticsLogger.get(this).log("play_request", ev);
+            }
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false); // prevent provider from appending more items
@@ -353,6 +367,11 @@ public class PlaybackService extends Service {
             Log.d("PlaybackService", "Load Range: " + String.format("%03d", ss) + " — " + surahName(ss) + ":" + sa +
                     " → " + String.format("%03d", es) + " — " + surahName(es) + ":" + ea + ", Repeat=" + (repeat==-1?"∞":repeat));
             captureSelectionForResume("range", null, ss, sa, es, ea, repeat);
+            {
+                java.util.Map<String, Object> evR = new java.util.HashMap<>();
+                evR.put("type", "range"); evR.put("ss", ss); evR.put("sa", sa); evR.put("es", es); evR.put("ea", ea); evR.put("repeat", repeat);
+                com.repeatquran.analytics.AnalyticsLogger.get(this).log("play_request", evR);
+            }
 
             // Build URLs for the inclusive range (ss:sa) -> (es:ea)
             player.stop();
@@ -394,6 +413,11 @@ public class PlaybackService extends Service {
                 return START_STICKY;
             }
             captureSelectionForResume("page", page, null, null, null, null, repeat);
+            {
+                java.util.Map<String, Object> evP = new java.util.HashMap<>();
+                evP.put("type", "page"); evP.put("page", page); evP.put("repeat", repeat);
+                com.repeatquran.analytics.AnalyticsLogger.get(this).log("play_request", evP);
+            }
             // Query and build cycle off main, then enqueue on main; insert session off main
             player.stop();
             player.clearMediaItems();
@@ -432,6 +456,11 @@ public class PlaybackService extends Service {
                 return START_STICKY;
             }
             captureSelectionForResume("surah", null, surah, null, null, null, repeat);
+            {
+                java.util.Map<String, Object> evS = new java.util.HashMap<>();
+                evS.put("type", "surah"); evS.put("surah", surah); evS.put("repeat", repeat);
+                com.repeatquran.analytics.AnalyticsLogger.get(this).log("play_request", evS);
+            }
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
