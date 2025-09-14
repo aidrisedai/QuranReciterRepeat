@@ -146,3 +146,10 @@
 - Added release signingConfig scaffold reading from gradle.properties (keystore path and credentials not committed).
 - Build via `./gradlew assembleRelease`; artifact at `app/build/outputs/apk/release/app-release.apk`.
 - Proof: Folder screenshot and install demo under `docs/proof/UHW-24/`.
+
+## Phase 12: UI Overhaul (Delight + Focus)
+
+### UHW-UI-1: Theme Tokens (Islamic Look) (2025-09-13)
+- Added Islamic-inspired palettes (light/dark) and rounded component shapes via Material Components XML theming.
+- Primary deep green with gold accents; updated background/surface/outline tokens.
+- Proof: `docs/proof/UHW-UI-1/light.png`, `docs/proof/UHW-UI-1/dark.png`.
