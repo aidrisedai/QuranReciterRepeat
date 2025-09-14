@@ -122,3 +122,10 @@
 - Added a debug‑only QA screen to simulate rapid control spamming, focus loss/gain (simulated), mid‑play reciter switching, and ∞ repeat soak.
 - Logs integrated in PlaybackService for state and error paths; QA actions drive service intents to validate stability under stress.
 - Proof: `docs/proof/UHW-20/stress-log.txt` and optional short videos.
+
+## Phase 9: Onboarding & Analytics
+
+### UHW-21: Onboarding Screen (Static) (2025-09-13)
+- Added a one-time fullscreen onboarding activity with title, brief bullets, and “Get Started”.
+- Shows only on first launch; persists `onboarding.seen` and returns to Home.
+- Proof: `docs/proof/UHW-21/onboarding-screenshot.png`.
