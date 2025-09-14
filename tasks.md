@@ -149,9 +149,10 @@
 ---
 
 ## Phase 9: Onboarding & Analytics
-- [ ] **UHW-21: Onboarding Screen (Static)**  
-  - One intro screen.  
-  - **Proof**: Screenshot.  
+- [x] **UHW-21: Onboarding Screen (Static)**  
+  - One-time fullscreen intro shown on first launch with “Get Started”.  
+  - Skips on subsequent launches (persisted in `onboarding.seen`).  
+  - **Proof**: Screenshot in docs/proof/UHW-21/.  
 
 - [ ] **UHW-22: Minimal Analytics Logs**  
   - Log play, pause, repeat, errors (local only).  

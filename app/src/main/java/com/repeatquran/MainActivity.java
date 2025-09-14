@@ -48,6 +48,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // One-time onboarding
+        boolean seen = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("onboarding.seen", false);
+        if (!seen) {
+            android.content.Intent i = new android.content.Intent(this, com.repeatquran.onboarding.OnboardingActivity.class);
+            startActivity(i);
+            finish();
+            return;
+        }
         setContentView(R.layout.activity_main);
 
         // Request notifications permission on Android 13+ so we can show the media notification
