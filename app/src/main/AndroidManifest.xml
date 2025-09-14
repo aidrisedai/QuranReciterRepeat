@@ -31,6 +31,8 @@
             android:name=".playback.PlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <activity android:name=".qa.QAActivity" />
     </application>
 
 </manifest>

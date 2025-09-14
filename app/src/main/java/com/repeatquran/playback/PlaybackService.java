@@ -55,6 +55,8 @@ public class PlaybackService extends Service {
     public static final String ACTION_PLAYBACK_STATE = "com.repeatquran.action.PLAYBACK_STATE";
     public static final String ACTION_RETRY_ITEM = "com.repeatquran.action.RETRY_ITEM";
     public static final String ACTION_SKIP_ITEM = "com.repeatquran.action.SKIP_ITEM";
+    public static final String ACTION_SIMULATE_FOCUS_LOSS = "com.repeatquran.action.SIM_FOCUS_LOSS";
+    public static final String ACTION_SIMULATE_FOCUS_GAIN = "com.repeatquran.action.SIM_FOCUS_GAIN";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -237,6 +239,18 @@ public class PlaybackService extends Service {
             stopSelf();
             broadcastState();
             return START_NOT_STICKY;
+        }
+        if (ACTION_SIMULATE_FOCUS_LOSS.equals(action)) {
+            Log.w("PlaybackService", "Simulated focus loss (call) — pausing");
+            if (player != null) player.pause();
+            broadcastState();
+            return START_STICKY;
+        }
+        if (ACTION_SIMULATE_FOCUS_GAIN.equals(action)) {
+            Log.w("PlaybackService", "Simulated focus gain — resuming if queue exists");
+            if (player != null && player.getMediaItemCount() > 0) player.play();
+            broadcastState();
+            return START_STICKY;
         }
         if (ACTION_RETRY_ITEM.equals(action)) {
             cancelErrorNotification();

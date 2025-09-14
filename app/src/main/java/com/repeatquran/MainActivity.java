@@ -318,6 +318,18 @@ public class MainActivity extends AppCompatActivity {
             android.content.Intent i = new android.content.Intent(this, com.repeatquran.downloads.DownloadsActivity.class);
             startActivity(i);
         });
+
+        // QA button only visible in debug builds
+        View btnQA = findViewById(R.id.btnOpenQA);
+        if (BuildConfig.DEBUG) {
+            btnQA.setVisibility(View.VISIBLE);
+            btnQA.setOnClickListener(v -> {
+                android.content.Intent i = new android.content.Intent(this, com.repeatquran.qa.QAActivity.class);
+                startActivity(i);
+            });
+        } else {
+            btnQA.setVisibility(View.GONE);
+        }
     }
 
     @Override
