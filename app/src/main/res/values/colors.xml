@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="md_theme_primary">#006B5E</color>
+    <!-- Islamic-inspired palette (Light) -->
+    <color name="md_theme_primary">#0E5C4A</color>
     <color name="md_theme_onPrimary">#FFFFFF</color>
-    <color name="md_theme_background">#FFFFFF</color>
-    <color name="md_theme_onBackground">#000000</color>
-    <color name="ic_launcher_background">#006B5E</color>
+    <color name="md_theme_primaryVariant">#094536</color>
+
+    <color name="md_theme_secondary">#C9A227</color>
+    <color name="md_theme_onSecondary">#1D1600</color>
+
+    <color name="md_theme_background">#FAFBF7</color>
+    <color name="md_theme_onBackground">#0D1B1E</color>
+
+    <color name="md_theme_surface">#FFFFFF</color>
+    <color name="md_theme_onSurface">#0D1B1E</color>
+
+    <color name="md_theme_outline">#D9E2DE</color>
+
+    <color name="ic_launcher_background">#0E5C4A</color>
 </resources>

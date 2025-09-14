@@ -185,6 +185,57 @@
 
 ---
 
+## Phase 12: UI Overhaul (Delight + Focus)
+- [ ] **UHW-UI-1: Theme Tokens (Islamic Look)**  
+  - Add Material color/typography/shape tokens (deep green + gold), light/dark palettes.  
+  - Proof: Screenshots (Home) in light/dark.  
+
+- [ ] **UHW-UI-2: Iconography + Header Polish**  
+  - Update header/iconography, spacing, dividers; keep layout.  
+  - Proof: Before/after screenshot.  
+
+- [ ] **UHW-UI-3: Tabs Navigation (Verse | Range | Page | Surah)**  
+  - Add TabLayout + ViewPager2 skeleton with 4 tabs.  
+  - Proof: Short video of tab switching.  
+
+- [ ] **UHW-UI-4: Persist Last Mode**  
+  - Save last selected tab; auto-open there; small toggle.  
+  - Proof: Relaunch video restoring tab.  
+
+- [ ] **UHW-UI-5: Verse Tab (Focused Form)**  
+  - Move single-verse inputs + controls to Verse tab.  
+  - Proof: Screenshot + play works.  
+
+- [ ] **UHW-UI-6: Range Tab (Focused Form)**  
+  - Move range inputs + controls to Range tab.  
+  - Proof: Screenshot + logs.  
+
+- [ ] **UHW-UI-7: Page Tab (Focused Form)**  
+  - Move page input + controls to Page tab.  
+  - Proof: Screenshot + logs.  
+
+- [ ] **UHW-UI-8: Surah Tab (Focused Form)**  
+  - Move surah picker + controls to Surah tab.  
+  - Proof: Screenshot + logs.  
+
+- [ ] **UHW-UI-9: Global Reciters + Repeat UX**  
+  - Top pill row; persist globally; applies across tabs.  
+  - Proof: Screenshot + carried values in logs.  
+
+- [ ] **UHW-UI-10: Half Recitation Toggle (Simple Split)**  
+  - Toggle on Range/Page/Surah: first half by A, second half by B (odd=ceil/floor; >2 cascade).  
+  - Proof: Demo + logs with order and counts.  
+
+- [ ] **UHW-UI-11: Visual QA + RTL/Arabic**  
+  - RTL sanity, Arabic headings font, padding polish.  
+  - Proof: RTL screenshots.  
+
+- [ ] **UHW-UI-12: Analytics + Downloads Restyle**  
+  - Log tab usage + half toggle; Downloads aligned to new palette.  
+  - Proof: Logcat + screenshot.  
+
+---
+
 ## Phase 8: QA Harness
 - [x] **UHW-20: Stress Test Playback**  
   - Add QA screen to simulate rapid controls, focus loss/gain, reciter switch, and ∞ soak.  

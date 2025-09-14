@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Islamic-inspired palette (Dark) -->
+    <color name="md_theme_primary">#50BFA6</color>
+    <color name="md_theme_onPrimary">#07241C</color>
+    <color name="md_theme_primaryVariant">#2A8C74</color>
+
+    <color name="md_theme_secondary">#E2C15A</color>
+    <color name="md_theme_onSecondary">#2A2200</color>
+
+    <color name="md_theme_background">#0B1212</color>
+    <color name="md_theme_onBackground">#E6EFEC</color>
+
+    <color name="md_theme_surface">#101919</color>
+    <color name="md_theme_onSurface">#E6EFEC</color>
+
+    <color name="md_theme_outline">#2A3A38</color>
+</resources>
