@@ -141,3 +141,8 @@
 - Added Room-backed presets with save from current inputs, list on Home, play, rename/edit repeat, and delete.
 - Uses saved reciters and repeat; maps to existing playback actions (single/range/page/surah).
 - Proof: `docs/proof/UHW-23/presets-screenshot.png` and play_request logs when replaying.
+
+### UHW-24: APK Packaging (Sideload) (2025-09-13)
+- Added release signingConfig scaffold reading from gradle.properties (keystore path and credentials not committed).
+- Build via `./gradlew assembleRelease`; artifact at `app/build/outputs/apk/release/app-release.apk`.
+- Proof: Folder screenshot and install demo under `docs/proof/UHW-24/`.

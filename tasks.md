@@ -173,7 +173,8 @@
 
 - [ ] **UHW-24: APK Packaging (Sideload)**  
   - Generate signed APK, share with testers.  
-  - **Proof**: APK file + installation demo.  
+  - Implemented signingConfig scaffold using gradle.properties; local keystore; assembleRelease generates app-release.apk.  
+  - **Proof**: APK file + installation demo (folder screenshot + install clip).  
 
 ---
 
