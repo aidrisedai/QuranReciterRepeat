@@ -196,8 +196,8 @@
   
   Implemented: Added Material top app bar, section heading style, and subtle dividers/margins.  
 
-- [ ] **UHW-UI-3: Tabs Navigation (Verse | Range | Page | Surah)**  
-  - Add TabLayout + ViewPager2 skeleton with 4 tabs.  
+- [x] **UHW-UI-3: Tabs Navigation (Verse | Range | Page | Surah)**  
+  - Added TabLayout + ViewPager2 skeleton with 4 tabs and placeholder fragments.  
   - Proof: Short video of tab switching.  
 
 - [ ] **UHW-UI-4: Persist Last Mode**  

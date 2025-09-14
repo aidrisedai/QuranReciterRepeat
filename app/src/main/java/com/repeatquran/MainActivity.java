@@ -25,6 +25,7 @@ import com.repeatquran.data.SessionRepository;
 import com.repeatquran.data.db.SessionEntity;
 import com.repeatquran.data.PresetRepository;
 import com.repeatquran.data.db.PresetEntity;
+import com.repeatquran.ui.ModesPagerAdapter;
 
 public class MainActivity extends AppCompatActivity {
     private android.content.BroadcastReceiver playbackStateReceiver;
@@ -929,3 +930,20 @@ public class MainActivity extends AppCompatActivity {
         tv.setText(sb.toString().trim());
     }
 }
+        // Setup tabs skeleton (Verse | Range | Page | Surah)
+        androidx.viewpager2.widget.ViewPager2 pager = findViewById(R.id.modePager);
+        if (pager != null) {
+            pager.setAdapter(new ModesPagerAdapter(this));
+            com.google.android.material.tabs.TabLayout tabs = findViewById(R.id.modeTabs);
+            if (tabs != null) {
+                new com.google.android.material.tabs.TabLayoutMediator(tabs, pager,
+                        (tab, position) -> {
+                            switch (position) {
+                                case 0: tab.setText("Verse"); break;
+                                case 1: tab.setText("Range"); break;
+                                case 2: tab.setText("Page"); break;
+                                case 3: tab.setText("Surah"); break;
+                            }
+                        }).attach();
+            }
+        }
