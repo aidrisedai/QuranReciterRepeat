@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">تكرار القرآن</string>
+    <string name="label_repeat">التكرار</string>
+    <string name="label_reciters">القراء</string>
+    <string name="title_recent_sessions">الجلسات الأخيرة</string>
+    <string name="title_presets">المحفوظات</string>
+    <string name="label_split_halves">تقسيم القراءة على النصفين</string>
+    <string name="title_settings">الإعدادات</string>
+    <string name="menu_settings">الإعدادات</string>
+    <string name="desc_split_halves">عند التفعيل، يتم تقسيم المقطع على عدة أجزاء متتالية موزعة على القراء المختارين بالترتيب. مثال: مع قارئين، النصف الأول بصوت القارئ أ والنصف الثاني بصوت القارئ ب.</string>
+    <string name="example_two_reciters">مثال (قارئان):</string>
+    <string name="example_three_reciters">مثال (ثلاثة قراء):</string>
+</resources>

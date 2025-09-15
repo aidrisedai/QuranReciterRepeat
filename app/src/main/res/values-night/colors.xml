@@ -15,4 +15,12 @@
     <color name="md_theme_onSurface">#E6EFEC</color>
 
     <color name="md_theme_outline">#2A3A38</color>
+
+    <!-- Container variants for visuals (dark) -->
+    <color name="md_theme_primaryContainer">#1B3A33</color>
+    <color name="md_theme_onPrimaryContainer">#AEECDC</color>
+    <color name="md_theme_secondaryContainer">#3A2F10</color>
+    <color name="md_theme_onSecondaryContainer">#F5E4A6</color>
+    <color name="md_theme_tertiaryContainer">#20303A</color>
+    <color name="md_theme_onTertiaryContainer">#D6E6F5</color>
 </resources>

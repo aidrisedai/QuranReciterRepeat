@@ -34,6 +34,11 @@
   - **Mitigation Plan:** Add accessibility UHWs in v2.  
   - **Status:** Open  
 
+- **Area:** Half-Split Discoverability  
+  - **Details:** Users didn’t notice the per-tab toggle.  
+  - **Mitigation Plan:** Add Settings entry with a global toggle and visual examples; keep per‑tab switches in sync.  
+  - **Status:** Addressed (Settings added).  
+
 - **Area:** Cultural Sensitivity of Streak Banner  
   - **Details:** Encouragement tone (“🔥 X-day streak”) could clash with spiritual context.  
   - **Mitigation Plan:** Run user testing with memorization teachers/learners in v2.  

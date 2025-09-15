@@ -15,9 +15,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?attr/colorPrimary"
-            app:title="Repeat Quran"
+            app:title="@string/app_name"
             app:titleCentered="true"
-            app:titleTextColor="@color/md_theme_onPrimary" />
+            app:titleTextColor="@color/md_theme_onPrimary"
+            app:menu="@menu/menu_main" />
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/modeTabs"
@@ -40,11 +41,39 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
+    <!-- Global pills: Repeat and Reciters -->
+    <LinearLayout
+        android:id="@+id/globalPills"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipRepeat"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Repeat: 1"
+            app:chipIconEnabled="false" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipReciters"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Reciters"
+            app:chipIconEnabled="false" />
+    </LinearLayout>
+
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/modePager"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/globalPills"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -54,6 +83,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Repeat"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/modePager"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -74,6 +104,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Surah"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/repeatInputLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/ayahInputLayout"
@@ -93,6 +124,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Ayah (>=1)"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/repeatInputLayout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/surahInputLayout"
@@ -111,6 +143,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Load Ayah"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/ayahInputLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -123,6 +156,7 @@
         android:orientation="horizontal"
         android:gravity="center"
         android:paddingTop="16dp"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/btnLoadAyah"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -169,6 +203,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Start Surah"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/controlsRow"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/endSurahLayout"
@@ -188,6 +223,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Start Ayah"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/startSurahLayout"
         app:layout_constraintStart_toStartOf="@id/startSurahLayout"
         app:layout_constraintEnd_toEndOf="@id/startSurahLayout"
@@ -206,6 +242,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="End Surah"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/controlsRow"
         app:layout_constraintStart_toEndOf="@id/startSurahLayout"
         app:layout_constraintEnd_toEndOf="parent"
@@ -225,6 +262,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="End Ayah"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/endSurahLayout"
         app:layout_constraintStart_toStartOf="@id/endSurahLayout"
         app:layout_constraintEnd_toEndOf="@id/endSurahLayout"
@@ -242,6 +280,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Load Range"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/endAyahLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -254,6 +293,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Page (1–604)"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/btnLoadRange"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -271,6 +311,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Load Page"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/pageInputLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -283,6 +324,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Surah"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/btnLoadPage"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -300,6 +342,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Load Surah"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/surahSelectLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -310,6 +353,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Choose Reciters"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/btnLoadSurah"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="16dp" />
@@ -319,6 +363,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Selected reciters: (none)"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/btnChooseReciters"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -370,7 +415,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         style="@style/TextAppearance.RepeatQuran.Section"
-        android:text="Recent Sessions"
+        android:text="@string/title_recent_sessions"
         app:layout_constraintTop_toBottomOf="@id/dividerHistory"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="16dp" />
@@ -390,7 +435,7 @@
         android:id="@+id/presetsTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Presets"
+        android:text="@string/title_presets"
         android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@id/historyContainer"
         app:layout_constraintStart_toStartOf="parent"

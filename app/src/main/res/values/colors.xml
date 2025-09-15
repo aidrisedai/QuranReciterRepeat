@@ -17,4 +17,12 @@
     <color name="md_theme_outline">#D9E2DE</color>
 
     <color name="ic_launcher_background">#0E5C4A</color>
+
+    <!-- Container variants for visuals -->
+    <color name="md_theme_primaryContainer">#BFE3D8</color>
+    <color name="md_theme_onPrimaryContainer">#07372B</color>
+    <color name="md_theme_secondaryContainer">#F5E4A6</color>
+    <color name="md_theme_onSecondaryContainer">#3A2F00</color>
+    <color name="md_theme_tertiaryContainer">#D6E6F5</color>
+    <color name="md_theme_onTertiaryContainer">#062433</color>
 </resources>

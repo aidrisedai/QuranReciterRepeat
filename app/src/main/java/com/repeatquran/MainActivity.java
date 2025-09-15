@@ -61,6 +61,76 @@ public class MainActivity extends AppCompatActivity {
         }
         setContentView(R.layout.activity_main);
 
+        // Toolbar menu handling (Remember my mode)
+        com.google.android.material.appbar.MaterialToolbar bar = findViewById(R.id.topAppBar);
+        if (bar != null) {
+            SharedPreferences prefsToolbar = getSharedPreferences("rq_prefs", MODE_PRIVATE);
+            boolean rememberInit = prefsToolbar.getBoolean("ui.remember.mode", true);
+            android.view.MenuItem menuItem = bar.getMenu().findItem(R.id.action_remember_mode);
+            if (menuItem != null) menuItem.setChecked(rememberInit);
+            bar.setOnMenuItemClickListener(mi -> {
+                if (mi.getItemId() == R.id.action_remember_mode) {
+                    boolean newVal = !mi.isChecked();
+                    mi.setChecked(newVal);
+                    getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putBoolean("ui.remember.mode", newVal).apply();
+                    return true;
+                } else if (mi.getItemId() == R.id.action_settings) {
+                    startActivity(new android.content.Intent(this, com.repeatquran.settings.SettingsActivity.class));
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        // Setup tabs skeleton (Verse | Range | Page | Surah)
+        androidx.viewpager2.widget.ViewPager2 pager = findViewById(R.id.modePager);
+        if (pager != null) {
+            pager.setAdapter(new com.repeatquran.ui.ModesPagerAdapter(this));
+            com.google.android.material.tabs.TabLayout tabs = findViewById(R.id.modeTabs);
+            if (tabs != null) {
+                new com.google.android.material.tabs.TabLayoutMediator(tabs, pager,
+                        (tab, position) -> {
+                            switch (position) {
+                                case 0: tab.setText("Verse"); break;
+                                case 1: tab.setText("Range"); break;
+                                case 2: tab.setText("Page"); break;
+                                case 3: tab.setText("Surah"); break;
+                            }
+                        }).attach();
+            }
+
+            // Restore last mode selection if enabled
+            SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
+            boolean remember = prefs.getBoolean("ui.remember.mode", true);
+            int last = prefs.getInt("ui.last.mode", 0);
+            if (remember && last >= 0 && last < 4) pager.setCurrentItem(last, false);
+
+            // Save selection when page changes if enabled
+            pager.registerOnPageChangeCallback(new androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
+                @Override public void onPageSelected(int position) {
+                    boolean rem = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.remember.mode", true);
+                    if (rem) getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("ui.last.mode", position).apply();
+                    java.util.Map<String,Object> ev = new java.util.HashMap<>();
+                    ev.put("tab", positionName(position));
+                    com.repeatquran.analytics.AnalyticsLogger.get(MainActivity.this).log("tab_selected", ev);
+                }
+            });
+        }
+
+        // Global pills: summary + interactions
+        refreshGlobalPills();
+        android.view.View chipRepeat = findViewById(R.id.chipRepeat);
+        if (chipRepeat != null) {
+            chipRepeat.setOnClickListener(v -> {
+                android.widget.AutoCompleteTextView dd = findViewById(R.id.repeatDropdown);
+                if (dd != null) dd.showDropDown();
+            });
+        }
+        android.view.View chipReciters = findViewById(R.id.chipReciters);
+        if (chipReciters != null) {
+            chipReciters.setOnClickListener(v -> showReciterPicker());
+        }
+
         // Request notifications permission on Android 13+ so we can show the media notification
         if (Build.VERSION.SDK_INT >= 33) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -417,6 +487,7 @@ public class MainActivity extends AppCompatActivity {
         java.util.Map<String, Object> ev = new java.util.HashMap<>();
         ev.put("repeat", value);
         com.repeatquran.analytics.AnalyticsLogger.get(this).log("repeat_set", ev);
+        refreshGlobalPills();
     }
 
     private void showError(TextInputLayout layout, String message) {
@@ -928,22 +999,56 @@ public class MainActivity extends AppCompatActivity {
         }
         android.widget.TextView tv = findViewById(R.id.txtReciters);
         tv.setText(sb.toString().trim());
+        refreshGlobalPills();
+    }
+
+    private void refreshGlobalPills() {
+        android.widget.TextView chipR;
+        android.view.View v = findViewById(R.id.chipRepeat);
+        if (v instanceof com.google.android.material.chip.Chip) {
+            com.google.android.material.chip.Chip chip = (com.google.android.material.chip.Chip) v;
+            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            chip.setText("Repeat: " + (repeat == -1 ? "∞" : String.valueOf(repeat)));
+        }
+        v = findViewById(R.id.chipReciters);
+        if (v instanceof com.google.android.material.chip.Chip) {
+            com.google.android.material.chip.Chip chip = (com.google.android.material.chip.Chip) v;
+            chip.setText("Reciters: " + summarizeReciters());
+        }
+    }
+
+    private String summarizeReciters() {
+        String[] namesArr = getResources().getStringArray(R.array.reciter_names);
+        String[] idsArr = getResources().getStringArray(R.array.reciter_ids);
+        java.util.Map<String, String> map = new java.util.HashMap<>();
+        for (int i = 0; i < idsArr.length; i++) map.put(idsArr[i], namesArr[i]);
+        String saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        if (!saved.isEmpty()) for (String s : saved.split(",")) if (!s.isEmpty()) ids.add(s);
+        if (ids.isEmpty()) return "(none)";
+        java.util.List<String> names = new java.util.ArrayList<>();
+        for (String id : ids) names.add(map.getOrDefault(id, id));
+        if (names.size() == 1) return names.get(0);
+        if (names.size() == 2) return names.get(0) + ", " + names.get(1);
+        return names.get(0) + ", " + names.get(1) + " +" + (names.size() - 2);
+    }
+
+    private String positionName(int pos) {
+        switch (pos) {
+            case 0: return "verse";
+            case 1: return "range";
+            case 2: return "page";
+            case 3: return "surah";
+        }
+        return String.valueOf(pos);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(android.view.MenuItem item) {
+        if (item.getItemId() == R.id.action_settings) {
+            startActivity(new android.content.Intent(this, com.repeatquran.settings.SettingsActivity.class));
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
-        // Setup tabs skeleton (Verse | Range | Page | Surah)
-        androidx.viewpager2.widget.ViewPager2 pager = findViewById(R.id.modePager);
-        if (pager != null) {
-            pager.setAdapter(new ModesPagerAdapter(this));
-            com.google.android.material.tabs.TabLayout tabs = findViewById(R.id.modeTabs);
-            if (tabs != null) {
-                new com.google.android.material.tabs.TabLayoutMediator(tabs, pager,
-                        (tab, position) -> {
-                            switch (position) {
-                                case 0: tab.setText("Verse"); break;
-                                case 1: tab.setText("Range"); break;
-                                case 2: tab.setText("Page"); break;
-                                case 3: tab.setText("Surah"); break;
-                            }
-                        }).attach();
-            }
-        }

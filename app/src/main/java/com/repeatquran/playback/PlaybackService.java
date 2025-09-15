@@ -377,18 +377,102 @@ public class PlaybackService extends Service {
             player.stop();
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
-            CycleResult cycle = buildRangeCycle(ss, sa, es, ea);
-            if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
-                Log.w("PlaybackService", "Offline with no cached audio for selection (range)");
-                mainHandler.post(() -> android.widget.Toast.makeText(this, "Offline: no cached audio for this range", android.widget.Toast.LENGTH_LONG).show());
-                return START_STICKY;
+            boolean half = intent.getBooleanExtra("halfSplit", getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false));
+            java.util.List<String> reciters = getSelectedReciterIds();
+            if (half && repeat != -1 && reciters.size() >= 2) {
+                // Build verses list once
+                java.util.List<String[]> verses = new java.util.ArrayList<>();
+                for (int s = ss; s <= es; s++) {
+                    int startAyah = (s == ss) ? sa : 1;
+                    int endAyah = (s == es) ? ea : getAyahCount(s);
+                    for (int a = startAyah; a <= endAyah; a++) verses.add(new String[]{String.format("%03d", s), String.format("%03d", a)});
+                }
+                java.util.List<MediaItem> combined = new java.util.ArrayList<>();
+                int cached = 0;
+                int Nrec = reciters.size();
+                for (int c = 0; c < repeat; c++) {
+                    int startIdx = (c * 2) % Nrec; // move one off every cycle
+                    String rA = reciters.get(startIdx);
+                    String rB = reciters.get((startIdx + 1) % Nrec);
+                    java.util.List<String> names = getReciterNames(java.util.Arrays.asList(rA, rB));
+                    Log.d("PlaybackService", "Range half-split pair cycle=" + (c+1) + ": " + names.get(0) + ", " + names.get(1));
+                    int N = verses.size();
+                    int split = N / 2;
+                    for (int i = 0; i < N; i++) {
+                        String rid = (i < split) ? rA : rB;
+                        String sss = verses.get(i)[0]; String aaa = verses.get(i)[1];
+                        String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                        java.io.File cachedFile = cacheManager.getTargetFile(rid, sss, aaa);
+                        if (cachedFile.exists()) { combined.add(MediaItem.fromUri(android.net.Uri.fromFile(cachedFile))); cached++; }
+                        else { combined.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                    }
+                }
+                if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cached == 0) {
+                    Log.w("PlaybackService", "Offline with no cached audio for selection (range) (rotating pairs)");
+                    mainHandler.post(() -> android.widget.Toast.makeText(this, "Offline: no cached audio for this range", android.widget.Toast.LENGTH_LONG).show());
+                    return START_STICKY;
+                }
+                final java.util.List<MediaItem> toEnqueue = combined;
+                mainHandler.post(() -> {
+                    enqueueCycles(toEnqueue, 1);
+                    player.prepare();
+                    player.play();
+                    broadcastState();
+                });
+            } else if (half && repeat == -1 && reciters.size() >= 2) {
+                // Infinite rotation: build one super-cycle covering the rotation period and loop it
+                java.util.List<String[]> verses = new java.util.ArrayList<>();
+                for (int s = ss; s <= es; s++) {
+                    int startAyah = (s == ss) ? sa : 1;
+                    int endAyah = (s == es) ? ea : getAyahCount(s);
+                    for (int a = startAyah; a <= endAyah; a++) verses.add(new String[]{String.format("%03d", s), String.format("%03d", a)});
+                }
+                int Nrec = reciters.size();
+                int period = (Nrec % 2 == 0) ? (Nrec / 2) : Nrec;
+                java.util.List<MediaItem> combined = new java.util.ArrayList<>();
+                int cached = 0;
+                for (int c = 0; c < period; c++) {
+                    int startIdx = (c * 2) % Nrec;
+                    String rA = reciters.get(startIdx);
+                    String rB = reciters.get((startIdx + 1) % Nrec);
+                    java.util.List<String> names = getReciterNames(java.util.Arrays.asList(rA, rB));
+                    Log.d("PlaybackService", "Range half-split pair cycle=" + (c+1) + ": " + names.get(0) + ", " + names.get(1));
+                    int N = verses.size(); int split = N / 2;
+                    for (int i = 0; i < N; i++) {
+                        String rid = (i < split) ? rA : rB;
+                        String sss = verses.get(i)[0]; String aaa = verses.get(i)[1];
+                        String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                        java.io.File cachedFile = cacheManager.getTargetFile(rid, sss, aaa);
+                        if (cachedFile.exists()) { combined.add(MediaItem.fromUri(android.net.Uri.fromFile(cachedFile))); cached++; }
+                        else { combined.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                    }
+                }
+                if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cached == 0) {
+                    Log.w("PlaybackService", "Offline with no cached audio for selection (range) (infinite rotation)");
+                    mainHandler.post(() -> android.widget.Toast.makeText(this, "Offline: no cached audio for this range", android.widget.Toast.LENGTH_LONG).show());
+                    return START_STICKY;
+                }
+                final java.util.List<MediaItem> toLoop = combined;
+                mainHandler.post(() -> {
+                    enqueueCycles(toLoop, -1);
+                    player.prepare();
+                    player.play();
+                    broadcastState();
+                });
+            } else {
+                CycleResult cycle = buildRangeCycle(ss, sa, es, ea, half);
+                if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
+                    Log.w("PlaybackService", "Offline with no cached audio for selection (range)");
+                    mainHandler.post(() -> android.widget.Toast.makeText(this, "Offline: no cached audio for this range", android.widget.Toast.LENGTH_LONG).show());
+                    return START_STICKY;
+                }
+                mainHandler.post(() -> {
+                    enqueueCycles(cycle.items, repeat);
+                    player.prepare();
+                    player.play();
+                    broadcastState();
+                });
             }
-            mainHandler.post(() -> {
-                enqueueCycles(cycle.items, repeat);
-                player.prepare();
-                player.play();
-                broadcastState();
-            });
             currentCyclesRequested = repeat;
             ioExecutor.execute(() -> {
                 SessionEntity e = new SessionEntity();
@@ -423,18 +507,93 @@ public class PlaybackService extends Service {
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
             ioExecutor.execute(() -> {
-                CycleResult cycle = buildPageCycle(page);
-                if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cycle.cachedCount == 0) {
-                    Log.w("PlaybackService", "Offline with no cached audio for selection (page)");
-                    mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this page", android.widget.Toast.LENGTH_LONG).show());
-                    return;
+                boolean half = intent.getBooleanExtra("halfSplit", getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false));
+                java.util.List<String> reciters = getSelectedReciterIds();
+                if (half && repeat != -1 && reciters.size() >= 2) {
+                    PageSegmentDao dao = RepeatQuranDatabase.get(this).pageSegmentDao();
+                    java.util.List<PageSegmentEntity> segs = dao.segmentsForPage(page);
+                    java.util.List<String[]> verses = new java.util.ArrayList<>();
+                    for (PageSegmentEntity s : segs) for (int a = s.startAyah; a <= s.endAyah; a++) verses.add(new String[]{String.format("%03d", s.surah), String.format("%03d", a)});
+                    java.util.List<MediaItem> combined = new java.util.ArrayList<>();
+                    int cached = 0;
+                    int Nrec = reciters.size();
+                    for (int c = 0; c < repeat; c++) {
+                        int startIdx = (c * 2) % Nrec; // move one off every cycle
+                        String rA = reciters.get(startIdx);
+                        String rB = reciters.get((startIdx + 1) % Nrec);
+                        java.util.List<String> names = getReciterNames(java.util.Arrays.asList(rA, rB));
+                        Log.d("PlaybackService", "Page half-split pair cycle=" + (c+1) + ": " + names.get(0) + ", " + names.get(1));
+                        int N = verses.size(); int split = N / 2;
+                        for (int i = 0; i < N; i++) {
+                            String rid = (i < split) ? rA : rB;
+                            String sss = verses.get(i)[0]; String aaa = verses.get(i)[1];
+                            String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                            java.io.File cachedFile = cacheManager.getTargetFile(rid, sss, aaa);
+                            if (cachedFile.exists()) { combined.add(MediaItem.fromUri(android.net.Uri.fromFile(cachedFile))); cached++; }
+                            else { combined.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                        }
+                    }
+                    if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cached == 0) {
+                        Log.w("PlaybackService", "Offline with no cached audio for selection (page) (rotating pairs)");
+                        mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this page", android.widget.Toast.LENGTH_LONG).show());
+                        return;
+                    }
+                    mainHandler.post(() -> {
+                        enqueueCycles(combined, 1);
+                        player.prepare();
+                        player.play();
+                        broadcastState();
+                    });
+                } else if (half && repeat == -1 && reciters.size() >= 2) {
+                    PageSegmentDao dao = RepeatQuranDatabase.get(this).pageSegmentDao();
+                    java.util.List<PageSegmentEntity> segs = dao.segmentsForPage(page);
+                    java.util.List<String[]> verses = new java.util.ArrayList<>();
+                    for (PageSegmentEntity s : segs) for (int a = s.startAyah; a <= s.endAyah; a++) verses.add(new String[]{String.format("%03d", s.surah), String.format("%03d", a)});
+                    int Nrec = reciters.size();
+                    int period = (Nrec % 2 == 0) ? (Nrec / 2) : Nrec;
+                    java.util.List<MediaItem> combined = new java.util.ArrayList<>();
+                    int cached = 0;
+                    for (int c = 0; c < period; c++) {
+                        int startIdx = (c * 2) % Nrec;
+                        String rA = reciters.get(startIdx);
+                        String rB = reciters.get((startIdx + 1) % Nrec);
+                        java.util.List<String> names = getReciterNames(java.util.Arrays.asList(rA, rB));
+                        Log.d("PlaybackService", "Page half-split pair cycle=" + (c+1) + ": " + names.get(0) + ", " + names.get(1));
+                        int N = verses.size(); int split = N / 2;
+                        for (int i = 0; i < N; i++) {
+                            String rid = (i < split) ? rA : rB;
+                            String sss = verses.get(i)[0]; String aaa = verses.get(i)[1];
+                            String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                            java.io.File cachedFile = cacheManager.getTargetFile(rid, sss, aaa);
+                            if (cachedFile.exists()) { combined.add(MediaItem.fromUri(android.net.Uri.fromFile(cachedFile))); cached++; }
+                            else { combined.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                        }
+                    }
+                    if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cached == 0) {
+                        Log.w("PlaybackService", "Offline with no cached audio for selection (page) (infinite rotation)");
+                        mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this page", android.widget.Toast.LENGTH_LONG).show());
+                        return;
+                    }
+                    mainHandler.post(() -> {
+                        enqueueCycles(combined, -1);
+                        player.prepare();
+                        player.play();
+                        broadcastState();
+                    });
+                } else {
+                    CycleResult cycle = buildPageCycle(page, half);
+                    if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cycle.cachedCount == 0) {
+                        Log.w("PlaybackService", "Offline with no cached audio for selection (page)");
+                        mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this page", android.widget.Toast.LENGTH_LONG).show());
+                        return;
+                    }
+                    mainHandler.post(() -> {
+                        enqueueCycles(cycle.items, repeat);
+                        player.prepare();
+                        player.play();
+                        broadcastState();
+                    });
                 }
-                mainHandler.post(() -> {
-                    enqueueCycles(cycle.items, repeat);
-                    player.prepare();
-                    player.play();
-                    broadcastState();
-                });
             });
             currentCyclesRequested = repeat;
             ioExecutor.execute(() -> {
@@ -465,18 +624,93 @@ public class PlaybackService extends Service {
             player.clearMediaItems();
             playbackManager.setFeedingEnabled(false);
             ioExecutor.execute(() -> {
-                CycleResult cycle = buildSurahCycle(surah);
-                if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cycle.cachedCount == 0) {
-                    Log.w("PlaybackService", "Offline with no cached audio for selection (surah)");
-                    mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this surah", android.widget.Toast.LENGTH_LONG).show());
-                    return;
+                boolean half = intent.getBooleanExtra("halfSplit", getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false));
+                java.util.List<String> reciters = getSelectedReciterIds();
+                if (half && repeat != -1 && reciters.size() >= 2) {
+                    java.util.List<String[]> verses = new java.util.ArrayList<>();
+                    String sss = String.format("%03d", surah);
+                    int N = getAyahCount(surah);
+                    for (int i = 1; i <= N; i++) verses.add(new String[]{sss, String.format("%03d", i)});
+                    java.util.List<MediaItem> combined = new java.util.ArrayList<>();
+                    int cached = 0;
+                    int Nrec = reciters.size();
+                    for (int c = 0; c < repeat; c++) {
+                        int startIdx = (c * 2) % Nrec; // move one off every cycle
+                        String rA = reciters.get(startIdx);
+                        String rB = reciters.get((startIdx + 1) % Nrec);
+                        java.util.List<String> names = getReciterNames(java.util.Arrays.asList(rA, rB));
+                        Log.d("PlaybackService", "Surah half-split pair cycle=" + (c+1) + ": " + names.get(0) + ", " + names.get(1));
+                        int split = N / 2;
+                        for (int i = 0; i < N; i++) {
+                            String rid = (i < split) ? rA : rB;
+                            String aaa = verses.get(i)[1];
+                            String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                            java.io.File cachedFile = cacheManager.getTargetFile(rid, sss, aaa);
+                            if (cachedFile.exists()) { combined.add(MediaItem.fromUri(android.net.Uri.fromFile(cachedFile))); cached++; }
+                            else { combined.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                        }
+                    }
+                    if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cached == 0) {
+                        Log.w("PlaybackService", "Offline with no cached audio for selection (surah) (rotating pairs)");
+                        mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this surah", android.widget.Toast.LENGTH_LONG).show());
+                        return;
+                    }
+                    mainHandler.post(() -> {
+                        enqueueCycles(combined, 1);
+                        player.prepare();
+                        player.play();
+                        broadcastState();
+                    });
+                } else if (half && repeat == -1 && reciters.size() >= 2) {
+                    java.util.List<String[]> verses = new java.util.ArrayList<>();
+                    String sss = String.format("%03d", surah);
+                    int N = getAyahCount(surah);
+                    for (int i = 1; i <= N; i++) verses.add(new String[]{sss, String.format("%03d", i)});
+                    int Nrec = reciters.size();
+                    int period = (Nrec % 2 == 0) ? (Nrec / 2) : Nrec;
+                    java.util.List<MediaItem> combined = new java.util.ArrayList<>();
+                    int cached = 0;
+                    for (int c = 0; c < period; c++) {
+                        int startIdx = (c * 2) % Nrec;
+                        String rA = reciters.get(startIdx);
+                        String rB = reciters.get((startIdx + 1) % Nrec);
+                        java.util.List<String> names = getReciterNames(java.util.Arrays.asList(rA, rB));
+                        Log.d("PlaybackService", "Surah half-split pair cycle=" + (c+1) + ": " + names.get(0) + ", " + names.get(1));
+                        int split = N / 2;
+                        for (int i = 0; i < N; i++) {
+                            String rid = (i < split) ? rA : rB;
+                            String aaa = verses.get(i)[1];
+                            String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                            java.io.File cachedFile = cacheManager.getTargetFile(rid, sss, aaa);
+                            if (cachedFile.exists()) { combined.add(MediaItem.fromUri(android.net.Uri.fromFile(cachedFile))); cached++; }
+                            else { combined.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                        }
+                    }
+                    if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cached == 0) {
+                        Log.w("PlaybackService", "Offline with no cached audio for selection (surah) (infinite rotation)");
+                        mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this surah", android.widget.Toast.LENGTH_LONG).show());
+                        return;
+                    }
+                    mainHandler.post(() -> {
+                        enqueueCycles(combined, -1);
+                        player.prepare();
+                        player.play();
+                        broadcastState();
+                    });
+                } else {
+                    CycleResult cycle = buildSurahCycle(surah, half);
+                    if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cycle.cachedCount == 0) {
+                        Log.w("PlaybackService", "Offline with no cached audio for selection (surah)");
+                        mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio for this surah", android.widget.Toast.LENGTH_LONG).show());
+                        return;
+                    }
+                    mainHandler.post(() -> {
+                        enqueueCycles(cycle.items, repeat);
+                        player.prepare();
+                        player.play();
+                        broadcastState();
+                    });
                 }
-                mainHandler.post(() -> {
-                    enqueueCycles(cycle.items, repeat);
-                    player.prepare();
-                    player.play();
-                    broadcastState();
-                });
             });
             currentCyclesRequested = repeat;
             ioExecutor.execute(() -> {
@@ -553,36 +787,57 @@ public class PlaybackService extends Service {
         return out;
     }
 
-    private CycleResult buildRangeCycle(int ss, int sa, int es, int ea) {
+    private CycleResult buildRangeCycle(int ss, int sa, int es, int ea, boolean halfSplit) {
         java.util.List<String> reciters = getSelectedReciterIds();
         if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
         CycleResult out = new CycleResult();
-        java.util.List<String> reciterNames = getReciterNames(reciters);
-        StringBuilder orderLog = new StringBuilder("Cycle order (range): ");
-        for (int i = 0; i < reciters.size(); i++) {
-            String rid = reciters.get(i);
-            orderLog.append(reciterNames.get(i));
-            if (i < reciters.size() - 1) orderLog.append(" -> ");
+        if (!halfSplit || reciters.size() == 1) {
+            java.util.List<String> reciterNames = getReciterNames(reciters);
+            StringBuilder orderLog = new StringBuilder("Cycle order (range): ");
+            for (int i = 0; i < reciters.size(); i++) {
+                String rid = reciters.get(i);
+                orderLog.append(reciterNames.get(i));
+                if (i < reciters.size() - 1) orderLog.append(" -> ");
+                for (int s = ss; s <= es; s++) {
+                    int startAyah = (s == ss) ? sa : 1;
+                    int endAyah = (s == es) ? ea : getAyahCount(s);
+                    for (int a = startAyah; a <= endAyah; a++) {
+                        String sss = String.format("%03d", s);
+                        String aaa = String.format("%03d", a);
+                        String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                        java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                        if (cached.exists()) { out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached))); out.cachedCount++; }
+                        else { out.items.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                        out.totalCount++;
+                    }
+                }
+            }
+            Log.d("PlaybackService", orderLog.toString());
+        } else {
+            // Build verses and split strictly into two contiguous halves using the first two reciters
+            java.util.List<String[]> verses = new java.util.ArrayList<>(); // [sss, aaa]
             for (int s = ss; s <= es; s++) {
                 int startAyah = (s == ss) ? sa : 1;
                 int endAyah = (s == es) ? ea : getAyahCount(s);
-                for (int a = startAyah; a <= endAyah; a++) {
-                    String sss = String.format("%03d", s);
-                    String aaa = String.format("%03d", a);
-                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-                    java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
-                    if (cached.exists()) {
-                        out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
-                        out.cachedCount++;
-                    } else {
-                        out.items.add(MediaItem.fromUri(url));
-                        cacheManager.cacheAsync(url, rid, sss, aaa);
-                    }
-                    out.totalCount++;
-                }
+                for (int a = startAyah; a <= endAyah; a++)
+                    verses.add(new String[]{String.format("%03d", s), String.format("%03d", a)});
             }
+            String rA = reciters.get(0);
+            String rB = reciters.size() > 1 ? reciters.get(1) : reciters.get(0);
+            int N = verses.size();
+            int split = N / 2; // first half size
+            for (int i = 0; i < N; i++) {
+                String rid = (i < split) ? rA : rB;
+                String sss = verses.get(i)[0];
+                String aaa = verses.get(i)[1];
+                String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                if (cached.exists()) { out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached))); out.cachedCount++; }
+                else { out.items.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                out.totalCount++;
+            }
+            Log.d("PlaybackService", "Range half-split enabled (pair=" + rA + "," + rB + "); itemsPerCycle=" + out.items.size());
         }
-        Log.d("PlaybackService", orderLog.toString());
         return out;
     }
 
@@ -632,68 +887,98 @@ public class PlaybackService extends Service {
         return "";
     }
 
-    private CycleResult buildPageCycle(int page) {
+    private CycleResult buildPageCycle(int page, boolean halfSplit) {
         PageSegmentDao dao = RepeatQuranDatabase.get(this).pageSegmentDao();
         java.util.List<PageSegmentEntity> segs = dao.segmentsForPage(page);
         java.util.List<String> reciters = getSelectedReciterIds();
         if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
-        java.util.List<String> reciterNames = getReciterNames(reciters);
-        StringBuilder orderLog = new StringBuilder("Cycle order (page ").append(page).append("): ");
         CycleResult out = new CycleResult();
-        for (int i = 0; i < reciters.size(); i++) {
-            String rid = reciters.get(i);
-            orderLog.append(reciterNames.get(i));
-            if (i < reciters.size() - 1) orderLog.append(" -> ");
-            for (PageSegmentEntity s : segs) {
-                for (int a = s.startAyah; a <= s.endAyah; a++) {
-                    String sss = String.format("%03d", s.surah);
-                    String aaa = String.format("%03d", a);
-                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-                    java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
-                    if (cached.exists()) {
-                        out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
-                        out.cachedCount++;
-                    } else {
-                        out.items.add(MediaItem.fromUri(url));
-                        cacheManager.cacheAsync(url, rid, sss, aaa);
+        if (!halfSplit || reciters.size() == 1) {
+            java.util.List<String> reciterNames = getReciterNames(reciters);
+            StringBuilder orderLog = new StringBuilder("Cycle order (page ").append(page).append("): ");
+            for (int i = 0; i < reciters.size(); i++) {
+                String rid = reciters.get(i);
+                orderLog.append(reciterNames.get(i));
+                if (i < reciters.size() - 1) orderLog.append(" -> ");
+                for (PageSegmentEntity s : segs) {
+                    for (int a = s.startAyah; a <= s.endAyah; a++) {
+                        String sss = String.format("%03d", s.surah);
+                        String aaa = String.format("%03d", a);
+                        String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                        java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                        if (cached.exists()) { out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached))); out.cachedCount++; }
+                        else { out.items.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                        out.totalCount++;
                     }
-                    out.totalCount++;
                 }
             }
+            Log.d("PlaybackService", orderLog.toString());
+            Log.d("PlaybackService", "Page " + page + " itemsPerCycle=" + out.items.size());
+        } else {
+            java.util.List<String[]> verses = new java.util.ArrayList<>();
+            for (PageSegmentEntity s : segs)
+                for (int a = s.startAyah; a <= s.endAyah; a++)
+                    verses.add(new String[]{String.format("%03d", s.surah), String.format("%03d", a)});
+            String rA = reciters.get(0);
+            String rB = reciters.size() > 1 ? reciters.get(1) : reciters.get(0);
+            int N = verses.size();
+            int split = N / 2;
+            for (int i = 0; i < N; i++) {
+                String rid = (i < split) ? rA : rB;
+                String sss = verses.get(i)[0];
+                String aaa = verses.get(i)[1];
+                String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                if (cached.exists()) { out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached))); out.cachedCount++; }
+                else { out.items.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                out.totalCount++;
+            }
+            Log.d("PlaybackService", "Page half-split enabled (pair=" + rA + "," + rB + "); itemsPerCycle=" + out.items.size());
         }
-        Log.d("PlaybackService", orderLog.toString());
-        Log.d("PlaybackService", "Page " + page + " itemsPerCycle=" + out.items.size());
         return out;
     }
 
-    private CycleResult buildSurahCycle(int surah) {
+    private CycleResult buildSurahCycle(int surah, boolean halfSplit) {
         java.util.List<String> reciters = getSelectedReciterIds();
         if (reciters.isEmpty()) reciters = java.util.Arrays.asList("Abdurrahmaan_As-Sudais_64kbps");
-        java.util.List<String> reciterNames = getReciterNames(reciters);
-        int maxAyah = getAyahCount(surah);
-        StringBuilder orderLog = new StringBuilder("Cycle order (surah ").append(String.format("%03d", surah)).append("): ");
         CycleResult out = new CycleResult();
-        for (int i = 0; i < reciters.size(); i++) {
-            String rid = reciters.get(i);
-            orderLog.append(reciterNames.get(i));
-            if (i < reciters.size() - 1) orderLog.append(" -> ");
+        if (!halfSplit || reciters.size() == 1) {
+            java.util.List<String> reciterNames = getReciterNames(reciters);
+            int maxAyah = getAyahCount(surah);
+            StringBuilder orderLog = new StringBuilder("Cycle order (surah ").append(String.format("%03d", surah)).append("): ");
+            for (int i = 0; i < reciters.size(); i++) {
+                String rid = reciters.get(i);
+                orderLog.append(reciterNames.get(i));
+                if (i < reciters.size() - 1) orderLog.append(" -> ");
+                String sss = String.format("%03d", surah);
+                for (int a = 1; a <= maxAyah; a++) {
+                    String aaa = String.format("%03d", a);
+                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                    java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                    if (cached.exists()) { out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached))); out.cachedCount++; }
+                    else { out.items.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                    out.totalCount++;
+                }
+            }
+            Log.d("PlaybackService", orderLog.toString());
+            Log.d("PlaybackService", "Surah " + surah + " itemsPerCycle=" + out.items.size());
+        } else {
             String sss = String.format("%03d", surah);
-            for (int a = 1; a <= maxAyah; a++) {
-                String aaa = String.format("%03d", a);
+            int N = getAyahCount(surah);
+            String rA = reciters.get(0);
+            String rB = reciters.size() > 1 ? reciters.get(1) : reciters.get(0);
+            int split = N / 2;
+            for (int i = 0; i < N; i++) {
+                String rid = (i < split) ? rA : rB;
+                String aaa = String.format("%03d", i + 1);
                 String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
                 java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
-                if (cached.exists()) {
-                    out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
-                    out.cachedCount++;
-                } else {
-                    out.items.add(MediaItem.fromUri(url));
-                    cacheManager.cacheAsync(url, rid, sss, aaa);
-                }
+                if (cached.exists()) { out.items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached))); out.cachedCount++; }
+                else { out.items.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
                 out.totalCount++;
             }
+            Log.d("PlaybackService", "Surah half-split enabled (pair=" + rA + "," + rB + "); itemsPerCycle=" + out.items.size());
         }
-        Log.d("PlaybackService", orderLog.toString());
-        Log.d("PlaybackService", "Surah " + surah + " itemsPerCycle=" + out.items.size());
         return out;
     }
 
@@ -849,7 +1134,8 @@ public class PlaybackService extends Service {
             int sa = prefs.getInt("resume.startAyah", 1);
             int es = prefs.getInt("resume.endSurah", ss);
             int ea = prefs.getInt("resume.endAyah", sa);
-            CycleResult cycle = buildRangeCycle(ss, sa, es, ea);
+            boolean half = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false);
+            CycleResult cycle = buildRangeCycle(ss, sa, es, ea, half);
             if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
                 android.widget.Toast.makeText(this, "Offline: no cached audio to resume", android.widget.Toast.LENGTH_LONG).show();
                 recitersOverride = null;
@@ -862,7 +1148,8 @@ public class PlaybackService extends Service {
             final int fMediaIndex = mediaIndex;
             final long fPositionMs = positionMs;
             ioExecutor.execute(() -> {
-                CycleResult cycle = buildPageCycle(page); // DB access off main thread
+                boolean half = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false);
+                CycleResult cycle = buildPageCycle(page, half); // DB access off main thread
                 if (!com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this) && cycle.cachedCount == 0) {
                     mainHandler.post(() -> {
                         android.widget.Toast.makeText(PlaybackService.this, "Offline: no cached audio to resume", android.widget.Toast.LENGTH_LONG).show();
@@ -881,7 +1168,8 @@ public class PlaybackService extends Service {
             return;
         } else if ("surah".equals(st)) {
             int ss = prefs.getInt("resume.startSurah", 1);
-            CycleResult cycle = buildSurahCycle(ss);
+            boolean half = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false);
+            CycleResult cycle = buildSurahCycle(ss, half);
             if (!com.repeatquran.util.NetworkUtil.isOnline(this) && cycle.cachedCount == 0) {
                 android.widget.Toast.makeText(this, "Offline: no cached audio to resume", android.widget.Toast.LENGTH_LONG).show();
                 recitersOverride = null;

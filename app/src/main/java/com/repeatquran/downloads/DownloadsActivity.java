@@ -36,6 +36,7 @@ public class DownloadsActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_downloads);
+        com.repeatquran.analytics.AnalyticsLogger.get(this).log("downloads_opened", java.util.Collections.emptyMap());
         cacheManager = CacheManager.get(this);
 
         reciterDropdown = findViewById(R.id.reciterDropdown);
@@ -51,13 +52,13 @@ public class DownloadsActivity extends AppCompatActivity {
         int lastPage = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("last.page", 1);
         pageEdit.setText(String.valueOf(lastPage));
 
-        findViewById(R.id.btnCheckSurah).setOnClickListener(v -> updateSurahStatus());
-        findViewById(R.id.btnDownloadSurah).setOnClickListener(v -> downloadMissingForSurah());
-        findViewById(R.id.btnClearSurah).setOnClickListener(v -> clearSurahCache());
+        findViewById(R.id.btnCheckSurah).setOnClickListener(v -> { updateSurahStatus(); });
+        findViewById(R.id.btnDownloadSurah).setOnClickListener(v -> { downloadMissingForSurah(); com.repeatquran.analytics.AnalyticsLogger.get(this).log("downloads_surah_download", java.util.Collections.singletonMap("surah", String.valueOf(selectedSurah()))); });
+        findViewById(R.id.btnClearSurah).setOnClickListener(v -> { clearSurahCache(); com.repeatquran.analytics.AnalyticsLogger.get(this).log("downloads_surah_clear", java.util.Collections.singletonMap("surah", String.valueOf(selectedSurah()))); });
 
-        findViewById(R.id.btnCheckPage).setOnClickListener(v -> updatePageStatus());
-        findViewById(R.id.btnDownloadPage).setOnClickListener(v -> downloadMissingForPage());
-        findViewById(R.id.btnClearPage).setOnClickListener(v -> clearPageCache());
+        findViewById(R.id.btnCheckPage).setOnClickListener(v -> { updatePageStatus(); });
+        findViewById(R.id.btnDownloadPage).setOnClickListener(v -> { downloadMissingForPage(); com.repeatquran.analytics.AnalyticsLogger.get(this).log("downloads_page_download", java.util.Collections.singletonMap("page", String.valueOf(parseIntSafe(pageEdit)))); });
+        findViewById(R.id.btnClearPage).setOnClickListener(v -> { clearPageCache(); com.repeatquran.analytics.AnalyticsLogger.get(this).log("downloads_page_clear", java.util.Collections.singletonMap("page", String.valueOf(parseIntSafe(pageEdit)))); });
     }
 
     private void setupReciterDropdown() {
@@ -235,4 +236,3 @@ public class DownloadsActivity extends AppCompatActivity {
         return AYAH_COUNTS[surah - 1];
     }
 }
-

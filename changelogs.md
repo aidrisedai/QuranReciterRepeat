@@ -65,6 +65,12 @@
 - Playback wiring deferred to UHW-28.
 - **Proof**: Screenshot of the UI with valid/invalid input behavior.
 
+### UHW-28: Page Playback Integration (2025-09-13)
+- Wired Page UI to `PlaybackService` ACTION_LOAD_PAGE.
+- Service builds ayah list from `page_segments`, applies nested reciter cycle, and enqueues finite N cycles or ∞ via REPEAT_MODE_ALL.
+- Logs record cycle order and queue sizing for proof.
+- Proof: `docs/proof/UHW-28/README.md`.
+
 ### UHW-9: Multi-Select Reciters (2025-09-07)
 - Added multi-choice dialog to select reciters; prevents duplicates and preserves saved order with numbered rendering.
 - Reciter list curated to style variants only (Murattal/Mujawwad/Teacher), no bitrate duplication; entries map to real everyayah folder IDs.
@@ -76,6 +82,13 @@
 - Finite N: enqueue N cycles with REPEAT_MODE_OFF; ∞: enqueue one cycle with REPEAT_MODE_ALL.
 - Disabled provider feeding for explicit queues; logs record cycle order and queue sizing for proof.
 - **Proof**: `docs/proof/UHW-10/nested-cycle-demo.mp4`, `docs/proof/UHW-10/logs.txt`.
+
+## Phase 5: History & Streaks
+
+### UHW-11: Local History Storage (2025-09-13)
+- Persist playback sessions in Room: create on load (source, range/page/surah info, reciters order, repeat), mark end with timestamp and cycles.
+- Expose retrieval APIs for recent sessions.
+- Proof: Covered by unit tests; see `docs/proof/UHW-19/` where history DB insert/retrieve is validated.
 
 ## Phase 6: Offline & Downloads
 
@@ -153,3 +166,48 @@
 - Added Islamic-inspired palettes (light/dark) and rounded component shapes via Material Components XML theming.
 - Primary deep green with gold accents; updated background/surface/outline tokens.
 - Proof: `docs/proof/UHW-UI-1/light.png`, `docs/proof/UHW-UI-1/dark.png`.
+
+### UHW-UI-2: Iconography + Header Polish (2025-09-13)
+- Added Material top app bar with title, section heading style, and subtle dividers/margins for structure.
+- No functional changes.
+
+### UHW-UI-3: Tabs Navigation (Verse | Range | Page | Surah) (2025-09-13)
+- Added TabLayout + ViewPager2 skeleton with 4 placeholder fragments.
+- Proof: `docs/proof/UHW-UI-3/tabs-demo.mp4`.
+
+### UHW-UI-4: Persist Last Mode (2025-09-13)
+- Saves last selected tab (`ui.last.mode`) and auto-opens it when `ui.remember.mode` is enabled (toolbar menu toggle, default on).
+- Proof: Relaunch video showing restored tab.
+
+### UHW-UI-5: Verse Tab (Focused Form) (2025-09-13)
+- Implemented Verse tab with focused Surah dropdown + Ayah input and Play/Pause/Resume controls.
+- Validates inputs; stores last surah; uses saved repeat preference; wires to PlaybackService ACTION_LOAD_SINGLE.
+
+### UHW-UI-6: Range Tab (Focused Form) (2025-09-13)
+- Implemented Range tab with Start/End Surah dropdowns and Ayah inputs; Play/Pause/Resume controls.
+- Validates inputs; stores last start/end surah; uses saved repeat; wires to ACTION_LOAD_RANGE.
+
+### UHW-UI-7: Page Tab (Focused Form) (2025-09-13)
+- Implemented Page tab with page input and Play/Pause/Resume controls.
+- Validates page; stores last page; uses saved repeat; wires to ACTION_LOAD_PAGE.
+
+### UHW-UI-8: Surah Tab (Focused Form) (2025-09-13)
+- Implemented Surah tab with surah dropdown and Play/Pause/Resume controls.
+- Validates surah; stores last surah; uses saved repeat; wires to ACTION_LOAD_SURAH.
+
+### UHW-UI-9: Global Reciters + Repeat UX (2025-09-13)
+- Added top pill row with Repeat and Reciters chips; tapping opens repeat dropdown or reciter picker.
+- Values persist globally and apply across tabs; chips reflect current selections.
+
+### UHW-UI-10: Half Recitation Toggle (Simple Split) (2025-09-13)
+- Added a toggle on Range/Page/Surah tabs to split playback across selected reciters in contiguous segments (2 reciters → halves; >2 cascades by order).
+- Extras and pref `ui.half.split` drive service behavior; logs indicate half-split mode and items per cycle.
+- UX improvement: Added a Settings screen with a global toggle and a simple visual example (2-reciter and 3-reciter bars) for clearer discoverability. Toolbar menu opens Settings.
+
+### UHW-UI-11: Visual QA + RTL/Arabic (2025-09-13)
+- Added Arabic strings for key labels and verified RTL layout with start/end-aware constraints.
+- Updated UI to consume string resources and ensured pill row and tabs render correctly in RTL.
+
+### UHW-UI-12: Analytics + Downloads Restyle (2025-09-14)
+- Added analytics logs for tab selections (`tab_selected`) and half-split toggles (`half_split_set` per tab).
+- DownloadsActivity logs open and page/surah download/clear actions; UI restyled with a Material toolbar and section heading styles.

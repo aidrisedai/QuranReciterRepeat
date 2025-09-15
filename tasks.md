@@ -66,16 +66,15 @@
   - Add page input (1–604) with validation + “Load Page” button.  
   - **Proof**: Screenshot of UI; invalid input shows inline error.  
 
-- [ ] **UHW-28: Page Playback Integration**  
+- [x] **UHW-28: Page Playback Integration**  
   - ACTION_LOAD_PAGE: Build ayah list from `page_segments`, apply nested reciter cycle + repeat N/∞.  
   - **Proof**: Demo video of page playback; logs show cycle order + item counts.  
   
-- [x] Implemented: wired UI Load Page to service; service builds cycle from DB and enqueues N/∞ cycles; logs order and sizes.  
 
 ---
 
 ## Phase 5: Multi-Reciter
-- [ ] **UHW-9: Multi-Select Dropdown**  
+- [x] **UHW-9: Multi-Select Dropdown**  
   - Prevent duplicates. Number reciters in selection.  
   - **Proof**: Screenshot of dropdown with multiple selected.  
 
@@ -87,7 +86,7 @@
 ---
 
 ## Phase 5: History & Streaks
-- [ ] **UHW-11: Local History Storage**  
+- [x] **UHW-11: Local History Storage**  
   - Save all sessions in Room DB.  
   - **Proof**: Unit test inserting/retrieving records.  
 
@@ -158,10 +157,7 @@
   - Log play, pause, repeat, errors (local only).  
   - Implemented: `AnalyticsLogger` writes structured events to Logcat and rotating files under `files/logs/analytics-*.log`. Hooked into app_open, repeat_set, load_* actions, and error paths.  
   - **Proof**: Logcat screenshot and a snippet from `analytics-0.log` in docs/proof/UHW-22/.  
-
-- [ ] **UHW-22: Minimal Analytics Logs**  
-  - Log play, pause, repeat, errors (local only).  
-  - **Proof**: Logcat screenshot.  
+ 
 
 ---
 
@@ -171,7 +167,7 @@
   - UI: Presets section on Home with actions; uses saved reciters and repeat.  
   - **Proof**: Screenshot + playback log (play_request from preset).  
 
-- [ ] **UHW-24: APK Packaging (Sideload)**  
+- [x] **UHW-24: APK Packaging (Sideload)**  
   - Generate signed APK, share with testers.  
   - Implemented signingConfig scaffold using gradle.properties; local keystore; assembleRelease generates app-release.apk.  
   - **Proof**: APK file + installation demo (folder screenshot + install clip).  
@@ -186,11 +182,11 @@
 ---
 
 ## Phase 12: UI Overhaul (Delight + Focus)
-- [ ] **UHW-UI-1: Theme Tokens (Islamic Look)**  
+- [x] **UHW-UI-1: Theme Tokens (Islamic Look)**  
   - Add Material color/typography/shape tokens (deep green + gold), light/dark palettes.  
   - Proof: Screenshots (Home) in light/dark.  
 
-- [ ] **UHW-UI-2: Iconography + Header Polish**  
+- [x] **UHW-UI-2: Iconography + Header Polish**  
   - Update header/iconography, spacing, dividers; keep layout.  
   - Proof: Before/after screenshot.  
   
@@ -200,41 +196,43 @@
   - Added TabLayout + ViewPager2 skeleton with 4 tabs and placeholder fragments.  
   - Proof: Short video of tab switching.  
 
-- [ ] **UHW-UI-4: Persist Last Mode**  
-  - Save last selected tab; auto-open there; small toggle.  
+- [x] **UHW-UI-4: Persist Last Mode**  
+  - Save last selected tab; auto-open there; toolbar menu toggle “Remember my mode” (default on).  
   - Proof: Relaunch video restoring tab.  
 
-- [ ] **UHW-UI-5: Verse Tab (Focused Form)**  
-  - Move single-verse inputs + controls to Verse tab.  
-  - Proof: Screenshot + play works.  
+- [x] **UHW-UI-5: Verse Tab (Focused Form)**  
+  - Moved single-verse inputs + Play/Pause/Resume into Verse tab with validation and prefs for repeat/last surah.  
+  - Proof: Screenshot + logs showing ACTION_LOAD_SINGLE with inputs.  
 
-- [ ] **UHW-UI-6: Range Tab (Focused Form)**  
-  - Move range inputs + controls to Range tab.  
+- [x] **UHW-UI-6: Range Tab (Focused Form)**  
+  - Moved range inputs + controls to Range tab with validation and prefs for last start/end surah; wired ACTION_LOAD_RANGE.  
   - Proof: Screenshot + logs.  
 
-- [ ] **UHW-UI-7: Page Tab (Focused Form)**  
-  - Move page input + controls to Page tab.  
+- [x] **UHW-UI-7: Page Tab (Focused Form)**  
+  - Moved page input + controls to Page tab; persists last page; wires ACTION_LOAD_PAGE.  
   - Proof: Screenshot + logs.  
 
-- [ ] **UHW-UI-8: Surah Tab (Focused Form)**  
-  - Move surah picker + controls to Surah tab.  
+- [x] **UHW-UI-8: Surah Tab (Focused Form)**  
+  - Moved surah picker + controls to Surah tab; persists last surah; wires ACTION_LOAD_SURAH.  
   - Proof: Screenshot + logs.  
 
-- [ ] **UHW-UI-9: Global Reciters + Repeat UX**  
-  - Top pill row; persist globally; applies across tabs.  
-  - Proof: Screenshot + carried values in logs.  
+- [x] **UHW-UI-9: Global Reciters + Repeat UX**  
+  - Added top pill row with Repeat and Reciters chips; taps open repeat dropdown or reciter picker; values persist and apply across tabs.  
+  - Proof: Screenshot + logs showing carried values.  
 
-- [ ] **UHW-UI-10: Half Recitation Toggle (Simple Split)**  
-  - Toggle on Range/Page/Surah: first half by A, second half by B (odd=ceil/floor; >2 cascade).  
-  - Proof: Demo + logs with order and counts.  
+- [x] **UHW-UI-10: Half Recitation Toggle (Simple Split)**  
+  - Toggle on Range/Page/Surah tabs; per cycle, items split across reciters in contiguous segments (2 reciters → halves; >2 segments across order).  
+  - Implemented extras + pref `ui.half.split`; service builds cycle accordingly; logs include half-split notes.  
+  - Proof: Demo + logs with itemsPerCycle and correct reciter segments.  
 
-- [ ] **UHW-UI-11: Visual QA + RTL/Arabic**  
-  - RTL sanity, Arabic headings font, padding polish.  
+- [x] **UHW-UI-11: Visual QA + RTL/Arabic**  
+  - Added Arabic strings for key labels; verified RTL layout; adjusted labels to use resources; ensured start/end constraints and pill row stability.  
   - Proof: RTL screenshots.  
 
-- [ ] **UHW-UI-12: Analytics + Downloads Restyle**  
-  - Log tab usage + half toggle; Downloads aligned to new palette.  
-  - Proof: Logcat + screenshot.  
+- [x] **UHW-UI-12: Analytics + Downloads Restyle**  
+  - Added analytics for tab selections and half-split toggles; downloads screen logs open/download/clear actions.  
+  - Restyled Downloads with a Material toolbar and section heading styles to match the palette.  
+  - Proof: Logcat events + Downloads screenshot.  
 
 ---
 
