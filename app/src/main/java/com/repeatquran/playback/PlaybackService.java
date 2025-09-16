@@ -1025,11 +1025,13 @@ public class PlaybackService extends Service {
         try {
             boolean hasQueue = player != null && player.getMediaItemCount() > 0;
             int state = player != null ? player.getPlaybackState() : Player.STATE_IDLE;
-            boolean active = hasQueue && state != Player.STATE_ENDED;
+            boolean playing = player != null && player.isPlaying();
+            boolean active = playing;
             android.content.Intent i = new android.content.Intent(ACTION_PLAYBACK_STATE);
             i.putExtra("hasQueue", hasQueue);
             i.putExtra("state", state);
             i.putExtra("active", active);
+            i.putExtra("playing", playing);
             sendBroadcast(i);
         } catch (Exception ignored) {}
     }
@@ -1097,6 +1099,14 @@ public class PlaybackService extends Service {
     private void onResumeRequested() {
         // Snapshot the most current position before reading prefs
         saveResumeStateNow();
+        boolean hasQueue = player != null && player.getMediaItemCount() > 0 && player.getPlaybackState() != Player.STATE_ENDED;
+        boolean isPlaying = player != null && player.isPlaying();
+        if (hasQueue && !isPlaying) {
+            // Simple resume: keep current queue and continue
+            player.play();
+            broadcastState();
+            return;
+        }
         android.content.SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
         String st = prefs.getString("resume.sourceType", null);
         if (st == null) {

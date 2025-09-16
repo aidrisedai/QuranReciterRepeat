@@ -36,6 +36,12 @@ public class DownloadsActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_downloads);
+        androidx.appcompat.widget.Toolbar tb = findViewById(R.id.topBarDownloads);
+        if (tb != null) {
+            setSupportActionBar(tb);
+            if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            tb.setNavigationOnClickListener(v -> finish());
+        }
         com.repeatquran.analytics.AnalyticsLogger.get(this).log("downloads_opened", java.util.Collections.emptyMap());
         cacheManager = CacheManager.get(this);
 
@@ -59,6 +65,12 @@ public class DownloadsActivity extends AppCompatActivity {
         findViewById(R.id.btnCheckPage).setOnClickListener(v -> { updatePageStatus(); });
         findViewById(R.id.btnDownloadPage).setOnClickListener(v -> { downloadMissingForPage(); com.repeatquran.analytics.AnalyticsLogger.get(this).log("downloads_page_download", java.util.Collections.singletonMap("page", String.valueOf(parseIntSafe(pageEdit)))); });
         findViewById(R.id.btnClearPage).setOnClickListener(v -> { clearPageCache(); com.repeatquran.analytics.AnalyticsLogger.get(this).log("downloads_page_clear", java.util.Collections.singletonMap("page", String.valueOf(parseIntSafe(pageEdit)))); });
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(android.view.MenuItem item) {
+        if (item.getItemId() == android.R.id.home) { finish(); return true; }
+        return super.onOptionsItemSelected(item);
     }
 
     private void setupReciterDropdown() {
