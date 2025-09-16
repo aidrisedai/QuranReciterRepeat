@@ -618,16 +618,32 @@ public class MainActivity extends AppCompatActivity {
         // Load sessions off-main and then render
         new Thread(() -> {
             SessionRepository repo = new SessionRepository(this);
-            java.util.List<SessionEntity> sessions = repo.getLastSessions(2);
+            java.util.List<SessionEntity> latest = repo.getLastSessions(10); // fetch more to filter duplicates
+            java.util.LinkedHashMap<String, SessionEntity> distinct = new java.util.LinkedHashMap<>();
+            for (SessionEntity e : latest) {
+                String key;
+                if ("single".equals(e.sourceType)) {
+                    key = "single:" + e.startSurah + ":" + e.startAyah;
+                } else if ("range".equals(e.sourceType)) {
+                    key = "range:" + e.startSurah + ":" + e.startAyah + ":" + e.endSurah + ":" + e.endAyah;
+                } else if ("surah".equals(e.sourceType)) {
+                    key = "surah:" + (e.startSurah == null ? -1 : e.startSurah);
+                } else if ("page".equals(e.sourceType)) {
+                    key = "page"; // page number not stored in v1
+                } else {
+                    key = e.sourceType != null ? e.sourceType : "unknown";
+                }
+                if (!distinct.containsKey(key)) distinct.put(key, e);
+                if (distinct.size() == 2) break;
+            }
+            java.util.List<SessionEntity> sessions = new java.util.ArrayList<>(distinct.values());
             runOnUiThread(() -> {
-                if (sessions == null || sessions.isEmpty()) {
+                if (sessions.isEmpty()) {
                     android.widget.TextView tv = new android.widget.TextView(this);
                     tv.setText("No recent sessions");
                     ll.addView(tv);
                 } else {
-                    for (SessionEntity e : sessions) {
-                        ll.addView(buildHistoryItemView(e));
-                    }
+                    for (SessionEntity e : sessions) ll.addView(buildHistoryItemView(e));
                 }
             });
         }).start();
