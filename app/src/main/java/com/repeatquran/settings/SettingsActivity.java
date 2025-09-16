@@ -33,6 +33,13 @@ public class SettingsActivity extends AppCompatActivity {
                 com.repeatquran.analytics.AnalyticsLogger.get(this).log("half_split_set", ev);
             });
         }
+
+        android.view.View btnDownloads = findViewById(R.id.btnOpenDownloadsFromSettings);
+        if (btnDownloads != null) {
+            btnDownloads.setOnClickListener(v -> {
+                startActivity(new android.content.Intent(this, com.repeatquran.downloads.DownloadsActivity.class));
+            });
+        }
     }
 
     @Override

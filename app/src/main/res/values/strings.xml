@@ -11,4 +11,5 @@
     <string name="desc_split_halves">When enabled, multi-ayah playback splits the selection into contiguous segments shared across your selected reciters in order. For example, with two reciters, the first half plays with Reciter A and the second half with Reciter B.</string>
     <string name="example_two_reciters">Example (2 reciters):</string>
     <string name="example_three_reciters">Example (3 reciters):</string>
+    <string name="open_downloads">Open Downloads</string>
 </resources>

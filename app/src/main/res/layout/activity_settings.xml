@@ -112,6 +112,13 @@
                     android:textColor="@color/md_theme_onTertiaryContainer" />
             </LinearLayout>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOpenDownloadsFromSettings"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/open_downloads"
+                android:layout_marginTop="16dp" />
+
         </LinearLayout>
     </ScrollView>
 

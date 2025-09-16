@@ -424,7 +424,12 @@ public class MainActivity extends AppCompatActivity {
             btnQA.setVisibility(View.GONE);
         }
 
-        findViewById(R.id.btnSavePreset).setOnClickListener(v -> onSavePreset());
+        android.view.View savePreset = findViewById(R.id.btnSavePreset);
+        if (savePreset != null) savePreset.setVisibility(View.GONE);
+        android.view.View presetsTitle = findViewById(R.id.presetsTitle);
+        if (presetsTitle != null) presetsTitle.setVisibility(View.GONE);
+        android.view.View presetContainer = findViewById(R.id.presetContainer);
+        if (presetContainer != null) presetContainer.setVisibility(View.GONE);
     }
 
     @Override
@@ -447,7 +452,6 @@ public class MainActivity extends AppCompatActivity {
         }
         // Also refresh recent history list
         renderRecentHistory();
-        renderPresets();
     }
 
     @Override
@@ -631,7 +635,7 @@ public class MainActivity extends AppCompatActivity {
         // Load sessions off-main and then render
         new Thread(() -> {
             SessionRepository repo = new SessionRepository(this);
-            java.util.List<SessionEntity> sessions = repo.getLastSessions(4);
+            java.util.List<SessionEntity> sessions = repo.getLastSessions(2);
             runOnUiThread(() -> {
                 if (sessions == null || sessions.isEmpty()) {
                     android.widget.TextView tv = new android.widget.TextView(this);
