@@ -273,3 +273,10 @@
 
 ### UHW-PR-18: UI Binding and Enablement
 - TODO: Bind strictly to broadcast extras; verify initial enable post-enqueue on all devices.
+
+### UHW-PR-20: Service Warmup + Immediate Feedback (2025-09-16)
+- Warm-started PlaybackService on app launch to avoid cold-start lag.
+- Page/Surah Play now shows immediate feedback and briefly disables the button to prevent double-tap while the queue builds.
+
+### UHW-PR-21: Broadcast After Enqueue (Page/Surah) (2025-09-16)
+- Verified and ensured broadcast after enqueue/play so UI toggles flip promptly on Page/Surah loads.

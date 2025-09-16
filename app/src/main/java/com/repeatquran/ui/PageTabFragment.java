@@ -46,9 +46,13 @@ public class PageTabFragment extends Fragment {
             intent.putExtra("repeat", repeat);
             intent.putExtra("halfSplit", half);
             if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
+            android.widget.Toast.makeText(requireContext(), "Loading page " + page + "…", android.widget.Toast.LENGTH_SHORT).show();
+            android.view.View btn = root.findViewById(R.id.btnPlay);
+            btn.setEnabled(false);
+            btn.postDelayed(() -> btn.setEnabled(true), 1200);
         });
 
-        // Pause/Resume moved to global toolbar control
+        root.findViewById(R.id.btnPause).setOnClickListener(v -> sendService(PlaybackService.ACTION_PAUSE));
     }
 
     private void sendService(String action) {

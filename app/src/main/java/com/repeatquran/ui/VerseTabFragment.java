@@ -69,7 +69,7 @@ public class VerseTabFragment extends Fragment {
             if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
         });
 
-        // Pause/Resume moved to global toolbar control
+        root.findViewById(R.id.btnPause).setOnClickListener(v -> sendService(PlaybackService.ACTION_PAUSE));
     }
 
     private void sendService(String action) {

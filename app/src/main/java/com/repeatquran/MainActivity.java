@@ -61,20 +61,17 @@ public class MainActivity extends AppCompatActivity {
         }
         setContentView(R.layout.activity_main);
 
-        // Toolbar menu handling (Play toggle, Remember my mode, Settings)
+        // Warm up playback service so first Play doesn't pay cold-start cost
+        sendServiceAction(com.repeatquran.playback.PlaybackService.ACTION_START);
+
+        // Toolbar menu handling (Remember my mode, Settings)
         com.google.android.material.appbar.MaterialToolbar bar = findViewById(R.id.topAppBar);
         if (bar != null) {
             SharedPreferences prefsToolbar = getSharedPreferences("rq_prefs", MODE_PRIVATE);
             boolean rememberInit = prefsToolbar.getBoolean("ui.remember.mode", true);
             android.view.MenuItem menuItem = bar.getMenu().findItem(R.id.action_remember_mode);
             if (menuItem != null) menuItem.setChecked(rememberInit);
-            // Initialize play toggle disabled
-            updatePlayToggleMenu(bar.getMenu(), false, false);
             bar.setOnMenuItemClickListener(mi -> {
-                if (mi.getItemId() == R.id.action_play_toggle) {
-                    sendServiceAction(com.repeatquran.playback.PlaybackService.ACTION_TOGGLE);
-                    return true;
-                }
                 if (mi.getItemId() == R.id.action_remember_mode) {
                     boolean newVal = !mi.isChecked();
                     mi.setChecked(newVal);
@@ -148,21 +145,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnPause).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PAUSE));
         findViewById(R.id.btnNext).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_NEXT));
         findViewById(R.id.btnPrev).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PREV));
-        android.view.View btnToggle = findViewById(R.id.btnTogglePauseResume);
-        if (btnToggle instanceof com.google.android.material.button.MaterialButton) {
-            com.google.android.material.button.MaterialButton toggle = (com.google.android.material.button.MaterialButton) btnToggle;
-            toggle.setOnClickListener(v -> {
-                CharSequence txt = toggle.getText();
-                boolean isPause = txt != null && "Pause".contentEquals(txt);
-                if (isPause) sendServiceAction(PlaybackService.ACTION_PAUSE);
-                else sendServiceAction(PlaybackService.ACTION_RESUME);
-            });
-        }
-
-        // Default: enable Resume; receiver will disable when active playback is present
-        if (btnToggle instanceof com.google.android.material.button.MaterialButton) {
-            ((com.google.android.material.button.MaterialButton) btnToggle).setEnabled(false);
-        }
+        // No row resume toggle; only Pause button in row per decision
 
         setupRepeatDropdown();
         // Analytics: app open
@@ -246,22 +229,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void updatePlayToggleMenu(android.view.Menu menu, boolean hasQueue, boolean playing) {
-        if (menu == null) return;
-        android.view.MenuItem playToggle = menu.findItem(R.id.action_play_toggle);
-        if (playToggle != null) {
-            if (playing) {
-                playToggle.setTitle("Pause");
-                playToggle.setEnabled(true);
-            } else if (hasQueue) {
-                playToggle.setTitle("Resume");
-                playToggle.setEnabled(true);
-            } else {
-                playToggle.setTitle("Resume");
-                playToggle.setEnabled(false);
-            }
-        }
-    }
+    // No toolbar toggle updater
 
     private void setupRepeatDropdown() {
         AutoCompleteTextView dropdown = findViewById(R.id.repeatDropdown);
@@ -457,20 +425,6 @@ public class MainActivity extends AppCompatActivity {
                     boolean active = intent.getBooleanExtra("active", false);
                     boolean hasQueue = intent.getBooleanExtra("hasQueue", false);
                     boolean playing = intent.getBooleanExtra("playing", false);
-                    android.view.View btn = findViewById(R.id.btnTogglePauseResume);
-                    if (btn instanceof com.google.android.material.button.MaterialButton) {
-                        com.google.android.material.button.MaterialButton t = (com.google.android.material.button.MaterialButton) btn;
-                        if (playing) {
-                            t.setText("Pause");
-                            t.setEnabled(true);
-                        } else if (hasQueue) {
-                            t.setText("Resume");
-                            t.setEnabled(true);
-                        } else {
-                            t.setText("Resume");
-                            t.setEnabled(false);
-                        }
-                    }
                     com.google.android.material.appbar.MaterialToolbar bar = findViewById(R.id.topAppBar);
                     if (bar != null) updatePlayToggleMenu(bar.getMenu(), hasQueue, playing);
                 }

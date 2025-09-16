@@ -315,3 +315,11 @@
 - [ ] **UHW-PR-18: UI Binding and Enablement**  
   - Bind toggles solely to broadcast extras (hasQueue, playing); ensure initial enable on first enqueue.  
   - Proof: Toggle enabled after first Play; updates on Pause/Resume.
+
+- [x] **UHW-PR-20: Service Warmup + Immediate Feedback**  
+  - Warm start service on app launch; Page/Surah Play shows immediate toast and disables Play briefly to prevent double-tap.  
+  - Proof: One-tap start works on Page/Surah with visible feedback.
+
+- [x] **UHW-PR-21: Broadcast After Enqueue (Page/Surah)**  
+  - Ensure a broadcast is sent after enqueue/play to flip toggles promptly.  
+  - Proof: Toggle flips right after Play.

@@ -31,6 +31,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Play" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPause"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Pause" />
     </LinearLayout>
 
 </LinearLayout>
