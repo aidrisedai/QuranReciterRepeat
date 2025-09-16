@@ -45,6 +45,7 @@ public class PlaybackService extends Service {
     public static final String ACTION_STOP = "com.repeatquran.action.STOP";
     public static final String ACTION_PLAY = "com.repeatquran.action.PLAY";
     public static final String ACTION_PAUSE = "com.repeatquran.action.PAUSE";
+    public static final String ACTION_TOGGLE = "com.repeatquran.action.TOGGLE";
     public static final String ACTION_NEXT = "com.repeatquran.action.NEXT";
     public static final String ACTION_PREV = "com.repeatquran.action.PREV";
     public static final String ACTION_LOAD_SINGLE = "com.repeatquran.action.LOAD_SINGLE";
@@ -132,6 +133,12 @@ public class PlaybackService extends Service {
                     currentCyclesRequested = null;
                     ioExecutor.execute(() -> sessionRepo.markEnded(id, System.currentTimeMillis(), cycles));
                 }
+                broadcastState();
+            }
+
+            @Override
+            public void onIsPlayingChanged(boolean isPlaying) {
+                // Push an update specifically when play/pause toggles
                 broadcastState();
             }
 
@@ -284,6 +291,17 @@ public class PlaybackService extends Service {
         if (ACTION_RESUME.equals(action)) {
             // Delegate to resume handler which will either resume current queue or rebuild from snapshot
             onResumeRequested();
+            return START_STICKY;
+        }
+        if (ACTION_TOGGLE.equals(action)) {
+            if (player.isPlaying()) {
+                player.pause();
+                mainHandler.post(() -> android.widget.Toast.makeText(this, "Paused", android.widget.Toast.LENGTH_SHORT).show());
+                broadcastState();
+            } else {
+                mainHandler.post(() -> android.widget.Toast.makeText(this, "Resuming", android.widget.Toast.LENGTH_SHORT).show());
+                onResumeRequested();
+            }
             return START_STICKY;
         }
         if (ACTION_PLAY.equals(action)) {

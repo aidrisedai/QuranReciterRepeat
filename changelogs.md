@@ -258,3 +258,18 @@
 ### UHW-PR-13: Controls Consolidation (2025-09-16)
 - Consolidated controls: kept Play on each tab to validate inputs; added a single toolbar Pause/Resume toggle reflecting playback state; removed per-tab Pause/Resume.
 - Proof: Video showing tab Play + global Pause/Resume working.
+
+### UHW-PR-14: Single Source of Truth (State Broadcast) (2025-09-16)
+- Broadcasts now fire on play/pause changes and right after enqueue, keeping UI toggles accurate and responsive.
+
+### UHW-PR-15: Service Toggle Action (Simple) (2025-09-16)
+- Added ACTION_TOGGLE: if playing → pause(); else → resume (or rebuild from snapshot when needed).
+
+### UHW-PR-16: Controls Row Simplification (One Toggle) (2025-09-16)
+- Controls row now uses a single Pause/Resume toggle wired to ACTION_TOGGLE; toolbar toggle mirrors the same.
+
+### UHW-PR-17: Tab Play Consistency (2025-09-16)
+- Ensured tab Play buttons only load/start selection (no implicit pause/resume behavior).
+
+### UHW-PR-18: UI Binding and Enablement
+- TODO: Bind strictly to broadcast extras; verify initial enable post-enqueue on all devices.

@@ -295,3 +295,23 @@
 - [x] **UHW-PR-13: Controls Consolidation**  
   - Keep Play on tabs; move Pause/Resume to a single toolbar toggle that reflects state; remove per-tab Pause/Resume.  
   - Proof: Short video showing Play from a tab and global Pause/Resume working across tabs.
+
+- [x] **UHW-PR-14: Single Source of Truth (State Broadcast)**  
+  - Broadcast on play/pause changes and after enqueue so UI toggles enable/labels reliably.  
+  - Proof: Video showing toggle flips immediately on Play/Pause.
+
+- [x] **UHW-PR-15: Service Toggle Action (Simple)**  
+  - Add ACTION_TOGGLE in service: if playing → pause(); else → resume/rebuild.  
+  - Proof: One-button control works regardless of state.
+
+- [x] **UHW-PR-16: Controls Row Simplification (One Toggle)**  
+  - Controls row uses a single Pause/Resume toggle (sends ACTION_TOGGLE); toolbar toggle mirrors it.  
+  - Proof: Both toggles stay in sync.
+
+- [x] **UHW-PR-17: Tab Play Consistency**  
+  - Ensure Play on all tabs only loads/starts selection (no implicit toggle).  
+  - Proof: Play never pauses; only builds and starts.
+
+- [ ] **UHW-PR-18: UI Binding and Enablement**  
+  - Bind toggles solely to broadcast extras (hasQueue, playing); ensure initial enable on first enqueue.  
+  - Proof: Toggle enabled after first Play; updates on Pause/Resume.
