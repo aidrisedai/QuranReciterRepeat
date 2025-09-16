@@ -254,3 +254,7 @@
 
 ### UHW-PR-12: StrictMode Sweep
 - TODO: Identify and move main-thread I/O; verify clean logs.
+
+### UHW-PR-13: Controls Consolidation (2025-09-16)
+- Consolidated controls: kept Play on each tab to validate inputs; added a single toolbar Pause/Resume toggle reflecting playback state; removed per-tab Pause/Resume.
+- Proof: Video showing tab Play + global Pause/Resume working.

@@ -69,8 +69,7 @@ public class VerseTabFragment extends Fragment {
             if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
         });
 
-        root.findViewById(R.id.btnPause).setOnClickListener(v -> sendService(PlaybackService.ACTION_PAUSE));
-        root.findViewById(R.id.btnResume).setOnClickListener(v -> sendService(PlaybackService.ACTION_RESUME));
+        // Pause/Resume moved to global toolbar control
     }
 
     private void sendService(String action) {
@@ -101,4 +100,3 @@ public class VerseTabFragment extends Fragment {
         return AYAH_COUNTS[surah - 1];
     }
 }
-

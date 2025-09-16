@@ -61,14 +61,22 @@ public class MainActivity extends AppCompatActivity {
         }
         setContentView(R.layout.activity_main);
 
-        // Toolbar menu handling (Remember my mode)
+        // Toolbar menu handling (Play toggle, Remember my mode, Settings)
         com.google.android.material.appbar.MaterialToolbar bar = findViewById(R.id.topAppBar);
         if (bar != null) {
             SharedPreferences prefsToolbar = getSharedPreferences("rq_prefs", MODE_PRIVATE);
             boolean rememberInit = prefsToolbar.getBoolean("ui.remember.mode", true);
             android.view.MenuItem menuItem = bar.getMenu().findItem(R.id.action_remember_mode);
             if (menuItem != null) menuItem.setChecked(rememberInit);
+            // Initialize play toggle disabled
+            updatePlayToggleMenu(bar.getMenu(), false, false);
             bar.setOnMenuItemClickListener(mi -> {
+                if (mi.getItemId() == R.id.action_play_toggle) {
+                    boolean isPause = mi.getTitle() != null && "Pause".contentEquals(mi.getTitle());
+                    if (isPause) sendServiceAction(com.repeatquran.playback.PlaybackService.ACTION_PAUSE);
+                    else sendServiceAction(com.repeatquran.playback.PlaybackService.ACTION_RESUME);
+                    return true;
+                }
                 if (mi.getItemId() == R.id.action_remember_mode) {
                     boolean newVal = !mi.isChecked();
                     mi.setChecked(newVal);
@@ -227,6 +235,23 @@ public class MainActivity extends AppCompatActivity {
             startForegroundService(intent);
         } else {
             startService(intent);
+        }
+    }
+
+    private void updatePlayToggleMenu(android.view.Menu menu, boolean hasQueue, boolean playing) {
+        if (menu == null) return;
+        android.view.MenuItem playToggle = menu.findItem(R.id.action_play_toggle);
+        if (playToggle != null) {
+            if (playing) {
+                playToggle.setTitle("Pause");
+                playToggle.setEnabled(true);
+            } else if (hasQueue) {
+                playToggle.setTitle("Resume");
+                playToggle.setEnabled(true);
+            } else {
+                playToggle.setTitle("Resume");
+                playToggle.setEnabled(false);
+            }
         }
     }
 
@@ -422,8 +447,12 @@ public class MainActivity extends AppCompatActivity {
             playbackStateReceiver = new android.content.BroadcastReceiver() {
                 @Override public void onReceive(android.content.Context context, android.content.Intent intent) {
                     boolean active = intent.getBooleanExtra("active", false);
+                    boolean hasQueue = intent.getBooleanExtra("hasQueue", false);
+                    boolean playing = intent.getBooleanExtra("playing", false);
                     android.view.View btn = findViewById(R.id.btnResume);
                     if (btn != null) btn.setEnabled(!active);
+                    com.google.android.material.appbar.MaterialToolbar bar = findViewById(R.id.topAppBar);
+                    if (bar != null) updatePlayToggleMenu(bar.getMenu(), hasQueue, playing);
                 }
             };
         }
