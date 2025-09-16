@@ -379,32 +379,13 @@
         android:layout_marginTop="12dp" />
 
     <!-- Downloads navigation -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnOpenDownloads"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Downloads"
-        app:layout_constraintTop_toBottomOf="@id/txtReciters"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp" />
-
-    <!-- QA navigation (debug only) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnOpenQA"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="QA"
-        app:layout_constraintTop_toBottomOf="@id/btnOpenDownloads"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="8dp" />
-
     <!-- Divider -->
     <View
         android:id="@+id/dividerHistory"
         android:layout_width="0dp"
         android:layout_height="1dp"
         android:background="@color/md_theme_outline"
-        app:layout_constraintTop_toBottomOf="@id/btnOpenQA"
+        app:layout_constraintTop_toBottomOf="@id/txtReciters"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp" />

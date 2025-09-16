@@ -52,17 +52,7 @@ public class RangeTabFragment extends Fragment {
         ddStart.setOnItemClickListener((p, v, pos, id) -> startAyahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
         ddEnd.setOnItemClickListener((p, v, pos, id) -> endAyahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
 
-        android.widget.CheckBox cbHalf = root.findViewById(R.id.switchHalfSplit) instanceof android.widget.CheckBox ? (android.widget.CheckBox) root.findViewById(R.id.switchHalfSplit) : null;
-        if (cbHalf != null) {
-            boolean savedHalf = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getBoolean("ui.half.split", false);
-            cbHalf.setChecked(savedHalf);
-            cbHalf.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit().putBoolean("ui.half.split", isChecked).apply();
-                java.util.Map<String,Object> ev = new java.util.HashMap<>();
-                ev.put("tab", "range"); ev.put("half", String.valueOf(isChecked));
-                com.repeatquran.analytics.AnalyticsLogger.get(requireContext()).log("half_split_set", ev);
-            });
-        }
+        // Half-split now controlled via Settings only
 
         root.findViewById(R.id.btnPlay).setOnClickListener(v -> {
             clearError(startSurahLayout); clearError(endSurahLayout); clearError(startAyahLayout); clearError(endAyahLayout);
@@ -87,12 +77,7 @@ public class RangeTabFragment extends Fragment {
                     .apply();
 
             int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
-            boolean half = false;
-            android.view.View sw = root.findViewById(R.id.switchHalfSplit);
-            if (sw instanceof android.widget.CheckBox) {
-                half = ((android.widget.CheckBox) sw).isChecked();
-                requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit().putBoolean("ui.half.split", half).apply();
-            }
+            boolean half = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getBoolean("ui.half.split", false);
 
             Intent intent = new Intent(requireContext(), PlaybackService.class);
             intent.setAction(PlaybackService.ACTION_LOAD_RANGE);

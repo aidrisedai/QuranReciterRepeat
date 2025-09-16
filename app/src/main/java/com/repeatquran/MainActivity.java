@@ -405,24 +405,7 @@ public class MainActivity extends AppCompatActivity {
         setupSingleSurahDropdown();
         findViewById(R.id.btnLoadSurah).setOnClickListener(v -> onLoadSurah());
 
-        // Open Downloads screen
-        findViewById(R.id.btnOpenDownloads).setOnClickListener(v -> {
-            android.content.Intent i = new android.content.Intent(this, com.repeatquran.downloads.DownloadsActivity.class);
-            startActivity(i);
-        });
-
-        // QA button only visible in debug builds
-        View btnQA = findViewById(R.id.btnOpenQA);
-        boolean isDebug = (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-        if (isDebug) {
-            btnQA.setVisibility(View.VISIBLE);
-            btnQA.setOnClickListener(v -> {
-                android.content.Intent i = new android.content.Intent(this, com.repeatquran.qa.QAActivity.class);
-                startActivity(i);
-            });
-        } else {
-            btnQA.setVisibility(View.GONE);
-        }
+        // Downloads and QA are now accessible from Settings only
 
         android.view.View savePreset = findViewById(R.id.btnSavePreset);
         if (savePreset != null) savePreset.setVisibility(View.GONE);
