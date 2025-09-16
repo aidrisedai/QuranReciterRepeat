@@ -211,3 +211,46 @@
 ### UHW-UI-12: Analytics + Downloads Restyle (2025-09-14)
 - Added analytics logs for tab selections (`tab_selected`) and half-split toggles (`half_split_set` per tab).
 - DownloadsActivity logs open and page/surah download/clear actions; UI restyled with a Material toolbar and section heading styles.
+
+## Phase 13: Production Readiness
+
+### UHW-PR-01: Pause/Play Resume Fix (2025-09-16)
+- Resume-if-needed: if paused with a queue, Resume/Play continues from the same position (no queue rebuilds).
+- Broadcast now includes `playing`; `active` reflects actual `isPlaying`.
+- Proof: Screen capture demonstrating pause→play continues at the same millisecond.
+
+### UHW-PR-02: Resume Button Logic Fix (2025-09-16)
+- ACTION_RESUME now resumes current queue when paused; rebuilds from snapshot only when no active queue.
+- UI can reliably gate Resume based on broadcast `playing` state.
+- Proof: Logs and demo showing correct gating and behavior from cold start.
+
+### UHW-PR-03: Downloads Back Navigation (2025-09-16)
+- Added toolbar up/back in Downloads screen to return to Home.
+- Proof: Short clip showing navigation.
+
+### UHW-PR-04: Media Notification Polish
+- TODO: Ensure notification actions reflect state; compact actions; cancel error notice on recovery.
+
+### UHW-PR-05: Audio Focus + Interruptions
+- TODO: Handle focus, ducking, calls; verify on device.
+
+### UHW-PR-06: Permissions & Policy Readiness
+- TODO: Post-notifications prompt 33+; Settings privacy link; Data Safety mapping.
+
+### UHW-PR-07: Crash/Log Collection (Local)
+- TODO: Verify log rotation; add Export Logs in Settings.
+
+### UHW-PR-08: Release Hardening
+- TODO: Enable shrinker/minify, keep rules, version bump, signed release sanity.
+
+### UHW-PR-09: UI Polish (States)
+- TODO: Disabled/empty/loading states; Day/Night visual QA.
+
+### UHW-PR-10: Store Assets
+- TODO: Adaptive/round icons; screenshots; feature graphic.
+
+### UHW-PR-11: Smoke Tests
+- TODO: Robolectric tests for resume flow, recent sessions filter, downloads back nav.
+
+### UHW-PR-12: StrictMode Sweep
+- TODO: Identify and move main-thread I/O; verify clean logs.

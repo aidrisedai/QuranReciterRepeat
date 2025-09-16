@@ -240,3 +240,54 @@
 - [x] **UHW-20: Stress Test Playback**  
   - Add QA screen to simulate rapid controls, focus loss/gain, reciter switch, and ∞ soak.  
   - **Proof**: Logcat export under `docs/proof/UHW-20/stress-log.txt` and optional short clips.  
+
+---
+
+## Phase 13: Production Readiness
+- [x] **UHW-PR-01: Pause/Play Resume Fix**  
+  - Resume-if-needed: if paused with queue, Resume/Play continues from the same position; no rebuilds.  
+  - Proof: Screen recording showing pause→play resuming exact ms.
+
+- [x] **UHW-PR-02: Resume Button Logic Fix**  
+  - Broadcast real playing state; disable Resume while playing; ACTION_RESUME rebuilds only when needed.  
+  - Proof: Logs + demo where Resume is gated and works from cold start.
+
+- [x] **UHW-PR-03: Downloads Back Navigation**  
+  - Add toolbar up/back in Downloads to return to Home.  
+  - Proof: Short clip showing back navigation.
+
+- [ ] **UHW-PR-04: Media Notification Polish**  
+  - Ensure notification Play/Pause actions reflect state; compact view actions correct; error notification cancels on recovery.  
+  - Proof: Video of notification actions.
+
+- [ ] **UHW-PR-05: Audio Focus + Interruptions**  
+  - Request focus, duck on transient, pause/resume on calls; verify on device.  
+  - Proof: Manual log on phone call and focus changes.
+
+- [ ] **UHW-PR-06: Permissions & Policy Readiness**  
+  - Post-notifications prompt (33+), Settings Privacy Policy link; Data Safety mapping draft.  
+  - Proof: Screenshot of prompt + policy link.
+
+- [ ] **UHW-PR-07: Crash/Log Collection (Local)**  
+  - Verify analytics log rotation; add “Export Logs” in Settings for QA.  
+  - Proof: Exported log file.
+
+- [ ] **UHW-PR-08: Release Hardening**  
+  - Enable shrinker/minify; keep rules; version bump; signed release sanity.  
+  - Proof: assembleRelease output and smoke run.
+
+- [ ] **UHW-PR-09: UI Polish (States)**  
+  - Disabled states for Resume when playing; empty/loading states polished; Day/Night checks.  
+  - Proof: Screenshots in both modes.
+
+- [ ] **UHW-PR-10: Store Assets**  
+  - Verify adaptive/round icons; capture screenshots; feature graphic draft.  
+  - Proof: /store_assets folder.
+
+- [ ] **UHW-PR-11: Smoke Tests**  
+  - Robolectric tests: play→pause→play; recent sessions filter; Downloads back nav.  
+  - Proof: Test logs.
+
+- [ ] **UHW-PR-12: StrictMode Sweep**  
+  - Identify and move main-thread I/O; confirm clean logs for typical flows.  
+  - Proof: StrictMode log capture.
