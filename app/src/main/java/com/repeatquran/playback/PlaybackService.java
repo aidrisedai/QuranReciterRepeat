@@ -282,14 +282,7 @@ public class PlaybackService extends Service {
             return START_STICKY;
         }
         if (ACTION_RESUME.equals(action)) {
-            boolean hasQueue = player.getMediaItemCount() > 0 && player.getPlaybackState() != Player.STATE_ENDED;
-            boolean isPlaying = player.isPlaying();
-            if (hasQueue && isPlaying) {
-                // Already playing — nothing to do
-                mainHandler.post(() -> android.widget.Toast.makeText(this, "Already playing", android.widget.Toast.LENGTH_SHORT).show());
-                saveResumeStateNow();
-                return START_STICKY;
-            }
+            // Delegate to resume handler which will either resume current queue or rebuild from snapshot
             onResumeRequested();
             return START_STICKY;
         }

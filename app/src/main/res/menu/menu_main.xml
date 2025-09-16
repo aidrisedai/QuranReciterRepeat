@@ -4,7 +4,7 @@
     <item
         android:id="@+id/action_play_toggle"
         android:title="Resume"
-        app:showAsAction="always" />
+        app:showAsAction="always|withText" />
     <item
         android:id="@+id/action_remember_mode"
         android:title="Remember my mode"
