@@ -34,13 +34,17 @@ public class VerseTabFragment extends Fragment {
         TextInputLayout ayahLayout = root.findViewById(R.id.ayahInputLayout);
         TextInputEditText editAyah = root.findViewById(R.id.editAyah);
 
-        String[] nums = requireContext().getResources().getStringArray(R.array.surah_numbers);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, nums);
+        String[] display = com.repeatquran.util.SurahNames.displayList();
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, display);
         ddSurah.setAdapter(adapter);
         ddSurah.setThreshold(0);
         // Prefill last surah if available
         int last = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("last.surah.single", 1);
-        if (last >= 1 && last <= 114) ddSurah.setText(String.format("%03d", last), false);
+        if (last >= 1 && last <= 114) {
+            ddSurah.setText(com.repeatquran.util.SurahNames.display(last), false);
+            // Show helper for max ayah on initial render
+            ayahLayout.setHelperText("Max ayah: " + getAyahCount(last));
+        }
 
         ddSurah.setOnItemClickListener((p, v, pos, id) -> ayahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
 

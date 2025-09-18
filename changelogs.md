@@ -212,6 +212,10 @@
 - Added analytics logs for tab selections (`tab_selected`) and half-split toggles (`half_split_set` per tab).
 - DownloadsActivity logs open and page/surah download/clear actions; UI restyled with a Material toolbar and section heading styles.
 
+### UHW-UI-13: Surah Labels (Verse/Range/Settings) (2025-09-18)
+- Updated Verse and Range tabs and Settings → Downloads surah picker to display combined labels in the format `NNN — Surah Name` (matching Surah tab behavior).
+- Prefill now uses combined labels; selection parsing remains based on the first 3 digits, preserving existing logic.
+
 ## Phase 13: Production Readiness
 
 ### UHW-PR-01: Pause/Play Resume Fix (2025-09-16)
@@ -254,6 +258,45 @@
 
 ### UHW-PR-12: StrictMode Sweep
 - TODO: Identify and move main-thread I/O; verify clean logs.
+
+### UHW-PR-24: Remove Auto-Play on Service Warmup (2025-09-16)
+- ACTION_START now only warms the service and broadcasts state; it never starts playback automatically even if a queue exists.
+
+### UHW-PR-25: Offload Range Queue Build to Background (2025-09-16)
+- Range cycle building now runs on a background executor, mirroring Page/Surah. Enqueue/play happens on the main thread. Reduces the risk of UI jank for large ranges.
+
+### UHW-PR-26: Downloads I/O Off Main (2025-09-16)
+- Moved Surah/Page clear and download loops to a background thread with UI updates posted on completion. Reduces chances of UI stutter under large operations.
+
+### UHW-PR-33: Downloads Toolbar Refactor (2025-09-16)
+- Eliminated separate Downloads toolbar by merging into Settings; no accidental back taps from within the downloads controls.
+
+### UHW-PR-34: Merge Settings + Downloads (2025-09-16)
+- Combined Split Halves with downloads (reciter selection, Surah/Page checks, download/clear) into a single Settings page.
+
+### UHW-PR-35: Simplify Split Halves UI (2025-09-16)
+- Removed descriptive text and visual examples; kept only the Split Halves checkbox.
+
+### UHW-PR-36: Navigation + Manifest Cleanup (2025-09-16)
+- Removed DownloadsActivity and its manifest entry; Settings is now the sole entry point for downloads and split settings.
+
+### UHW-PR-27: Deduplicate AYAH_COUNTS (2025-09-16)
+- Added `AyahCounts` utility with a single source of truth; updated MainActivity, RangeTabFragment, and SettingsActivity to reference it.
+
+### UHW-PR-28: Notification Polish
+- TODO: Sync notification actions/labels; reduce churn; cancel error on recovery.
+
+### UHW-PR-29: Audio Focus + Interruptions QA
+- TODO: Verify pause on call; ducking/resume; document behavior.
+
+### UHW-PR-30: Version Bump + Release Metadata
+- TODO: Increment versionCode/versionName; finalize Play notes.
+
+### UHW-PR-31: Inline Repeat UX Tightening
+- TODO: Ensure ∞ display; validate typed values.
+
+### UHW-PR-32: Double-Start Guard
+- TODO: Add in-flight guards to prevent duplicate enqueues under rapid taps.
 
 ### UHW-PR-13: Controls Consolidation (2025-09-16)
 - Consolidated controls: kept Play on each tab to validate inputs; added a single toolbar Pause/Resume toggle reflecting playback state; removed per-tab Pause/Resume.

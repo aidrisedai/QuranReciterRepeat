@@ -18,6 +18,11 @@
 
 ---
 
+## ✅ Addressed Requests (MVP)
+- Surah labels in dropdowns (Verse, Range, Settings) now show `NNN — Surah Name` consistent with the Surah tab. Parsing remains stable using the first three digits.
+
+---
+
 ## ⚠️ Blind Spots Identified
 - **Area:** Cache Eviction / Storage Management  
   - **Details:** Internal storage grows unbounded with verse files.  
@@ -33,6 +38,31 @@
   - **Details:** RTL layout, font scaling, and small-screen testing not yet planned.  
   - **Mitigation Plan:** Add accessibility UHWs in v2.  
   - **Status:** Open  
+
+- **Area:** Service Warmup Auto-Play  
+  - **Details:** ACTION_START may auto-play if queue exists.  
+  - **Mitigation Plan:** PR-24 removes auto-play; warm + broadcast only.  
+  - **Status:** Planned (PR-24).  
+
+- **Area:** Range Build on Main Thread  
+  - **Details:** Large ranges may cause jank during queue build.  
+  - **Mitigation Plan:** PR-25 offloads to ioExecutor then enqueues on main.  
+  - **Status:** Planned (PR-25).  
+
+- **Area:** Downloads I/O on UI Thread  
+  - **Details:** Clear/download loops may stutter.  
+  - **Mitigation Plan:** PR-26 move to background; post updates to UI.  
+  - **Status:** Planned (PR-26).  
+
+- **Area:** Duplication of AYAH_COUNTS  
+  - **Details:** Defined in multiple classes; drift risk.  
+  - **Mitigation Plan:** PR-27 extract helper.  
+  - **Status:** Planned (PR-27).  
+
+- **Area:** Settings/Downloads discoverability  
+  - **Details:** Two screens caused confusion; Page checks overlapped toolbar.  
+  - **Mitigation Plan:** Merged Downloads into Settings and removed extra visuals; toolbar sits outside scroll.  
+  - **Status:** Addressed (PR-33..PR-36).  
 
 - **Area:** Half-Split Discoverability  
   - **Details:** Users didn’t notice the per-tab toggle.  

@@ -234,6 +234,10 @@
   - Restyled Downloads with a Material toolbar and section heading styles to match the palette.  
   - Proof: Logcat events + Downloads screenshot.  
 
+- [x] **UHW-UI-13: Surah Labels (Verse/Range/Settings)**  
+  - Show `NNN — Surah Name` in Verse, Range, and Settings surah dropdowns; keep parsing by first 3 digits.  
+  - Proof: Screenshot of each dropdown showing names.  
+
 ---
 
 ## Phase 8: QA Harness
@@ -323,3 +327,54 @@
 - [x] **UHW-PR-21: Broadcast After Enqueue (Page/Surah)**  
   - Ensure a broadcast is sent after enqueue/play to flip toggles promptly.  
   - Proof: Toggle flips right after Play.
+
+- [x] **UHW-PR-24: Remove Auto-Play on Service Warmup**  
+  - ACTION_START should never auto-play; only warm and broadcast state.  
+  - Proof: App open does not start playback when a queue exists.
+
+- [x] **UHW-PR-25: Offload Range Queue Build to Background**  
+  - Build Range cycles on ioExecutor and enqueue on main (mirror Page/Surah).  
+  - Proof: No UI jank; long ranges start smoothly.
+
+- [x] **UHW-PR-26: Downloads I/O Off Main**  
+  - Run clear/download loops in background; update UI on main.  
+  - Proof: No stutter when clearing/downloading large sets.
+
+- [x] **UHW-PR-27: Deduplicate AYAH_COUNTS**  
+  - Extract shared helper to avoid drift across classes.  
+  - Proof: Single source referenced by MainActivity and RangeTab.
+
+- [ ] **UHW-PR-28: Notification Polish**  
+  - Sync actions/labels with player state; reduce update churn; cancel error on recovery.  
+  - Proof: Video of correct notification behavior.
+
+- [ ] **UHW-PR-29: Audio Focus + Interruptions QA**  
+  - Verify pause on call + ducking; recover cleanly.  
+  - Proof: Manual log on real device.
+
+- [ ] **UHW-PR-30: Version Bump + Release Metadata**  
+  - Bump versionCode/versionName and prep Play release notes.  
+  - Proof: About screen/version and signed artifact.
+
+- [ ] **UHW-PR-31: Inline Repeat UX Tightening**  
+  - Ensure ∞ displays consistently; keep editable with presets.  
+  - Proof: Screens showing dropdown and typed values.
+
+- [ ] **UHW-PR-32: Double-Start Guard**  
+  - Add in-flight guard on ACTION_LOAD_* to prevent re-enqueue races.  
+  - Proof: No duplicate starts under fast taps.
+- [x] **UHW-PR-33: Downloads Toolbar Refactor**  
+  - Refactor toolbar outside scroll (via merge); prevent accidental back taps on actions.  
+  - Proof: Taps on Page Check no longer navigate; up/back works.
+
+- [x] **UHW-PR-34: Merge Settings + Downloads**  
+  - Merged Downloads (reciter, Surah/Page checks, download/clear) into Settings; removed separate screen.  
+  - Proof: Single Settings page with Split Halves and Downloads.
+
+- [x] **UHW-PR-35: Simplify Split Halves UI**  
+  - Removed descriptive text and visuals; kept only the checkbox.  
+  - Proof: Settings shows only a single Split Halves checkbox.
+
+- [x] **UHW-PR-36: Navigation + Manifest Cleanup**  
+  - Removed DownloadsActivity and manifest entry; Settings is the sole entry.  
+  - Proof: No residual navigation to Downloads; Settings contains downloads.

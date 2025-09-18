@@ -37,20 +37,25 @@ public class RangeTabFragment extends Fragment {
         TextInputEditText editStartAyah = root.findViewById(R.id.editStartAyah);
         TextInputEditText editEndAyah = root.findViewById(R.id.editEndAyah);
 
-        String[] nums = requireContext().getResources().getStringArray(R.array.surah_numbers);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, nums);
+        String[] display = com.repeatquran.util.SurahNames.displayList();
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, display);
         ddStart.setAdapter(adapter); ddStart.setThreshold(0);
         ddEnd.setAdapter(adapter); ddEnd.setThreshold(0);
 
-        int lastStart = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("last.surah.range.start", 1);
-        int lastEnd = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("last.surah.range.end", 1);
-        if (lastStart>=1 && lastStart<=114) ddStart.setText(String.format("%03d", lastStart), false);
-        if (lastEnd>=1 && lastEnd<=114) ddEnd.setText(String.format("%03d", lastEnd), false);
+        android.content.SharedPreferences prefsRange = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE);
+        int lastStart = prefsRange.getInt("last.surah.range.start", 1);
+        int lastEnd = prefsRange.getInt("last.surah.range.end", 1);
+        if (lastStart>=1 && lastStart<=114) ddStart.setText(com.repeatquran.util.SurahNames.display(lastStart), false);
+        if (lastEnd>=1 && lastEnd<=114) ddEnd.setText(com.repeatquran.util.SurahNames.display(lastEnd), false);
+        int lastStartAyah = prefsRange.getInt("last.ayah.range.start", -1);
+        int lastEndAyah = prefsRange.getInt("last.ayah.range.end", -1);
+        if (lastStartAyah > 0) editStartAyah.setText(String.valueOf(lastStartAyah));
+        if (lastEndAyah > 0) editEndAyah.setText(String.valueOf(lastEndAyah));
 
-        startAyahLayout.setHelperText("Max ayah: " + getAyahCount(Math.max(1, Math.min(114, lastStart))));
-        endAyahLayout.setHelperText("Max ayah: " + getAyahCount(Math.max(1, Math.min(114, lastEnd))));
-        ddStart.setOnItemClickListener((p, v, pos, id) -> startAyahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
-        ddEnd.setOnItemClickListener((p, v, pos, id) -> endAyahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
+        startAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(Math.max(1, Math.min(114, lastStart))));
+        endAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(Math.max(1, Math.min(114, lastEnd))));
+        ddStart.setOnItemClickListener((parent, v, pos, id) -> startAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(pos + 1)));
+        ddEnd.setOnItemClickListener((parent, v, pos, id) -> endAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(pos + 1)));
 
         // Half-split now controlled via Settings only
 
@@ -74,6 +79,8 @@ public class RangeTabFragment extends Fragment {
             requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit()
                     .putInt("last.surah.range.start", ss)
                     .putInt("last.surah.range.end", es)
+                    .putInt("last.ayah.range.start", sa)
+                    .putInt("last.ayah.range.end", ea)
                     .apply();
 
             int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
@@ -105,21 +112,5 @@ public class RangeTabFragment extends Fragment {
     private void showError(TextInputLayout layout, String msg) { layout.setError(msg); }
     private void clearError(TextInputLayout layout) { layout.setError(null); layout.setErrorEnabled(false); }
     private int parseIntSafe(TextInputEditText edit) { try { return Integer.parseInt(edit.getText()==null?"":edit.getText().toString().trim()); } catch (Exception e) { return -1; } }
-    private int getAyahCount(int surah) {
-        final int[] AYAH_COUNTS = new int[] {
-                7, 286, 200, 176, 120, 165, 206, 75, 129, 109,
-                123, 111, 43, 52, 99, 128, 111, 110, 98, 135,
-                112, 78, 118, 64, 77, 227, 93, 88, 69, 60,
-                34, 30, 73, 54, 45, 83, 182, 88, 75, 85,
-                54, 53, 89, 59, 37, 35, 38, 29, 18, 45,
-                60, 49, 62, 55, 78, 96, 29, 22, 24, 13,
-                14, 11, 11, 18, 12, 12, 30, 52, 52, 44,
-                28, 28, 20, 56, 40, 31, 50, 40, 46, 42,
-                29, 19, 36, 25, 22, 17, 19, 26, 30, 20,
-                15, 21, 11, 8, 8, 19, 5, 8, 8, 11,
-                11, 8, 3, 9, 5, 4, 7, 3, 6, 3,
-                5, 4, 5, 6
-        };
-        return AYAH_COUNTS[surah - 1];
-    }
+    private int getAyahCount(int surah) { return com.repeatquran.util.AyahCounts.getCount(surah); }
 }
