@@ -1,0 +1,37 @@
+Release: Cycle Integrity
+Date: 2025-09-19
+
+Summary
+- Refines split playback so one cycle means every selected reciter participates once per cycle, with no same‑voice halves or boundary repeats. Applies to Range, Page, Surah, and Resume.
+
+What’s New
+- Split-cycle definition (two-halves, per-pair):
+  - Even K reciters: cycle = (R0|R1), (R2|R3), …; repeats reuse this cycle; boundary voice differs (…D → A).
+  - Odd K reciters: cycle 1 = (A|B), (C|A); cycle 2 = (B|C), (A|B); cycle 3 = (C|A), (B|C); then loops.
+- Unified across Range, Page, and Surah builders.
+- Resume rebuild uses the same logic to preserve rotation and boundary guarantees.
+- Added “Split pairs …” logs for quick verification.
+
+Improvements
+- Consistent split behavior avoids same voice across halves and across cycle boundaries.
+- Preserves repeat accuracy semantics: N repeats = N cycles (not per-pair).
+- Maintains reciter order fidelity and applies to both finite and ∞ repeat.
+
+Fixes
+- Resolved compile issue from nested helper definition.
+- Resolved variable shadowing in resume logic.
+
+Known (MVP)
+- Cache eviction strategy planned for v2.
+- Analytics are local-only; no third‑party telemetry (v2 consideration).
+- Accessibility and broader UI state polish tracked in PR tasks.
+
+Permissions
+- Foreground service for audio playback.
+- Network access for streaming/downloading recitations.
+- Notifications (Android 13+) for media controls.
+
+Verification Tips
+- Logs show “Split pairs …” per cycle; confirm boundary voice changes between cycles.
+- K=4 example: (A|B), (C|D) repeating, boundary …D → A (different voice).
+- K=3 example: (A|B),(C|A) → (B|C),(A|B) → (C|A),(B|C) rotation.

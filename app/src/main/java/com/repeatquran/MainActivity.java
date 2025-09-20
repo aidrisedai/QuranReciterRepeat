@@ -122,13 +122,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Global pills: summary + interactions
         refreshGlobalPills();
-        android.view.View chipRepeat = findViewById(R.id.chipRepeat);
-        if (chipRepeat != null) {
-            chipRepeat.setOnClickListener(v -> {
-                android.widget.AutoCompleteTextView dd = findViewById(R.id.repeatDropdown);
-                if (dd != null) dd.showDropDown();
-            });
-        }
+        // Inline repeat control (dropdown + editable number)
         android.view.View chipReciters = findViewById(R.id.chipReciters);
         if (chipReciters != null) {
             chipReciters.setOnClickListener(v -> showReciterPicker());
@@ -141,23 +135,18 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        findViewById(R.id.btnPlay).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PLAY));
-        findViewById(R.id.btnPause).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PAUSE));
-        findViewById(R.id.btnNext).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_NEXT));
-        findViewById(R.id.btnPrev).setOnClickListener(v -> sendServiceAction(PlaybackService.ACTION_PREV));
-        // No row resume toggle; only Pause button in row per decision
+        // Inline controls row removed; real controls live inside tab fragments
 
         setupRepeatDropdown();
+        setupSpeedDropdown();
         // Analytics: app open
         com.repeatquran.analytics.AnalyticsLogger.get(this).log("app_open", java.util.Collections.emptyMap());
 
         findViewById(R.id.btnLoadAyah).setOnClickListener(v -> {
             TextInputLayout surahLayout = findViewById(R.id.surahInputLayout);
             TextInputLayout ayahLayout = findViewById(R.id.ayahInputLayout);
-            TextInputLayout repeatLayout = findViewById(R.id.repeatInputLayout);
             AutoCompleteTextView surahDd = findViewById(R.id.surahSingleDropdown);
             TextInputEditText ayahEdit = findViewById(R.id.editAyah);
-            AutoCompleteTextView repeatDropdown = findViewById(R.id.repeatDropdown);
 
             clearError(surahLayout);
             clearError(ayahLayout);
@@ -174,14 +163,7 @@ public class MainActivity extends AppCompatActivity {
             int maxAyah = getAyahCount(surah);
             if (ayah > maxAyah) { showError(ayahLayout, "Max: " + maxAyah); return; }
 
-            String repeatText = repeatDropdown.getText() != null ? repeatDropdown.getText().toString().trim() : "";
-            int repeat;
-            if (repeatText.isEmpty()) { showError(repeatLayout, "Enter repeat or choose ∞"); return; }
-            if ("∞".equals(repeatText)) { repeat = -1; }
-            else {
-                try { repeat = Integer.parseInt(repeatText); } catch (NumberFormatException e) { showError(repeatLayout, "Invalid repeat number"); return; }
-                if (repeat < 1 || repeat > 9999) { showError(repeatLayout, "1..9999 only"); return; }
-            }
+            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
 
             getSharedPreferences("rq_prefs", MODE_PRIVATE).edit()
                     .putInt("repeat.count", repeat)
@@ -223,7 +205,12 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, PlaybackService.class);
         intent.setAction(action);
         if (Build.VERSION.SDK_INT >= 26) {
-            startForegroundService(intent);
+            if (PlaybackService.ACTION_START.equals(action)) {
+                // Warmup doesn't need foreground; avoid startForeground timeout
+                startService(intent);
+            } else {
+                startForegroundService(intent);
+            }
         } else {
             startService(intent);
         }
@@ -232,8 +219,8 @@ public class MainActivity extends AppCompatActivity {
     // No toolbar toggle updater
 
     private void setupRepeatDropdown() {
-        AutoCompleteTextView dropdown = findViewById(R.id.repeatDropdown);
-        TextInputLayout inputLayout = findViewById(R.id.repeatInputLayout);
+        AutoCompleteTextView dropdown = findViewById(R.id.repeatInlineDropdown);
+        TextInputLayout inputLayout = findViewById(R.id.repeatInlineLayout);
         String[] labels = getResources().getStringArray(R.array.repeat_labels);
         final int[] values = getResources().getIntArray(R.array.repeat_values);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, labels);
@@ -252,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
             int value = values[position];
             persistRepeat(prefs, value);
             clearError(inputLayout);
+            dropdown.clearFocus();
         });
 
         dropdown.setOnFocusChangeListener((v, hasFocus) -> {
@@ -316,23 +304,14 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            // Get current repeat
-            AutoCompleteTextView rep = findViewById(R.id.repeatDropdown);
-            String repText = rep.getText() != null ? rep.getText().toString().trim() : "";
-            int repeat;
-            if (repText.isEmpty()) {
-                showError(inputLayout, "Enter repeat or choose ∞");
-                return;
-            } else if ("∞".equals(repText)) {
-                repeat = -1;
-            } else {
-                try { repeat = Integer.parseInt(repText); } catch (Exception e) { showError(inputLayout, "Invalid repeat"); return; }
-                if (repeat < 1 || repeat > 9999) { showError(inputLayout, "1..9999 only"); return; }
-            }
+            // Get current repeat from prefs (inline control already persisted it)
+            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
             getSharedPreferences("rq_prefs", MODE_PRIVATE).edit()
                     .putInt("repeat.count", repeat)
                     .putInt("last.surah.range.start", ss)
                     .putInt("last.surah.range.end", es)
+                    .putInt("last.ayah.range.start", sa)
+                    .putInt("last.ayah.range.end", ea)
                     .apply();
             java.util.Map<String, Object> ev = new java.util.HashMap<>();
             ev.put("repeat", repeat);
@@ -381,14 +360,8 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("last.page", page).apply();
-            // Read repeat now
-            AutoCompleteTextView rep = findViewById(R.id.repeatDropdown);
-            String repText = rep.getText() != null ? rep.getText().toString().trim() : "";
-            int repeat = -1;
-            if (!"∞".equals(repText)) {
-                try { repeat = Integer.parseInt(repText); } catch (Exception e) { repeat = 1; }
-                if (repeat < 1) repeat = 1;
-            }
+            // Read repeat from prefs
+            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
             Intent intent = new Intent(this, com.repeatquran.playback.PlaybackService.class);
             intent.setAction(com.repeatquran.playback.PlaybackService.ACTION_LOAD_PAGE);
             intent.putExtra("page", page);
@@ -416,17 +389,39 @@ public class MainActivity extends AppCompatActivity {
         if (presetContainer != null) presetContainer.setVisibility(View.GONE);
     }
 
+    // Speed controls in Home are provided via the inline dropdown near Reciters.
+
+    private void setupSpeedDropdown() {
+        AutoCompleteTextView dd = findViewById(R.id.speedInlineDropdown);
+        if (dd == null) return;
+        String[] labels = new String[]{"0.5×","0.75×","1.0×","1.25×","1.5×","1.75×","2.0×"};
+        final float[] values = new float[]{0.5f,0.75f,1.0f,1.25f,1.5f,1.75f,2.0f};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, labels);
+        dd.setAdapter(adapter);
+        float saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getFloat("playback.speed", 1.0f);
+        int sel = 2; float min = Float.MAX_VALUE;
+        for (int i = 0; i < values.length; i++) { float d = Math.abs(values[i]-saved); if (d < min) { min = d; sel = i; } }
+        dd.setText(labels[sel], false);
+        dd.setOnItemClickListener((parent, view, position, id) -> {
+            float v = values[position];
+            getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putFloat("playback.speed", v).apply();
+            java.util.Map<String, Object> ev = new java.util.HashMap<>();
+            ev.put("source", "home"); ev.put("speed", String.valueOf(v));
+            com.repeatquran.analytics.AnalyticsLogger.get(this).log("speed_changed", ev);
+            Intent i = new Intent(this, PlaybackService.class);
+            i.setAction(PlaybackService.ACTION_SET_SPEED);
+            i.putExtra("speed", v);
+            if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(i); else startService(i);
+        });
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         if (playbackStateReceiver == null) {
             playbackStateReceiver = new android.content.BroadcastReceiver() {
                 @Override public void onReceive(android.content.Context context, android.content.Intent intent) {
-                    boolean active = intent.getBooleanExtra("active", false);
-                    boolean hasQueue = intent.getBooleanExtra("hasQueue", false);
-                    boolean playing = intent.getBooleanExtra("playing", false);
-                    com.google.android.material.appbar.MaterialToolbar bar = findViewById(R.id.topAppBar);
-                    if (bar != null) updatePlayToggleMenu(bar.getMenu(), hasQueue, playing);
+                    // No toolbar toggle to update; state is consumed elsewhere if needed
                 }
             };
         }
@@ -609,6 +604,14 @@ public class MainActivity extends AppCompatActivity {
         endAyahLayout.setHelperText("Max ayah: " + getAyahCount(Math.max(1, Math.min(114, lastEnd))));
         ddStart.setOnItemClickListener((p, v, pos, id) -> startAyahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
         ddEnd.setOnItemClickListener((p, v, pos, id) -> endAyahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
+
+        // Prefill last ayahs if available
+        TextInputEditText editStartAyah = findViewById(R.id.editStartAyah);
+        TextInputEditText editEndAyah = findViewById(R.id.editEndAyah);
+        int lastStartAyah = prefs.getInt("last.ayah.range.start", -1);
+        int lastEndAyah = prefs.getInt("last.ayah.range.end", -1);
+        if (lastStartAyah > 0) editStartAyah.setText(String.valueOf(lastStartAyah));
+        if (lastEndAyah > 0) editEndAyah.setText(String.valueOf(lastEndAyah));
     }
 
     // ---- Quick History UI (last 4 sessions) ----
@@ -921,14 +924,8 @@ public class MainActivity extends AppCompatActivity {
         try { surah = Integer.parseInt(numStr); } catch (Exception e) { showError(layout, "Select a surah"); return; }
         if (surah < 1 || surah > 114) { showError(layout, "Invalid surah"); return; }
         getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("last.surah", surah).apply();
-        // Read repeat now
-        AutoCompleteTextView rep = findViewById(R.id.repeatDropdown);
-        String repText = rep.getText() != null ? rep.getText().toString().trim() : "";
-        int repeat = -1;
-        if (!"∞".equals(repText)) {
-            try { repeat = Integer.parseInt(repText); } catch (Exception e) { repeat = 1; }
-            if (repeat < 1) repeat = 1;
-        }
+        // Read repeat from prefs
+        int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
         Intent intent = new Intent(this, com.repeatquran.playback.PlaybackService.class);
         intent.setAction(com.repeatquran.playback.PlaybackService.ACTION_LOAD_SURAH);
         intent.putExtra("surah", surah);
@@ -1009,14 +1006,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshGlobalPills() {
-        android.widget.TextView chipR;
-        android.view.View v = findViewById(R.id.chipRepeat);
-        if (v instanceof com.google.android.material.chip.Chip) {
-            com.google.android.material.chip.Chip chip = (com.google.android.material.chip.Chip) v;
-            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-            chip.setText("Repeat: " + (repeat == -1 ? "∞" : String.valueOf(repeat)));
-        }
-        v = findViewById(R.id.chipReciters);
+        android.view.View v = findViewById(R.id.chipReciters);
         if (v instanceof com.google.android.material.chip.Chip) {
             com.google.android.material.chip.Chip chip = (com.google.android.material.chip.Chip) v;
             chip.setText("Reciters: " + summarizeReciters());

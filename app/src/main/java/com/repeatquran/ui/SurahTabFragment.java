@@ -30,13 +30,13 @@ public class SurahTabFragment extends Fragment {
         AutoCompleteTextView dd = root.findViewById(R.id.surahDropdown);
         TextInputLayout layout = root.findViewById(R.id.surahSelectLayout);
 
-        String[] nums = requireContext().getResources().getStringArray(R.array.surah_numbers);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, nums);
+        String[] display = com.repeatquran.util.SurahNames.displayList();
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, display);
         dd.setAdapter(adapter);
         dd.setThreshold(0);
 
         int last = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("last.surah", 1);
-        if (last>=1 && last<=114) dd.setText(String.format("%03d", last), false);
+        if (last>=1 && last<=114) dd.setText(com.repeatquran.util.SurahNames.display(last), false);
 
         // Half-split now controlled via Settings only
 

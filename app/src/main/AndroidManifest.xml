@@ -18,7 +18,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.RepeatQuran">
         <activity android:name=".settings.SettingsActivity" />
-        <activity android:name=".downloads.DownloadsActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

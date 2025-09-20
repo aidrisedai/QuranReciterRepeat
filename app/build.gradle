@@ -3,14 +3,14 @@ apply plugin: 'com.google.dagger.hilt.android'
 
 android {
     namespace 'com.repeatquran'
-    compileSdkVersion 34
+    compileSdkVersion 35
 
     defaultConfig {
         applicationId 'com.repeatquran'
         minSdkVersion 21
-        targetSdkVersion 34
-        versionCode 1
-        versionName '1.0'
+        targetSdkVersion 35
+        versionCode 3
+        versionName '1.1'
     }
 
     signingConfigs {

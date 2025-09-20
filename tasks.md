@@ -376,5 +376,36 @@
   - Proof: Settings shows only a single Split Halves checkbox.
 
 - [x] **UHW-PR-36: Navigation + Manifest Cleanup**  
+
+### New
+- [x] **UHW-PR-37: Split Cycle Definition & Sequencing**  
+  - Clarify cycle with split: each reciter appears at least once per cycle; avoid same voice across halves and cycle boundaries.  
+  - Applied to Range, Page, Surah, and Resume; logs show pair order.  
+  - **Proof**: Logcat lines starting with “Split pairs …”.  
+
+- [x] **UHW-PR-38: Speed Engine (Global)**  
+  - Global playback speed preference (0.5×–2.0×) saved to `rq_prefs` and applied in `PlaybackService` using ExoPlayer `PlaybackParameters`.  
+  - ACTION_SET_SPEED intent applies immediately and persists across Resume.  
+  - **Proof**: Logcat shows “Applied playback speed=…”, audible change.  
+
+- [x] **UHW-UI-14: Speed Control in Settings**  
+  - Add a slider/dropdown to Settings to change speed and dispatch ACTION_SET_SPEED.  
+  - **Proof**: Settings screenshot; speed change reflected immediately.  
+
+- [x] **UHW-UI-15: Inline Speed Control (Home)**  
+  - Add speed dropdown next to Repeat and Reciters on Home; persists and sends ACTION_SET_SPEED immediately.  
+  - **Proof**: Home screenshot; Logcat `Applied playback speed=…`.  
+
+- [x] **UHW-PR-40: Verse Selection Regression Fix**  
+  - Restore Verse tab Play behavior; add defensive service logs and guards for invalid input.  
+  - **Proof**: Logcat shows Load Single intent; verse plays after valid selection.  
+
+- [x] **UHW-PR-41: Block Playback Without Reciter**  
+  - Add UI hint and service guard to prevent playback when no reciter is selected; remove default-reciter fallbacks.  
+  - **Proof**: Toast “Select at least one reciter” and no playback until a reciter is chosen.  
+
+- [x] **UHW-UI-16: Global Pills Scrollability (Speed Visibility)**  
+  - Wrap pills row in HorizontalScrollView so Speed remains accessible on small screens; keep Repeat full label, Reciters second.  
+  - **Proof**: Screenshot on small device showing accessible Speed control (scrollable row).  
   - Removed DownloadsActivity and manifest entry; Settings is the sole entry.  
   - Proof: No residual navigation to Downloads; Settings contains downloads.

@@ -100,6 +100,8 @@ private void setupSurahDropdown() {
     surahDropdown.setText(com.repeatquran.util.SurahNames.display(bounded), false);
 }
 
+// Speed control moved to controls row in Home
+
 private String selectedReciterId() {
     Object tag = reciterDropdown.getTag();
     if (tag instanceof String) return (String) tag;

@@ -138,3 +138,9 @@
   - **Observation:** Roadmap is complete, QA hooks embedded, blind spots logged.  
   - **Blind Spots Surfaced:** Cache management, analytics, accessibility, cultural tone.  
   - **Growth Action:** Defer blind spots into v2 UHWs; keep focus on v1 trust-first launch.  
+## ⚙️ New Implementation Notes
+- Global Playback Speed
+  - Pref key: `playback.speed` (float, default 1.0f). Range enforced: 0.5–2.0.
+  - Service action: `ACTION_SET_SPEED` with extra `speed` (float). Applies immediately and persists.
+  - Applied in `PlaybackService.onCreate()` and remains effective across queue rebuilds and Resume. Pitch fixed at 1.0.
+  - Next: add Settings UI control (UHW-UI-14) to adjust without ADB.

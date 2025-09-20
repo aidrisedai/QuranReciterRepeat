@@ -138,6 +138,13 @@
 
 ## Phase 9: Onboarding & Analytics
 
+### UHW-PR-37: Split Cycle Definition & Sequencing (2025-09-19)
+- Updated half-split playback semantics so a cycle completes only after all selected reciters have participated at least once via two-halves pairs, and no reciter reads both halves of any pair.
+- Even K reciters: one split-cycle = pairs (R0|R1),(R2|R3),…; finite repeat enqueues that cycle N times; infinite repeat loops the single cycle. Boundary voice at end/start differs (e.g., …D → A).
+- Odd K reciters: one split-cycle = pairs (s0|s0+1),(s0+2|s0+3),… with wrap; across cycles the starting index advances +1 so rotation is (A|B,C|A) → (B|C,A|B) → (C|A,B|C)…; finite repeat flattens N such cycles, infinite repeat loops a super‑cycle of K.
+- Applied consistently for Range, Page, and Surah; Resume uses the same builder to preserve rotation and boundary guarantees.
+- Proof: Verify Logcat lines beginning with “Split pairs …” show expected pair orders and that the cycle boundary never repeats the same voice.
+
 ### UHW-21: Onboarding Screen (Static) (2025-09-13)
 - Added a one-time fullscreen onboarding activity with title, brief bullets, and “Get Started”.
 - Shows only on first launch; persists `onboarding.seen` and returns to Home.
@@ -323,3 +330,28 @@
 
 ### UHW-PR-21: Broadcast After Enqueue (Page/Surah) (2025-09-16)
 - Verified and ensured broadcast after enqueue/play so UI toggles flip promptly on Page/Surah loads.
+### UHW-PR-38: Speed Engine (Global) (2025-09-19)
+- Added a global playback speed setting (0.5×–2.0×). The service applies the saved value at startup and on demand via `ACTION_SET_SPEED` (extra `speed`), using ExoPlayer `PlaybackParameters` with pitch preserved at 1.0.
+- Works across Range, Page, Surah, and Resume; persists in `rq_prefs` as `playback.speed`.
+- **Proof**: Logcat shows `Applied playback speed=…`; quick audible check at 0.75× and 1.5×.
+
+### UHW-UI-14: Speed Control in Settings (2025-09-19)
+- Added a simple speed dropdown (0.5×–2.0×) in Settings. Selecting a value persists it and sends `ACTION_SET_SPEED` to the service for immediate effect.
+- **Proof**: Settings screenshot and Logcat `speed_changed` + `Applied playback speed=…` lines.
+
+### UHW-UI-15: Inline Speed Control (Home) (2025-09-19)
+- Added a speed dropdown to the Home screen next to Repeat and Reciters for quick adjustments. Persists selection and sends `ACTION_SET_SPEED` instantly.
+- **Proof**: Home screenshot; `Applied playback speed=…` visible in Logcat upon change.
+
+### UHW-PR-40: Verse Selection Regression Fix (2025-09-19)
+- Verified Verse tab Play wiring and added defensive service-side guards/logs. Verse Play triggers `ACTION_LOAD_SINGLE` after valid Surah+Ayah input.
+- **Proof**: Logcat shows `Load Single: Surah ... Ayah ...`; playback starts with chosen reciter(s).
+
+### UHW-PR-41: Block Playback Without Reciter (2025-09-19)
+- Added a service-level guard to reject play requests when no reciter is selected, with a toast prompt; removed default-reciter fallbacks in all builders.
+- UI hint: Verse tab shows “Select at least one reciter” toast and does not play when none are chosen.
+- **Proof**: Video or logs showing guard behavior and successful play after selecting reciter(s).
+
+### UHW-UI-16: Global Pills Scrollability (2025-09-19)
+- Wrapped the top pills (Repeat, Reciters, Speed) in a `HorizontalScrollView` to keep Speed visible on smaller screens; Repeat remains full label, Reciters second.
+- **Proof**: Screenshot demonstrating pills row scroll with Speed accessible.

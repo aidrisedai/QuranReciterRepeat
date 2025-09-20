@@ -2,15 +2,18 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true">
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/settingsToolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingTop="8dp"
             app:title="@string/title_settings" />
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -31,93 +34,128 @@
                 android:layout_height="wrap_content"
                 android:text="@string/label_split_halves" />
 
-            <TextView
-                android:id="@+id/txtHalfDesc"
+            <!-- Playback Speed moved to controls row in Home -->
+
+            <!-- Downloads Section (merged) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/reciterInputLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/desc_split_halves" />
-
-            <!-- Simple visual examples: 2-reciter halves and 3-reciter split -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/example_two_reciters"
-                android:layout_marginTop="12dp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="24dp"
-                android:orientation="horizontal"
-                android:layout_marginTop="6dp">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="A"
-                    android:textStyle="bold"
-                    android:background="@color/md_theme_primaryContainer"
-                    android:textColor="@color/md_theme_onPrimaryContainer" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="B"
-                    android:textStyle="bold"
-                    android:background="@color/md_theme_secondaryContainer"
-                    android:textColor="@color/md_theme_onSecondaryContainer" />
-            </LinearLayout>
+                android:hint="Reciter"
+                android:layout_marginTop="16dp">
+                <AutoCompleteTextView
+                    android:id="@+id/reciterDropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <TextView
+                android:id="@+id/surahSectionTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/example_three_reciters"
-                android:layout_marginTop="12dp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="24dp"
-                android:orientation="horizontal"
-                android:layout_marginTop="6dp">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="A"
-                    android:textStyle="bold"
-                    android:background="@color/md_theme_primaryContainer"
-                    android:textColor="@color/md_theme_onPrimaryContainer" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="B"
-                    android:textStyle="bold"
-                    android:background="@color/md_theme_secondaryContainer"
-                    android:textColor="@color/md_theme_onSecondaryContainer" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="C"
-                    android:textStyle="bold"
-                    android:background="@color/md_theme_tertiaryContainer"
-                    android:textColor="@color/md_theme_onTertiaryContainer" />
-            </LinearLayout>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnOpenDownloadsFromSettings"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/open_downloads"
+                android:text="Surah"
+                style="@style/TextAppearance.RepeatQuran.Section"
                 android:layout_marginTop="16dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/surahSelectLayoutDl"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Surah (001–114)"
+                android:layout_marginTop="8dp">
+                <AutoCompleteTextView
+                    android:id="@+id/surahDropdownDl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/txtSurahStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Status: -"
+                android:layout_marginTop="8dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckSurah"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Check" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDownloadSurah"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Download Missing"
+                    android:layout_marginStart="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClearSurah"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Clear"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/pageSectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Page"
+                style="@style/TextAppearance.RepeatQuran.Section"
+                android:layout_marginTop="16dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/pageInputLayoutDl"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Page (1–604)"
+                android:layout_marginTop="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editPageDl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/txtPageStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Status: -"
+                android:layout_marginTop="8dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckPage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Check" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDownloadPage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Download Missing"
+                    android:layout_marginStart="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClearPage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Clear"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>

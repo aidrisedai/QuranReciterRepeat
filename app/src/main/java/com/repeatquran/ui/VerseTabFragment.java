@@ -49,6 +49,12 @@ public class VerseTabFragment extends Fragment {
         ddSurah.setOnItemClickListener((p, v, pos, id) -> ayahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
 
         root.findViewById(R.id.btnPlay).setOnClickListener(v -> {
+            // UI guard: require at least one reciter selected
+            String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
+            if (savedOrder == null || savedOrder.trim().isEmpty()) {
+                android.widget.Toast.makeText(requireContext(), "Select at least one reciter", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
             clearError(surahLayout); clearError(ayahLayout);
             String txt = ddSurah.getText() != null ? ddSurah.getText().toString().trim() : "";
             if (txt.length() < 3) { showError(surahLayout, "Select surah"); return; }
