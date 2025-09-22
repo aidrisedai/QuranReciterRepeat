@@ -42,22 +42,22 @@
 - **Area:** Service Warmup Auto-Play  
   - **Details:** ACTION_START may auto-play if queue exists.  
   - **Mitigation Plan:** PR-24 removes auto-play; warm + broadcast only.  
-  - **Status:** Planned (PR-24).  
+  - **Status:** Addressed (PR-24 completed).  
 
 - **Area:** Range Build on Main Thread  
   - **Details:** Large ranges may cause jank during queue build.  
   - **Mitigation Plan:** PR-25 offloads to ioExecutor then enqueues on main.  
-  - **Status:** Planned (PR-25).  
+  - **Status:** Addressed (PR-25 completed).  
 
 - **Area:** Downloads I/O on UI Thread  
   - **Details:** Clear/download loops may stutter.  
   - **Mitigation Plan:** PR-26 move to background; post updates to UI.  
-  - **Status:** Planned (PR-26).  
+  - **Status:** Addressed (PR-26 completed).  
 
 - **Area:** Duplication of AYAH_COUNTS  
   - **Details:** Defined in multiple classes; drift risk.  
   - **Mitigation Plan:** PR-27 extract helper.  
-  - **Status:** Planned (PR-27).  
+  - **Status:** Addressed (PR-27 completed).  
 
 - **Area:** Settings/Downloads discoverability  
   - **Details:** Two screens caused confusion; Page checks overlapped toolbar.  
@@ -143,4 +143,3 @@
   - Pref key: `playback.speed` (float, default 1.0f). Range enforced: 0.5–2.0.
   - Service action: `ACTION_SET_SPEED` with extra `speed` (float). Applies immediately and persists.
   - Applied in `PlaybackService.onCreate()` and remains effective across queue rebuilds and Resume. Pitch fixed at 1.0.
-  - Next: add Settings UI control (UHW-UI-14) to adjust without ADB.

@@ -90,12 +90,12 @@
   - Save all sessions in Room DB.  
   - **Proof**: Unit test inserting/retrieving records.  
 
-- [ ] **UHW-12: Quick History UI**  
+- [x] **UHW-12: Quick History UI**  
   - Display last 4 sessions on Home.  
   - **Proof**: Screenshot of Home with history list.  
   - **QA Note**: Verify DB has all sessions.  
 
-- [ ] **UHW-13: Streak Counter (Encouragement Banner)**  
+- [x] **UHW-13: Streak Counter (Encouragement Banner)**  
   - Compute streaks dynamically from logs.  
   - Banner = “🔥 X-day streak — keep going!”  
   - **Proof**: Screenshots across 3 days with skip.  
@@ -141,7 +141,7 @@
   - Deferred: full player error retry simulation (partly covered via service actions), deep page DB cycle under resume (covered by service IO fix).  
   - **Proof**: Local test run log/screenshot under `docs/proof/UHW-19/`.  
 
-- [ ] **UHW-20: Stress Test Playback**  
+- [x] **UHW-20: Stress Test Playback**  
   - Simulate pause/resume, switch reciters mid-play, call interruption.  
   - **Proof**: Manual test log.  
 
@@ -175,7 +175,7 @@
 ---
 
 ## Phase 11: Theming
-- [ ] **UHW-25: Dark Mode Toggle**  
+- [x] **UHW-25: Dark Mode Toggle**  
   - Add toggle in settings; persist preference.  
   - **Proof**: Screenshots of all tabs in both modes.  
 
@@ -260,39 +260,39 @@
   - Add toolbar up/back in Downloads to return to Home.  
   - Proof: Short clip showing back navigation.
 
-- [ ] **UHW-PR-04: Media Notification Polish**  
+- [x] **UHW-PR-04: Media Notification Polish**  
   - Ensure notification Play/Pause actions reflect state; compact view actions correct; error notification cancels on recovery.  
   - Proof: Video of notification actions.
 
-- [ ] **UHW-PR-05: Audio Focus + Interruptions**  
+- [x] **UHW-PR-05: Audio Focus + Interruptions**  
   - Request focus, duck on transient, pause/resume on calls; verify on device.  
   - Proof: Manual log on phone call and focus changes.
 
-- [ ] **UHW-PR-06: Permissions & Policy Readiness**  
+- [x] **UHW-PR-06: Permissions & Policy Readiness**  
   - Post-notifications prompt (33+), Settings Privacy Policy link; Data Safety mapping draft.  
   - Proof: Screenshot of prompt + policy link.
 
-- [ ] **UHW-PR-07: Crash/Log Collection (Local)**  
+- [x] **UHW-PR-07: Crash/Log Collection (Local)**  
   - Verify analytics log rotation; add “Export Logs” in Settings for QA.  
   - Proof: Exported log file.
 
-- [ ] **UHW-PR-08: Release Hardening**  
+- [x] **UHW-PR-08: Release Hardening**  
   - Enable shrinker/minify; keep rules; version bump; signed release sanity.  
   - Proof: assembleRelease output and smoke run.
 
-- [ ] **UHW-PR-09: UI Polish (States)**  
+- [x] **UHW-PR-09: UI Polish (States)**  
   - Disabled states for Resume when playing; empty/loading states polished; Day/Night checks.  
   - Proof: Screenshots in both modes.
 
-- [ ] **UHW-PR-10: Store Assets**  
+- [x] **UHW-PR-10: Store Assets**  
   - Verify adaptive/round icons; capture screenshots; feature graphic draft.  
   - Proof: /store_assets folder.
 
-- [ ] **UHW-PR-11: Smoke Tests**  
+- [x] **UHW-PR-11: Smoke Tests**  
   - Robolectric tests: play→pause→play; recent sessions filter; Downloads back nav.  
   - Proof: Test logs.
 
-- [ ] **UHW-PR-12: StrictMode Sweep**  
+- [x] **UHW-PR-12: StrictMode Sweep**  
   - Identify and move main-thread I/O; confirm clean logs for typical flows.  
   - Proof: StrictMode log capture.
 
@@ -316,7 +316,7 @@
   - Ensure Play on all tabs only loads/starts selection (no implicit toggle).  
   - Proof: Play never pauses; only builds and starts.
 
-- [ ] **UHW-PR-18: UI Binding and Enablement**  
+- [x] **UHW-PR-18: UI Binding and Enablement**  
   - Bind toggles solely to broadcast extras (hasQueue, playing); ensure initial enable on first enqueue.  
   - Proof: Toggle enabled after first Play; updates on Pause/Resume.
 
@@ -344,23 +344,23 @@
   - Extract shared helper to avoid drift across classes.  
   - Proof: Single source referenced by MainActivity and RangeTab.
 
-- [ ] **UHW-PR-28: Notification Polish**  
+- [x] **UHW-PR-28: Notification Polish**  
   - Sync actions/labels with player state; reduce update churn; cancel error on recovery.  
   - Proof: Video of correct notification behavior.
 
-- [ ] **UHW-PR-29: Audio Focus + Interruptions QA**  
+- [x] **UHW-PR-29: Audio Focus + Interruptions QA**  
   - Verify pause on call + ducking; recover cleanly.  
   - Proof: Manual log on real device.
 
-- [ ] **UHW-PR-30: Version Bump + Release Metadata**  
+- [x] **UHW-PR-30: Version Bump + Release Metadata**  
   - Bump versionCode/versionName and prep Play release notes.  
   - Proof: About screen/version and signed artifact.
 
-- [ ] **UHW-PR-31: Inline Repeat UX Tightening**  
+- [x] **UHW-PR-31: Inline Repeat UX Tightening**  
   - Ensure ∞ displays consistently; keep editable with presets.  
   - Proof: Screens showing dropdown and typed values.
 
-- [ ] **UHW-PR-32: Double-Start Guard**  
+- [x] **UHW-PR-32: Double-Start Guard**  
   - Add in-flight guard on ACTION_LOAD_* to prevent re-enqueue races.  
   - Proof: No duplicate starts under fast taps.
 - [x] **UHW-PR-33: Downloads Toolbar Refactor**  
@@ -409,3 +409,9 @@
   - **Proof**: Screenshot on small device showing accessible Speed control (scrollable row).  
   - Removed DownloadsActivity and manifest entry; Settings is the sole entry.  
   - Proof: No residual navigation to Downloads; Settings contains downloads.
+- [x] **UHW-UI-17: Speed Button in Tab Controls**  
+  - Add a Speed button next to existing Play and Pause in Verse/Range/Page/Surah tabs; reuses existing controls and sends ACTION_SET_SPEED.  
+  - **Proof**: Screenshot of each tab with Speed button; Logcat shows `Applied playback speed=…` when changed.  
+- [x] **UHW-PR-42: Verse Single Playback Stability**  
+  - Add UI feedback and guardrails: toast + temporary disable after Play; service defenses already added (PR‑41).  
+  - **Proof**: Video/Logcat showing steady single-ayah playback without immediate stop except on expected end or error.  

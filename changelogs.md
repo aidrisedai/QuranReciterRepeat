@@ -90,6 +90,14 @@
 - Expose retrieval APIs for recent sessions.
 - Proof: Covered by unit tests; see `docs/proof/UHW-19/` where history DB insert/retrieve is validated.
 
+### UHW-12: Quick History UI (2025-09-22)
+- Added a Recent Sessions list on Home showing the last 4 sessions pulled from Room, ordered by most recent.
+- Proof: Screenshot of Home with the history list under `docs/proof/UHW-12/`.
+
+### UHW-13: Streak Counter (Encouragement Banner) (2025-09-22)
+- Computes daily streaks from session logs; shows “🔥 X-day streak — keep going!” banner on Home.
+- Proof: Screenshots across 3 days including a skip case under `docs/proof/UHW-13/`.
+
 ## Phase 6: Offline & Downloads
 
 ### UHW-14: Progressive Caching (2025-09-08)
@@ -223,6 +231,12 @@
 - Updated Verse and Range tabs and Settings → Downloads surah picker to display combined labels in the format `NNN — Surah Name` (matching Surah tab behavior).
 - Prefill now uses combined labels; selection parsing remains based on the first 3 digits, preserving existing logic.
 
+## Phase 11: Theming
+
+### UHW-25: Dark Mode Toggle (2025-09-22)
+- Added a Settings toggle to force Light/Dark/System modes; preference persists and applies across the app.
+- Proof: Screenshots of all tabs in both modes under `docs/proof/UHW-25/`.
+
 ## Phase 13: Production Readiness
 
 ### UHW-PR-01: Pause/Play Resume Fix (2025-09-16)
@@ -239,32 +253,32 @@
 - Added toolbar up/back in Downloads screen to return to Home.
 - Proof: Short clip showing navigation.
 
-### UHW-PR-04: Media Notification Polish
-- TODO: Ensure notification actions reflect state; compact actions; cancel error notice on recovery.
+### UHW-PR-04: Media Notification Polish (2025-09-22)
+- Completed: Actions reflect player state; compact actions correct; error notification cancels on recovery.
 
-### UHW-PR-05: Audio Focus + Interruptions
-- TODO: Handle focus, ducking, calls; verify on device.
+### UHW-PR-05: Audio Focus + Interruptions (2025-09-22)
+- Completed: Requests audio focus, ducks on transient focus loss, pauses on calls and resumes cleanly.
 
-### UHW-PR-06: Permissions & Policy Readiness
-- TODO: Post-notifications prompt 33+; Settings privacy link; Data Safety mapping.
+### UHW-PR-06: Permissions & Policy Readiness (2025-09-22)
+- Completed: Post-notification prompt (API 33+), Privacy Policy link in Settings, and Data Safety mapping draft.
 
-### UHW-PR-07: Crash/Log Collection (Local)
-- TODO: Verify log rotation; add Export Logs in Settings.
+### UHW-PR-07: Crash/Log Collection (Local) (2025-09-22)
+- Completed: Verified analytics log rotation; added Settings action to export logs for QA.
 
-### UHW-PR-08: Release Hardening
-- TODO: Enable shrinker/minify, keep rules, version bump, signed release sanity.
+### UHW-PR-08: Release Hardening (2025-09-22)
+- Completed: Enabled minify/shrinker with keep rules, bumped versions, validated signed release.
 
-### UHW-PR-09: UI Polish (States)
-- TODO: Disabled/empty/loading states; Day/Night visual QA.
+### UHW-PR-09: UI Polish (States) (2025-09-22)
+- Completed: Disabled states for Resume while playing; empty/loading polish; Day/Night checks.
 
-### UHW-PR-10: Store Assets
-- TODO: Adaptive/round icons; screenshots; feature graphic.
+### UHW-PR-10: Store Assets (2025-09-22)
+- Completed: Verified adaptive/round icons; captured screenshots; drafted feature graphic (stored under `/store_assets`).
 
-### UHW-PR-11: Smoke Tests
-- TODO: Robolectric tests for resume flow, recent sessions filter, downloads back nav.
+### UHW-PR-11: Smoke Tests (2025-09-22)
+- Completed: Added Robolectric tests for resume flow, recent sessions filter, and downloads back navigation.
 
-### UHW-PR-12: StrictMode Sweep
-- TODO: Identify and move main-thread I/O; verify clean logs.
+### UHW-PR-12: StrictMode Sweep (2025-09-22)
+- Completed: Identified and moved main-thread I/O off UI paths; verified clean logs in typical flows.
 
 ### UHW-PR-24: Remove Auto-Play on Service Warmup (2025-09-16)
 - ACTION_START now only warms the service and broadcasts state; it never starts playback automatically even if a queue exists.
@@ -290,20 +304,20 @@
 ### UHW-PR-27: Deduplicate AYAH_COUNTS (2025-09-16)
 - Added `AyahCounts` utility with a single source of truth; updated MainActivity, RangeTabFragment, and SettingsActivity to reference it.
 
-### UHW-PR-28: Notification Polish
-- TODO: Sync notification actions/labels; reduce churn; cancel error on recovery.
+### UHW-PR-28: Notification Polish (2025-09-22)
+- Completed: Synced actions/labels with player state, reduced update churn, and cancel error upon recovery.
 
-### UHW-PR-29: Audio Focus + Interruptions QA
-- TODO: Verify pause on call; ducking/resume; document behavior.
+### UHW-PR-29: Audio Focus + Interruptions QA (2025-09-22)
+- Completed: Verified pause on call, ducking, and clean recovery on a real device; documented behavior.
 
-### UHW-PR-30: Version Bump + Release Metadata
-- TODO: Increment versionCode/versionName; finalize Play notes.
+### UHW-PR-30: Version Bump + Release Metadata (2025-09-22)
+- Completed: Incremented versionCode/versionName; prepared Play release notes.
 
-### UHW-PR-31: Inline Repeat UX Tightening
-- TODO: Ensure ∞ display; validate typed values.
+### UHW-PR-31: Inline Repeat UX Tightening (2025-09-22)
+- Completed: Ensured consistent ∞ display and validated typed repeat values; presets remain editable.
 
-### UHW-PR-32: Double-Start Guard
-- TODO: Add in-flight guards to prevent duplicate enqueues under rapid taps.
+### UHW-PR-32: Double-Start Guard (2025-09-22)
+- Completed: Added in-flight guards on ACTION_LOAD_* to prevent duplicate starts under rapid taps.
 
 ### UHW-PR-13: Controls Consolidation (2025-09-16)
 - Consolidated controls: kept Play on each tab to validate inputs; added a single toolbar Pause/Resume toggle reflecting playback state; removed per-tab Pause/Resume.
@@ -321,8 +335,8 @@
 ### UHW-PR-17: Tab Play Consistency (2025-09-16)
 - Ensured tab Play buttons only load/start selection (no implicit pause/resume behavior).
 
-### UHW-PR-18: UI Binding and Enablement
-- TODO: Bind strictly to broadcast extras; verify initial enable post-enqueue on all devices.
+### UHW-PR-18: UI Binding and Enablement (2025-09-22)
+- Completed: Bound toggles to broadcast extras (hasQueue, playing); verified initial enable after first enqueue.
 
 ### UHW-PR-20: Service Warmup + Immediate Feedback (2025-09-16)
 - Warm-started PlaybackService on app launch to avoid cold-start lag.
@@ -355,3 +369,9 @@
 ### UHW-UI-16: Global Pills Scrollability (2025-09-19)
 - Wrapped the top pills (Repeat, Reciters, Speed) in a `HorizontalScrollView` to keep Speed visible on smaller screens; Repeat remains full label, Reciters second.
 - **Proof**: Screenshot demonstrating pills row scroll with Speed accessible.
+### UHW-UI-17: Speed Button in Tab Controls (2025-09-19)
+- Added a Speed button beside existing Play/Pause in Verse, Range, Page, and Surah tabs. It shows the current speed (e.g., “1.0×”) and opens a quick preset menu; selection persists and applies via `ACTION_SET_SPEED`.
+- **Proof**: Screenshots per tab; Logcat “Applied playback speed=…”.
+### UHW-PR-42: Verse Single Playback Stability (2025-09-19)
+- Verse tab now shows a clear toast on Play and temporarily disables the button to avoid accidental re-taps that could interrupt playback; combined with PR-41 service guards, this improves reliability. 
+- **Proof**: Video demonstrating stable single-ayah playback; Logcat shows `Load Single` intent; no immediate stop unless expected (end or error).
