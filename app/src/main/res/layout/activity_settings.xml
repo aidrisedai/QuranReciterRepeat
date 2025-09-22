@@ -18,7 +18,8 @@
             app:title="@string/title_settings"
             app:titleTextColor="?attr/colorOnSurface"
             app:navigationIconTint="?attr/colorOnSurface"
-            android:backgroundTint="?attr/colorSurface" />
+            android:backgroundTint="?attr/colorSurface"
+            app:popupTheme="@style/ThemeOverlay.MaterialComponents" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView

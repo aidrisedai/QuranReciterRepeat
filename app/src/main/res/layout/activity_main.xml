@@ -21,6 +21,7 @@
             app:title="@string/app_name"
             app:titleCentered="true"
             app:titleTextColor="@color/md_theme_onPrimary"
+            app:popupTheme="@style/ThemeOverlay.MaterialComponents"
             app:menu="@menu/menu_main" />
 
         <com.google.android.material.tabs.TabLayout
