@@ -21,6 +21,11 @@
 ## ✅ Addressed Requests (MVP)
 - Surah labels in dropdowns (Verse, Range, Settings) now show `NNN — Surah Name` consistent with the Surah tab. Parsing remains stable using the first three digits.
 
+## ✅ Theme Contrast Root-Cause Fix (Settings)
+- Consolidated Settings text styling to Material DayNight tokens: `colorOnSurface` for text, `colorSurface`/`colorBackground` for surfaces.
+- Removed hardcoded colors in Section headers; added `TextAppearance.RepeatQuran.Body` for body/status text.
+- Toolbar title and nav icon now tint correctly across Light/Dark.
+
 ---
 
 ## ⚠️ Blind Spots Identified

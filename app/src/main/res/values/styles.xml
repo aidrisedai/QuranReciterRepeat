@@ -2,8 +2,11 @@
 <resources>
     <style name="TextAppearance.RepeatQuran.Section" parent="TextAppearance.MaterialComponents.Subtitle1">
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/md_theme_onSurface</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:textSize">16sp</item>
     </style>
-</resources>
 
+    <style name="TextAppearance.RepeatQuran.Body" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+</resources>

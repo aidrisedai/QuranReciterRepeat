@@ -375,3 +375,8 @@
 ### UHW-PR-42: Verse Single Playback Stability (2025-09-19)
 - Verse tab now shows a clear toast on Play and temporarily disables the button to avoid accidental re-taps that could interrupt playback; combined with PR-41 service guards, this improves reliability. 
 - **Proof**: Video demonstrating stable single-ayah playback; Logcat shows `Load Single` intent; no immediate stop unless expected (end or error).
+
+### UHW-PR-43: Theme Contrast Audit + Fix (2025-09-22)
+- Replaced hardcoded text colors in Settings with DayNight theme tokens (`?attr/colorOnSurface`), set root background to `?attr/colorBackground`, and aligned toolbar title/icon tints to `?attr/colorOnSurface`.
+- Added reusable `TextAppearance.RepeatQuran.Body` and applied to status texts.
+- Proof: Settings screenshots in Light/Dark across two devices under `docs/proof/UHW-PR-43/`.

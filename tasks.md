@@ -378,6 +378,9 @@
 - [x] **UHW-PR-36: Navigation + Manifest Cleanup**  
 
 ### New
+- [x] **UHW-PR-43: Theme Contrast Audit + Fix**  
+  - Ensure Settings and shared styles use DayNight tokens (onSurface/surface/background); remove hardcoded text colors; verify toolbar/title/icons.  
+  - **Proof**: Screenshots of Settings in Light and Dark on two devices.  
 - [x] **UHW-PR-37: Split Cycle Definition & Sequencing**  
   - Clarify cycle with split: each reciter appears at least once per cycle; avoid same voice across halves and cycle boundaries.  
   - Applied to Range, Page, Surah, and Resume; logs show pair order.  

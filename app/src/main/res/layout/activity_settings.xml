@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:background="?attr/colorBackground">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -14,7 +15,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="8dp"
-            app:title="@string/title_settings" />
+            app:title="@string/title_settings"
+            app:titleTextColor="?attr/colorOnSurface"
+            app:navigationIconTint="?attr/colorOnSurface"
+            android:backgroundTint="?attr/colorSurface" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
@@ -78,6 +82,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Status: -"
+                style="@style/TextAppearance.RepeatQuran.Body"
                 android:layout_marginTop="8dp" />
 
             <LinearLayout
@@ -131,6 +136,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Status: -"
+                style="@style/TextAppearance.RepeatQuran.Body"
                 android:layout_marginTop="8dp" />
 
             <LinearLayout
