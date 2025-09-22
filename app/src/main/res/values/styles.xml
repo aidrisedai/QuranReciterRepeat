@@ -23,6 +23,5 @@
     <style name="ThemeOverlay.RepeatQuran.Popup" parent="ThemeOverlay.MaterialComponents">
         <item name="popupMenuStyle">@style/PopupMenu.RepeatQuran</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
-        <item name="textColorPrimary">?attr/colorOnSurface</item>
     </style>
 </resources>
