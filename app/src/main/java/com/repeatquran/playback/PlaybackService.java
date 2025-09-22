@@ -76,6 +76,11 @@ public class PlaybackService extends Service {
     private CacheManager cacheManager;
     private java.util.Map<String, Integer> retryCounts = new java.util.HashMap<>();
     private static final int ERROR_NOTIFICATION_ID = 2002;
+    // Loop control for large playlists to avoid duplicating items in memory
+    private Integer loopCyclesTarget = null; // null when not looping finite
+    private int loopCyclesDone = 0;
+    private int cycleItemsCount = 0;
+    private int lastMediaIndex = -1;
 
     // Resume state tracking
     private String lastSourceType = null; // single | range | page | surah
@@ -87,6 +92,7 @@ public class PlaybackService extends Service {
     private Integer lastRepeat = null; // -1 for infinite
     private String lastRecitersCsv = null; // saved selection for fidelity
     private java.util.List<String> recitersOverride = null; // used during resume build
+    private Boolean lastHalfSplit = null; // remembers half-split state for range/page/surah
     private final Runnable resumeSaver = new Runnable() {
         @Override public void run() {
             try { saveResumeStatePeriodic(); } catch (Exception ignored) {}
@@ -142,6 +148,31 @@ public class PlaybackService extends Service {
                     ioExecutor.execute(() -> sessionRepo.markEnded(id, System.currentTimeMillis(), cycles));
                 }
                 broadcastState();
+            }
+
+            @Override
+            public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
+                int idx = player.getCurrentMediaItemIndex();
+                if (loopCyclesTarget != null && cycleItemsCount > 0) {
+                    // Detect wrap-around: last index -> 0
+                    if (idx == 0 && lastMediaIndex == cycleItemsCount - 1) {
+                        loopCyclesDone++;
+                        Log.d("PlaybackService", "Loop cycle completed: " + loopCyclesDone + "/" + loopCyclesTarget);
+                        if (loopCyclesDone >= loopCyclesTarget) {
+                            // Stop looping and end playback cleanly
+                            loopCyclesTarget = null;
+                            loopCyclesDone = 0;
+                            cycleItemsCount = 0;
+                            mainHandler.post(() -> {
+                                try {
+                                    player.setRepeatMode(Player.REPEAT_MODE_OFF);
+                                    player.stop();
+                                } catch (Exception ignored) {}
+                            });
+                        }
+                    }
+                }
+                lastMediaIndex = idx;
             }
 
             @Override
@@ -259,6 +290,16 @@ public class PlaybackService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent != null ? intent.getAction() : null;
         if (ACTION_STOP.equals(action)) {
+            try {
+                if (player != null) {
+                    player.setRepeatMode(Player.REPEAT_MODE_OFF);
+                    player.stop();
+                    player.clearMediaItems();
+                }
+                cancelErrorNotification();
+                NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID);
+                android.widget.Toast.makeText(this, "Stopped playback", android.widget.Toast.LENGTH_SHORT).show();
+            } catch (Exception ignored) {}
             stopForeground(true);
             stopSelf();
             broadcastState();
@@ -348,10 +389,25 @@ public class PlaybackService extends Service {
         } else if (ACTION_LOAD_SINGLE.equals(action)) {
             int sura = intent.getIntExtra("sura", 1);
             int ayah = intent.getIntExtra("ayah", 1);
-            if (player.getMediaItemCount() > 0 && !player.isPlaying()) {
-                if ("single".equals(lastSourceType)
+            // Resume if same selection AND same config; otherwise rebuild from start
+            if (player.getMediaItemCount() > 0) {
+                String currentReciters = getSharedPreferences("rq_prefs", MODE_PRIVATE)
+                        .getString("reciters.order", "");
+                int repeatNow = intent.getIntExtra("repeat",
+                        getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
+                boolean sameSelection = "single".equals(lastSourceType)
                         && lastStartSurah != null && lastStartAyah != null
-                        && lastStartSurah == sura && lastStartAyah == ayah) {
+                        && lastStartSurah == sura && lastStartAyah == ayah;
+                boolean sameReciters = (lastRecitersCsv == null
+                        ? (currentReciters == null || currentReciters.isEmpty())
+                        : lastRecitersCsv.equals(currentReciters));
+                boolean sameRepeat = (lastRepeat == null) || (lastRepeat == repeatNow);
+                if (sameSelection && sameReciters && sameRepeat) {
+                    if (player.getPlaybackState() == Player.STATE_ENDED) {
+                        // Restart from beginning if finished
+                        player.seekTo(0, 0);
+                        player.prepare();
+                    }
                     player.play();
                     broadcastState();
                     return START_STICKY;
@@ -402,17 +458,33 @@ public class PlaybackService extends Service {
             int sa = intent.getIntExtra("sa", 1);
             int es = intent.getIntExtra("es", 1);
             int ea = intent.getIntExtra("ea", 1);
-            if (player.getMediaItemCount() > 0 && !player.isPlaying()) {
-                if ("range".equals(lastSourceType)
+            int repeat = intent.getIntExtra("repeat",
+                    getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
+            if (player.getMediaItemCount() > 0) {
+                boolean halfNow = intent.getBooleanExtra("halfSplit",
+                        getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false));
+                String currentReciters = getSharedPreferences("rq_prefs", MODE_PRIVATE)
+                        .getString("reciters.order", "");
+                boolean sameSelection = "range".equals(lastSourceType)
                         && lastStartSurah != null && lastStartAyah != null && lastEndSurah != null && lastEndAyah != null
-                        && lastStartSurah == ss && lastStartAyah == sa && lastEndSurah == es && lastEndAyah == ea) {
+                        && lastStartSurah == ss && lastStartAyah == sa && lastEndSurah == es && lastEndAyah == ea;
+                boolean sameReciters = (lastRecitersCsv == null
+                        ? (currentReciters == null || currentReciters.isEmpty())
+                        : lastRecitersCsv.equals(currentReciters));
+                boolean sameRepeat = (lastRepeat == null) || (lastRepeat == repeat);
+                boolean sameHalf = (lastHalfSplit == null) || (lastHalfSplit == halfNow);
+                if (sameSelection && sameReciters && sameRepeat && sameHalf) {
+                    if (player.getPlaybackState() == Player.STATE_ENDED) {
+                        player.seekTo(0, 0);
+                        player.prepare();
+                    }
                     player.play();
                     broadcastState();
                     return START_STICKY;
                 }
             }
-            int repeat = intent.getIntExtra("repeat",
-                    getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
+
+
             Log.d("PlaybackService", "Load Range: " + String.format("%03d", ss) + " — " + surahName(ss) + ":" + sa +
                     " → " + String.format("%03d", es) + " — " + surahName(es) + ":" + ea + ", Repeat=" + (repeat==-1?"∞":repeat));
             captureSelectionForResume("range", null, ss, sa, es, ea, repeat);
@@ -480,13 +552,7 @@ public class PlaybackService extends Service {
             });
         } else if (ACTION_LOAD_PAGE.equals(action)) {
             int page = intent.getIntExtra("page", -1);
-            if (player.getMediaItemCount() > 0 && !player.isPlaying()) {
-                if ("page".equals(lastSourceType) && lastPage != null && lastPage == page) {
-                    player.play();
-                    broadcastState();
-                    return START_STICKY;
-                }
-            }
+
             int repeat = intent.getIntExtra("repeat",
                     getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1));
             Log.d("PlaybackService", "Load Page: " + page + ", Repeat=" + (repeat==-1?"∞":repeat));
@@ -495,6 +561,13 @@ public class PlaybackService extends Service {
                 return START_STICKY;
             }
             captureSelectionForResume("page", page, null, null, null, null, repeat);
+            boolean halfPref = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false);
+            lastHalfSplit = halfPref;
+            String currentRecitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+            Log.d("PlaybackService", "Play PAGE decision: lastPage=" + lastPage + ", page=" + page
+                    + ", lastRecitersCsv=" + (lastRecitersCsv==null?"null":lastRecitersCsv)
+                    + ", currentRecitersCsv=" + (currentRecitersCsv==null?"null":currentRecitersCsv)
+                    + ", lastHalfSplit=" + lastHalfSplit + ", halfNow=" + halfPref + "; action=rebuild");
             {
                 java.util.Map<String, Object> evP = new java.util.HashMap<>();
                 evP.put("type", "page"); evP.put("page", page); evP.put("repeat", repeat);
@@ -552,8 +625,19 @@ public class PlaybackService extends Service {
             });
         } else if (ACTION_LOAD_SURAH.equals(action)) {
             int surah = intent.getIntExtra("surah", -1);
-            if (player.getMediaItemCount() > 0 && !player.isPlaying()) {
-                if ("surah".equals(lastSourceType) && lastStartSurah != null && lastStartSurah == surah) {
+            boolean halfNowForCheck = intent.getBooleanExtra("halfSplit", getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false));
+            if (player.getMediaItemCount() > 0) {
+                String currentReciters = getSharedPreferences("rq_prefs", MODE_PRIVATE)
+                        .getString("reciters.order", "");
+                boolean sameSelection = ("surah".equals(lastSourceType) && lastStartSurah != null && lastStartSurah == surah);
+                boolean sameReciters = (lastRecitersCsv == null
+                        ? (currentReciters == null || currentReciters.isEmpty())
+                        : lastRecitersCsv.equals(currentReciters));
+                if (sameSelection && sameReciters) {
+                    if (player.getPlaybackState() == Player.STATE_ENDED) {
+                        player.seekTo(0, 0);
+                        player.prepare();
+                    }
                     player.play();
                     broadcastState();
                     return START_STICKY;
@@ -567,6 +651,7 @@ public class PlaybackService extends Service {
                 return START_STICKY;
             }
             captureSelectionForResume("surah", null, surah, null, null, null, repeat);
+            lastHalfSplit = halfNowForCheck;
             {
                 java.util.Map<String, Object> evS = new java.util.HashMap<>();
                 evS.put("type", "surah"); evS.put("surah", surah); evS.put("repeat", repeat);
@@ -736,7 +821,18 @@ public class PlaybackService extends Service {
     }
 
     private void enqueueCycles(java.util.List<MediaItem> cycle, int repeat) {
-        if (repeat == -1) {
+        // For very large playlists, avoid duplicating items in memory; loop finite times via listener
+        final int LARGE_THRESHOLD = 2000; // items total threshold
+        int totalRequested = (repeat <= 0) ? cycle.size() : cycle.size() * repeat;
+        if (repeat > 0 && totalRequested > LARGE_THRESHOLD) {
+            player.setRepeatMode(Player.REPEAT_MODE_ALL);
+            for (MediaItem mi : cycle) player.addMediaItem(mi);
+            loopCyclesTarget = repeat;
+            loopCyclesDone = 0;
+            cycleItemsCount = cycle.size();
+            lastMediaIndex = -1;
+            Log.w("PlaybackService", "Enqueued 1 large cycle with finite loop target=" + repeat + ", itemsPerCycle=" + cycle.size());
+        } else if (repeat == -1) {
             player.setRepeatMode(Player.REPEAT_MODE_ALL);
             for (MediaItem mi : cycle) player.addMediaItem(mi);
             Log.d("PlaybackService", "Enqueued 1 cycle (∞ loop), items=" + cycle.size());

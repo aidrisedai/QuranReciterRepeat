@@ -26,6 +26,11 @@
 - Removed hardcoded colors in Section headers; added `TextAppearance.RepeatQuran.Body` for body/status text.
 - Toolbar title and nav icon now tint correctly across Light/Dark.
 
+## ✅ Controls State + Stop (Root Cause)
+- Added a true Stop action that clears the queue and cancels the media notification to prevent lingering state.
+- Tabs bind Pause/Resume to service broadcast extras (`hasQueue`, `playing`) so controls never disappear due to stale UI assumptions.
+- Discoverability: Stop available in overflow; long‑press on Pause as a shortcut.
+
 ---
 
 ## ⚠️ Blind Spots Identified

@@ -380,3 +380,9 @@
 - Replaced hardcoded text colors in Settings with DayNight theme tokens (`?attr/colorOnSurface`), set root background to `?attr/colorBackground`, and aligned toolbar title/icon tints to `?attr/colorOnSurface`.
 - Added reusable `TextAppearance.RepeatQuran.Body` and applied to status texts.
 - Proof: Settings screenshots in Light/Dark across two devices under `docs/proof/UHW-PR-43/`.
+
+### UHW-PR-44: Controls State Hardening + Stop (2025-09-22)
+- Added `ACTION_STOP` to fully stop playback, clear queue, cancel notification, and broadcast state; shows a brief toast.
+- Bound Pause button per tab to broadcast (`hasQueue`, `playing`) to set enabled state and label (Pause/Resume). Long‑press Pause triggers Stop.
+- Overflow menu now includes Stop; menu visibility/contrast verified in Light/Dark.
+- Proof: Clip demonstrating Range Play→Pause→Stop→switch to Verse with controls present and logcat state transitions.

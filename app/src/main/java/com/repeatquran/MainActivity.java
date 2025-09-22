@@ -80,6 +80,11 @@ public class MainActivity extends AppCompatActivity {
                 } else if (mi.getItemId() == R.id.action_settings) {
                     startActivity(new android.content.Intent(this, com.repeatquran.settings.SettingsActivity.class));
                     return true;
+                } else if (mi.getItemId() == R.id.action_stop) {
+                    Intent i = new Intent(this, PlaybackService.class);
+                    i.setAction(PlaybackService.ACTION_STOP);
+                    if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(i); else startService(i);
+                    return true;
                 }
                 return false;
             });

@@ -77,9 +77,46 @@ public class VerseTabFragment extends Fragment {
             intent.putExtra("ayah", ayah);
             intent.putExtra("repeat", repeat);
             if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
+            android.widget.Toast.makeText(requireContext(),
+                    "Loading Surah " + String.format("%03d", surah) + " — " + com.repeatquran.util.SurahNames.name(surah) +
+                            ", Ayah " + ayah + " (repeat=" + (repeat==-1?"∞":repeat) + ")",
+                    android.widget.Toast.LENGTH_SHORT).show();
+            View btn = root.findViewById(R.id.btnPlay);
+            btn.setEnabled(false);
+            btn.postDelayed(() -> btn.setEnabled(true), 1200);
         });
 
         root.findViewById(R.id.btnPause).setOnClickListener(v -> sendService(PlaybackService.ACTION_PAUSE));
+        root.findViewById(R.id.btnPause).setOnLongClickListener(v -> {
+            sendService(PlaybackService.ACTION_STOP);
+            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        android.content.BroadcastReceiver br = new android.content.BroadcastReceiver() {
+            @Override public void onReceive(android.content.Context context, android.content.Intent intent) {
+                boolean hasQueue = intent.getBooleanExtra("hasQueue", false);
+                boolean playing = intent.getBooleanExtra("playing", false);
+                android.view.View btn = root.findViewById(R.id.btnPause);
+                if (btn instanceof com.google.android.material.button.MaterialButton) {
+                    com.google.android.material.button.MaterialButton b = (com.google.android.material.button.MaterialButton) btn;
+                    b.setText(playing ? "Pause" : "Resume");
+                    b.setEnabled(hasQueue);
+                }
+            }
+        };
+        androidx.lifecycle.LifecycleOwner owner = getViewLifecycleOwner();
+        owner.getLifecycle().addObserver(new androidx.lifecycle.DefaultLifecycleObserver() {
+            @Override public void onStart(@androidx.annotation.NonNull androidx.lifecycle.LifecycleOwner owner) {
+                android.content.IntentFilter f = new android.content.IntentFilter(PlaybackService.ACTION_PLAYBACK_STATE);
+                if (android.os.Build.VERSION.SDK_INT >= 33) requireContext().registerReceiver(br, f, android.content.Context.RECEIVER_NOT_EXPORTED); else requireContext().registerReceiver(br, f);
+            }
+            @Override public void onStop(@androidx.annotation.NonNull androidx.lifecycle.LifecycleOwner owner) {
+                try { requireContext().unregisterReceiver(br); } catch (Exception ignored) {}
+            }
+        });
+        // Speed next to Play/Pause
+        com.google.android.material.button.MaterialButton btnSpeed = root.findViewById(R.id.btnSpeed);
+        com.repeatquran.ui.SpeedControlHelper.setup(requireContext(), btnSpeed);
     }
 
     private void sendService(String action) {

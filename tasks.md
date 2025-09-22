@@ -418,3 +418,7 @@
 - [x] **UHW-PR-42: Verse Single Playback Stability**  
   - Add UI feedback and guardrails: toast + temporary disable after Play; service defenses already added (PR‑41).  
   - **Proof**: Video/Logcat showing steady single-ayah playback without immediate stop except on expected end or error.  
+ 
+- [x] **UHW-PR-44: Controls State Hardening + Stop**  
+  - Bind Pause/Resume enable/label to broadcast extras; add ACTION_STOP to clear queue and cancel notification; expose Stop in overflow and long‑press Pause.  
+  - **Proof**: Video switching Range→Pause→Stop→Verse showing controls present and state transitions in logs.  

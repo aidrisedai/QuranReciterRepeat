@@ -10,4 +10,8 @@
         android:id="@+id/action_settings"
         android:title="@string/menu_settings"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_stop"
+        android:title="Stop"
+        app:showAsAction="never" />
 </menu>
