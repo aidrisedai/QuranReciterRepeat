@@ -9,4 +9,20 @@
     <style name="TextAppearance.RepeatQuran.Body" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
+
+    <!-- Popup menu text/background uses DayNight tokens -->
+    <style name="TextAppearance.RepeatQuran.MenuItem" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="PopupMenu.RepeatQuran" parent="Widget.MaterialComponents.PopupMenu">
+        <item name="android:popupBackground">?attr/colorSurface</item>
+        <item name="android:itemTextAppearance">@style/TextAppearance.RepeatQuran.MenuItem</item>
+    </style>
+
+    <style name="ThemeOverlay.RepeatQuran.Popup" parent="ThemeOverlay.MaterialComponents">
+        <item name="popupMenuStyle">@style/PopupMenu.RepeatQuran</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="textColorPrimary">?attr/colorOnSurface</item>
+    </style>
 </resources>

@@ -8,8 +8,7 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fitsSystemWindows="true"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        android:fitsSystemWindows="true">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/topAppBar"
@@ -21,7 +20,8 @@
             app:title="@string/app_name"
             app:titleCentered="true"
             app:titleTextColor="@color/md_theme_onPrimary"
-            app:popupTheme="@style/ThemeOverlay.MaterialComponents"
+            app:navigationIconTint="@color/md_theme_onPrimary"
+            app:popupTheme="@style/ThemeOverlay.RepeatQuran.Popup"
             app:menu="@menu/menu_main" />
 
         <com.google.android.material.tabs.TabLayout
