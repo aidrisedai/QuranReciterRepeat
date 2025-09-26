@@ -10,21 +10,6 @@ Sections and questions:
 Section 1 — About You
 - Short answer (required): Full name
 - Short answer (required): Country and Timezone (e.g., Nigeria, WAT)
-- Checkboxes (optional): Languages you’re comfortable with
-  - Arabic
-  - English
-  - Hausa
-  - Yoruba
-  - Other (short answer)
-
-Section 2 — Your Device
-- Short answer (required): Android version (e.g., 12, 13, 14)
-- Short answer (required): Phone brand and model (e.g., Samsung A52)
-- Multiple choice (optional): Headphones usage during recitation
-  - Often
-  - Sometimes
-  - Rarely
-  - Never
 
 Section 3 — Quran Study Profile
 - Multiple choice (required): Your familiarity with Quran recitation
@@ -32,6 +17,7 @@ Section 3 — Quran Study Profile
   - Intermediate
   - Advanced
   - Teacher
+
 - Checkboxes (optional): What you intend to practice with Repeat Quran
   - Single ayah loops
   - Verse ranges
@@ -66,6 +52,5 @@ Privacy & Notes (static description at the end):
 - We collect your email solely to invite you to the beta and share testing updates.
 - The app stores usage data locally on your device; we don’t sell or share your personal data.
 - Optional logs are only shared if you choose to send them for support.
-- Privacy Policy: [paste your URL]
 
 Make the email and all marked "required" fields required. Keep the form clean and mobile‑friendly.

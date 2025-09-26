@@ -35,22 +35,43 @@ public class PageTabFragment extends Fragment {
         // Half-split now controlled via Settings only
 
         root.findViewById(R.id.btnPlay).setOnClickListener(v -> {
+            // Guard against rapid clicks
+            android.view.View btn = root.findViewById(R.id.btnPlay);
+            if (!btn.isEnabled()) return;
+            
             clearError(pageLayout);
             int page = parseIntSafe(editPage);
             if (page < 1 || page > 604) { showError(pageLayout, "Enter 1–604"); return; }
+            
+            // Check for reciter selection before proceeding
+            String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
+            if (savedOrder == null || savedOrder.trim().isEmpty()) {
+                android.widget.Toast.makeText(requireContext(), "Select at least one reciter first", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
             requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit().putInt("last.page", page).apply();
             int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
             boolean half = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getBoolean("ui.half.split", false);
+            
             Intent intent = new Intent(requireContext(), PlaybackService.class);
             intent.setAction(PlaybackService.ACTION_LOAD_PAGE);
             intent.putExtra("page", page);
             intent.putExtra("repeat", repeat);
             intent.putExtra("halfSplit", half);
-            if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
-            android.widget.Toast.makeText(requireContext(), "Loading page " + page + "…", android.widget.Toast.LENGTH_SHORT).show();
-            android.view.View btn = root.findViewById(R.id.btnPlay);
+            
+            // Disable button immediately and show loading state
             btn.setEnabled(false);
-            btn.postDelayed(() -> btn.setEnabled(true), 1200);
+            android.widget.Toast.makeText(requireContext(), "Loading page " + page + "…", android.widget.Toast.LENGTH_SHORT).show();
+            
+            if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
+            
+            // Re-enable after shorter delay, but service broadcast will manage state properly
+            btn.postDelayed(() -> {
+                if (btn.isEnabled() == false) { // Only re-enable if still disabled
+                    btn.setEnabled(true);
+                }
+            }, 800); // Reduced from 1200ms
         });
 
         root.findViewById(R.id.btnPause).setOnClickListener(v -> sendService(PlaybackService.ACTION_PAUSE));
@@ -60,22 +81,36 @@ public class PageTabFragment extends Fragment {
             return true;
         });
         playbackBr = new android.content.BroadcastReceiver() {
-            @Override public void onReceive(android.content.Context context, android.content.Intent intent) {
+            @Override 
+            public void onReceive(android.content.Context context, android.content.Intent intent) {
                 android.view.View rootView = getView();
                 if (rootView == null) return;
+                
                 boolean hasQueue = intent.getBooleanExtra("hasQueue", false);
                 boolean playing = intent.getBooleanExtra("playing", false);
-                android.view.View btn = rootView.findViewById(R.id.btnPause);
-                if (btn instanceof com.google.android.material.button.MaterialButton) {
-                    com.google.android.material.button.MaterialButton b = (com.google.android.material.button.MaterialButton) btn;
+                
+                // Update Pause/Resume button
+                android.view.View pauseBtn = rootView.findViewById(R.id.btnPause);
+                if (pauseBtn instanceof com.google.android.material.button.MaterialButton) {
+                    com.google.android.material.button.MaterialButton b = (com.google.android.material.button.MaterialButton) pauseBtn;
                     b.setText(playing ? "Pause" : "Resume");
                     b.setEnabled(hasQueue);
                 }
+                
+                // Update Play button state - re-enable when service is ready
+                android.view.View playBtn = rootView.findViewById(R.id.btnPlay);
+                if (playBtn != null && hasQueue) {
+                    // Service has successfully processed the load request
+                    playBtn.setEnabled(true);
+                }
             }
         };
-        // Speed next to Play/Pause
-        com.google.android.material.button.MaterialButton btnSpeed = root.findViewById(R.id.btnSpeed);
-        com.repeatquran.ui.SpeedControlHelper.setup(requireContext(), btnSpeed);
+        
+        // Stop button
+        root.findViewById(R.id.btnStop).setOnClickListener(v -> {
+            sendService(PlaybackService.ACTION_STOP);
+            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
+        });
     }
 
     @Override public void onStart() {

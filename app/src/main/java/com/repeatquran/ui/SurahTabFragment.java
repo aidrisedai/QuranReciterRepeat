@@ -70,7 +70,8 @@ public class SurahTabFragment extends Fragment {
             return true;
         });
         playbackBr = new android.content.BroadcastReceiver() {
-            @Override public void onReceive(android.content.Context context, android.content.Intent intent) {
+            @Override 
+            public void onReceive(android.content.Context context, android.content.Intent intent) {
                 android.view.View rootView = getView();
                 if (rootView == null) return;
                 boolean hasQueue = intent.getBooleanExtra("hasQueue", false);
@@ -83,9 +84,12 @@ public class SurahTabFragment extends Fragment {
                 }
             }
         };
-        // Speed next to Play/Pause
-        com.google.android.material.button.MaterialButton btnSpeed = root.findViewById(R.id.btnSpeed);
-        com.repeatquran.ui.SpeedControlHelper.setup(requireContext(), btnSpeed);
+        
+        // Stop button
+        root.findViewById(R.id.btnStop).setOnClickListener(v -> {
+            sendService(PlaybackService.ACTION_STOP);
+            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
+        });
     }
 
     @Override public void onStart() {

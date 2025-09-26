@@ -945,46 +945,67 @@ public class MainActivity extends AppCompatActivity {
 
     // ---- Reciter multi-select ----
     private void showReciterPicker() {
-        String[] names = getResources().getStringArray(R.array.reciter_names);
-        String[] ids = getResources().getStringArray(R.array.reciter_ids);
+        showTabbedReciterPicker();
+    }
+    
+    private void showTabbedReciterPicker() {
         SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
         String saved = prefs.getString("reciters.order", "");
-        java.util.List<String> order = new java.util.ArrayList<>();
+        java.util.List<String> currentSelection = new java.util.ArrayList<>();
         if (!saved.isEmpty()) {
-            for (String s : saved.split(",")) if (!s.isEmpty()) order.add(s);
+            for (String s : saved.split(",")) if (!s.isEmpty()) currentSelection.add(s);
         }
-
-        // Build a sorted view by name (case-insensitive), while preserving mapping to ids
-        Integer[] idx = new Integer[names.length];
-        for (int i = 0; i < names.length; i++) idx[i] = i;
-        java.util.Arrays.sort(idx, (a, b) -> names[a].compareToIgnoreCase(names[b]));
-        String[] sortedNames = new String[names.length];
-        String[] sortedIds = new String[ids.length];
-        for (int i = 0; i < idx.length; i++) { sortedNames[i] = names[idx[i]]; sortedIds[i] = ids[idx[i]]; }
-
-        boolean[] checked = new boolean[sortedIds.length];
-        java.util.Set<String> selectedSet = new java.util.HashSet<>(order);
-        for (int i = 0; i < sortedIds.length; i++) checked[i] = selectedSet.contains(sortedIds[i]);
-
-        java.util.List<String> working = new java.util.ArrayList<>(order);
-        new AlertDialog.Builder(this)
-                .setTitle("Select Reciters")
-                .setMultiChoiceItems(sortedNames, checked, (dialog, which, isChecked) -> {
-                    String id = sortedIds[which];
-                    if (isChecked) {
-                        if (!working.contains(id)) working.add(id);
-                    } else {
-                        working.remove(id);
+        
+        // Get reciter data
+        String[] originalNames = getResources().getStringArray(R.array.reciter_names);
+        String[] originalIds = getResources().getStringArray(R.array.reciter_ids);
+        
+        // Create pairs to maintain name-id relationship while sorting
+        java.util.List<java.util.AbstractMap.SimpleEntry<String, String>> reciterPairs = new java.util.ArrayList<>();
+        for (int i = 0; i < originalNames.length; i++) {
+            reciterPairs.add(new java.util.AbstractMap.SimpleEntry<>(originalNames[i], originalIds[i]));
+        }
+        
+        // Sort pairs alphabetically by name (case-insensitive)
+        reciterPairs.sort((a, b) -> a.getKey().compareToIgnoreCase(b.getKey()));
+        
+        // Extract sorted names and ids
+        String[] names = new String[reciterPairs.size()];
+        String[] ids = new String[reciterPairs.size()];
+        for (int i = 0; i < reciterPairs.size(); i++) {
+            names[i] = reciterPairs.get(i).getKey();
+            ids[i] = reciterPairs.get(i).getValue();
+        }
+        
+        // Create boolean array for current selections
+        boolean[] checkedItems = new boolean[names.length];
+        for (int i = 0; i < ids.length; i++) {
+            checkedItems[i] = currentSelection.contains(ids[i]);
+        }
+        
+        // Create simple multi-choice dialog
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Select Reciters")
+            .setMultiChoiceItems(names, checkedItems, (dialog, which, isChecked) -> {
+                // Handle individual item clicks
+                checkedItems[which] = isChecked;
+            })
+            .setPositiveButton("OK", (dialog, which) -> {
+                // Save selections
+                java.util.List<String> selectedIds = new java.util.ArrayList<>();
+                for (int i = 0; i < checkedItems.length; i++) {
+                    if (checkedItems[i]) {
+                        selectedIds.add(ids[i]);
                     }
-                })
-                .setPositiveButton("Save", (d, w) -> {
-                    String joined = android.text.TextUtils.join(",", working);
-                    prefs.edit().putString("reciters.order", joined).apply();
-                    renderSelectedReciters();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                }
+                String joined = android.text.TextUtils.join(",", selectedIds);
+                prefs.edit().putString("reciters.order", joined).apply();
+                renderSelectedReciters();
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
+    
 
     private void renderSelectedReciters() {
         String[] names = getResources().getStringArray(R.array.reciter_names);
@@ -1019,19 +1040,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String summarizeReciters() {
-        String[] namesArr = getResources().getStringArray(R.array.reciter_names);
-        String[] idsArr = getResources().getStringArray(R.array.reciter_ids);
-        java.util.Map<String, String> map = new java.util.HashMap<>();
-        for (int i = 0; i < idsArr.length; i++) map.put(idsArr[i], namesArr[i]);
         String saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
         java.util.List<String> ids = new java.util.ArrayList<>();
         if (!saved.isEmpty()) for (String s : saved.split(",")) if (!s.isEmpty()) ids.add(s);
-        if (ids.isEmpty()) return "(none)";
-        java.util.List<String> names = new java.util.ArrayList<>();
-        for (String id : ids) names.add(map.getOrDefault(id, id));
-        if (names.size() == 1) return names.get(0);
-        if (names.size() == 2) return names.get(0) + ", " + names.get(1);
-        return names.get(0) + ", " + names.get(1) + " +" + (names.size() - 2);
+        if (ids.isEmpty()) return "0 selected";
+        return ids.size() + " selected";
     }
 
     private String positionName(int pos) {

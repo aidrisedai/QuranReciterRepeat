@@ -55,13 +55,38 @@ public class RangeTabFragment extends Fragment {
 
         startAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(Math.max(1, Math.min(114, lastStart))));
         endAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(Math.max(1, Math.min(114, lastEnd))));
-        ddStart.setOnItemClickListener((parent, v, pos, id) -> startAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(pos + 1)));
-        ddEnd.setOnItemClickListener((parent, v, pos, id) -> endAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(pos + 1)));
+        
+        // Ensure all UI elements are visible initially
+        ensureUIElementsVisible(root);
+        
+        ddStart.setOnItemClickListener((parent, v, pos, id) -> {
+            startAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(pos + 1));
+            // Refresh UI visibility after dropdown interaction
+            ensureUIElementsVisible(root);
+        });
+        
+        ddEnd.setOnItemClickListener((parent, v, pos, id) -> {
+            endAyahLayout.setHelperText("Max ayah: " + com.repeatquran.util.AyahCounts.getCount(pos + 1));
+            // Refresh UI visibility after dropdown interaction
+            ensureUIElementsVisible(root);
+        });
 
         // Half-split now controlled via Settings only
 
         root.findViewById(R.id.btnPlay).setOnClickListener(v -> {
+            // Guard against rapid clicks
+            android.view.View btn = root.findViewById(R.id.btnPlay);
+            if (!btn.isEnabled()) return;
+            
             clearError(startSurahLayout); clearError(endSurahLayout); clearError(startAyahLayout); clearError(endAyahLayout);
+            
+            // Check for reciter selection before proceeding
+            String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
+            if (savedOrder == null || savedOrder.trim().isEmpty()) {
+                android.widget.Toast.makeText(requireContext(), "Select at least one reciter first", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
             String s1 = ddStart.getText()!=null?ddStart.getText().toString().trim():"";
             String s2 = ddEnd.getText()!=null?ddEnd.getText().toString().trim():"";
             if (s1.length()<3) { showError(startSurahLayout, "Select start"); return; }
@@ -87,6 +112,10 @@ public class RangeTabFragment extends Fragment {
             int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
             boolean half = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getBoolean("ui.half.split", false);
 
+            // Disable button immediately and show loading state  
+            btn.setEnabled(false);
+            android.widget.Toast.makeText(requireContext(), "Loading range…", android.widget.Toast.LENGTH_SHORT).show();
+
             Intent intent = new Intent(requireContext(), PlaybackService.class);
             intent.setAction(PlaybackService.ACTION_LOAD_RANGE);
             intent.putExtra("ss", ss);
@@ -95,7 +124,15 @@ public class RangeTabFragment extends Fragment {
             intent.putExtra("ea", ea);
             intent.putExtra("repeat", repeat);
             intent.putExtra("halfSplit", half);
+            
             if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
+            
+            // Re-enable after shorter delay, but service broadcast will manage state properly
+            btn.postDelayed(() -> {
+                if (btn.isEnabled() == false) { // Only re-enable if still disabled
+                    btn.setEnabled(true);
+                }
+            }, 800);
         });
 
         root.findViewById(R.id.btnPause).setOnClickListener(v -> sendService(PlaybackService.ACTION_PAUSE));
@@ -107,22 +144,39 @@ public class RangeTabFragment extends Fragment {
         });
         // Prepare receiver for pause/resume binding
         playbackBr = new android.content.BroadcastReceiver() {
-            @Override public void onReceive(android.content.Context context, android.content.Intent intent) {
+            @Override 
+            public void onReceive(android.content.Context context, android.content.Intent intent) {
                 android.view.View rootView = getView();
                 if (rootView == null) return;
+                
                 boolean hasQueue = intent.getBooleanExtra("hasQueue", false);
                 boolean playing = intent.getBooleanExtra("playing", false);
-                android.view.View btn = rootView.findViewById(R.id.btnPause);
-                if (btn instanceof com.google.android.material.button.MaterialButton) {
-                    com.google.android.material.button.MaterialButton b = (com.google.android.material.button.MaterialButton) btn;
+                
+                // Update Pause/Resume button
+                android.view.View pauseBtn = rootView.findViewById(R.id.btnPause);
+                if (pauseBtn instanceof com.google.android.material.button.MaterialButton) {
+                    com.google.android.material.button.MaterialButton b = (com.google.android.material.button.MaterialButton) pauseBtn;
                     b.setText(playing ? "Pause" : "Resume");
                     b.setEnabled(hasQueue);
                 }
+                
+                // Update Play button state - re-enable when service is ready
+                android.view.View playBtn = rootView.findViewById(R.id.btnPlay);
+                if (playBtn != null && hasQueue) {
+                    // Service has successfully processed the load request
+                    playBtn.setEnabled(true);
+                }
+                
+                // Ensure UI elements remain visible after service state changes
+                ensureUIElementsVisible(rootView);
             }
         };
-        // Speed next to Play/Pause
-        com.google.android.material.button.MaterialButton btnSpeed = root.findViewById(R.id.btnSpeed);
-        com.repeatquran.ui.SpeedControlHelper.setup(requireContext(), btnSpeed);
+        
+        // Stop button
+        root.findViewById(R.id.btnStop).setOnClickListener(v -> {
+            sendService(PlaybackService.ACTION_STOP);
+            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
+        });
     }
 
     @Override public void onStart() {
@@ -130,6 +184,15 @@ public class RangeTabFragment extends Fragment {
         if (playbackBr != null) {
             android.content.IntentFilter f = new android.content.IntentFilter(PlaybackService.ACTION_PLAYBACK_STATE);
             if (android.os.Build.VERSION.SDK_INT >= 33) requireContext().registerReceiver(playbackBr, f, android.content.Context.RECEIVER_NOT_EXPORTED); else requireContext().registerReceiver(playbackBr, f);
+        }
+    }
+    
+    @Override public void onResume() {
+        super.onResume();
+        // Ensure UI elements are visible when fragment becomes active
+        View rootView = getView();
+        if (rootView != null) {
+            ensureUIElementsVisible(rootView);
         }
     }
 
@@ -153,4 +216,53 @@ public class RangeTabFragment extends Fragment {
     private void clearError(TextInputLayout layout) { layout.setError(null); layout.setErrorEnabled(false); }
     private int parseIntSafe(TextInputEditText edit) { try { return Integer.parseInt(edit.getText()==null?"":edit.getText().toString().trim()); } catch (Exception e) { return -1; } }
     private int getAyahCount(int surah) { return com.repeatquran.util.AyahCounts.getCount(surah); }
+    
+    /**
+     * Ensures all UI elements are properly visible and laid out.
+     * This fixes the issue where End Ayah and Play buttons may not appear.
+     */
+    private void ensureUIElementsVisible(View root) {
+        // Force visibility of all key UI elements
+        View endAyahLayout = root.findViewById(R.id.endAyahLayout);
+        View endSurahLayout = root.findViewById(R.id.endSurahLayout);
+        View btnPlay = root.findViewById(R.id.btnPlay);
+        View btnPause = root.findViewById(R.id.btnPause);
+        View btnStop = root.findViewById(R.id.btnStop);
+        
+        if (endAyahLayout != null) {
+            endAyahLayout.setVisibility(View.VISIBLE);
+            // Force layout refresh
+            endAyahLayout.requestLayout();
+        }
+        
+        if (endSurahLayout != null) {
+            endSurahLayout.setVisibility(View.VISIBLE);
+            endSurahLayout.requestLayout();
+        }
+        
+        if (btnPlay != null) {
+            btnPlay.setVisibility(View.VISIBLE);
+            btnPlay.requestLayout();
+        }
+        
+        if (btnPause != null) {
+            btnPause.setVisibility(View.VISIBLE);
+            btnPause.requestLayout();
+        }
+        
+        if (btnStop != null) {
+            btnStop.setVisibility(View.VISIBLE);
+            btnStop.requestLayout();
+        }
+        
+        // Force the parent layout to refresh
+        root.requestLayout();
+        
+        // Post a layout update to ensure proper rendering
+        root.post(() -> {
+            if (getView() != null) {
+                getView().invalidate();
+            }
+        });
+    }
 }

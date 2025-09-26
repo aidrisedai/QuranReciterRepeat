@@ -47,6 +47,9 @@
         <item>Khalefa Al Tunaiji</item>
         <item>Aziz Alili</item>
         <item>Ahmed ibn Ali al Ajamy</item>
+        <item>(Warsh) Ibrahim Al-Dosary</item>
+        <item>(Warsh) Yassin Al-Jazaery</item>
+        <item>(Warsh) Abdul Basit</item>
     </string-array>
 
     <string-array name="reciter_ids">
@@ -81,6 +84,9 @@
         <item>khalefa_al_tunaiji_64kbps</item>
         <item>aziz_alili_128kbps</item>
         <item>ahmed_ibn_ali_al_ajamy_128kbps</item>
+        <item>warsh/warsh_ibrahim_aldosary_128kbps</item>
+        <item>warsh/warsh_yassin_al_jazaery_64kbps</item>
+        <item>warsh/warsh_Abdul_Basit_128kbps</item>
     </string-array>
 
     <!-- Surah numbers (001..114) and English names -->

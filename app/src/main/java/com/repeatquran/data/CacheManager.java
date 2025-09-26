@@ -8,14 +8,28 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class CacheManager {
     private static final String TAG = "CacheManager";
     private static volatile CacheManager INSTANCE;
     private final Context appContext;
-    private final ExecutorService ioExecutor = Executors.newFixedThreadPool(2);
+    // Bounded executor to avoid unbounded task queue memory growth
+    private final ExecutorService ioExecutor = new ThreadPoolExecutor(
+            2, // core
+            2, // max
+            60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(64) // cap outstanding tasks
+    );
+    // Track in-flight downloads to prevent duplicate scheduling
+    private final Set<String> inflight = Collections.synchronizedSet(new HashSet<>());
 
     private CacheManager(Context context) {
         this.appContext = context.getApplicationContext();
@@ -44,7 +58,18 @@ public class CacheManager {
     public void cacheAsync(String url, String reciterId, String sss, String aaa) {
         File target = getTargetFile(reciterId, sss, aaa);
         if (target.exists()) return;
-        ioExecutor.execute(() -> downloadTo(url, target));
+        String key = safe(reciterId) + ":" + sss + aaa;
+        if (!inflight.add(key)) return; // already scheduled
+        try {
+            ioExecutor.execute(() -> {
+                try { downloadTo(url, target); }
+                finally { inflight.remove(key); }
+            });
+        } catch (RejectedExecutionException rex) {
+            // Queue is full; drop this background cache to avoid OOM pressure
+            inflight.remove(key);
+            Log.w(TAG, "Cache queue full; dropping: " + url);
+        }
     }
 
     private void downloadTo(String urlStr, File target) {
