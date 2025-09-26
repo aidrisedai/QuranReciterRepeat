@@ -1,7 +1,6 @@
 package com.repeatquran.playback;
 
 import android.content.Context;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 
@@ -54,11 +53,11 @@ public class PlaybackManager {
                     // Only auto-repeat provider-driven passages when feeding is enabled
                     if (passageRepeatCount == -1 || passageCyclesCompleted < Math.max(0, passageRepeatCount - 1)) {
                         passageCyclesCompleted++;
-                        Log.d(TAG, "Passage cycle " + passageCyclesCompleted + " complete; repeating");
+                        // Debug: Passage cycle complete, repeating
                         player.seekToDefaultPosition(0);
                         player.play();
                     } else {
-                        Log.d(TAG, "Passage playback finished (no more repeats)");
+                        // Debug: Passage playback finished
                     }
                 }
             }
@@ -70,7 +69,7 @@ public class PlaybackManager {
 
             @Override
             public void onPlayerError(com.google.android.exoplayer2.PlaybackException error) {
-                Log.e(TAG, "Playback error", error);
+                // Debug: Playback error occurred
                 if (callback != null) callback.onPlaybackError(error.getMessage());
             }
         });
@@ -119,7 +118,7 @@ public class PlaybackManager {
         MediaItem item = new MediaItem.Builder().setUri(url).build();
         player.addMediaItem(item);
         if (callback != null) callback.onBufferAppended(nextToAppend);
-        Log.d(TAG, "Appended to buffer: index=" + nextToAppend);
+        // Debug: Appended to buffer
         nextToAppend++;
     }
 

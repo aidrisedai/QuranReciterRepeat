@@ -1,7 +1,6 @@
 package com.repeatquran.data;
 
 import android.content.Context;
-import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -68,7 +67,7 @@ public class CacheManager {
         } catch (RejectedExecutionException rex) {
             // Queue is full; drop this background cache to avoid OOM pressure
             inflight.remove(key);
-            Log.w(TAG, "Cache queue full; dropping: " + url);
+            // Debug: Cache queue full, dropping request
         }
     }
 
@@ -81,7 +80,7 @@ public class CacheManager {
             conn.setReadTimeout(20000);
             conn.connect();
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                Log.w(TAG, "HTTP " + conn.getResponseCode() + " for " + urlStr);
+                // Debug: HTTP error for urlStr
                 conn.disconnect();
                 return;
             }
@@ -99,9 +98,9 @@ public class CacheManager {
                 //noinspection ResultOfMethodCallIgnored
                 tmp.renameTo(target);
             }
-            Log.d(TAG, "Cached: " + target.getAbsolutePath());
+            // Debug: Successfully cached file
         } catch (Exception e) {
-            Log.e(TAG, "Cache failed for " + urlStr, e);
+            // Debug: Cache failed for URL
             //noinspection ResultOfMethodCallIgnored
             tmp.delete();
         }

@@ -102,12 +102,12 @@ public class PlaybackService extends Service {
                 new PlaybackManager.Callback() {
                     @Override
                     public void onBufferAppended(int index) {
-                        Log.d("PlaybackService", "Buffer appended: " + index);
+                        // Debug: Buffer appended
                     }
 
                     @Override
                     public void onPlaybackError(String message) {
-                        Log.e("PlaybackService", "Playback error: " + message);
+                        // Debug: Playback error occurred
                     }
 
                     @Override
@@ -175,7 +175,7 @@ public class PlaybackService extends Service {
                     com.repeatquran.analytics.AnalyticsLogger.get(PlaybackService.this).log("error_playback", evErr);
                 }
                 if (!online) {
-                    Log.w("PlaybackService", "Offline playback error; skipping item: " + uriStr);
+                    // Debug: Offline playback error, skipping item
                     mainHandler.post(() -> android.widget.Toast.makeText(PlaybackService.this, "Offline: skipping uncached item", android.widget.Toast.LENGTH_SHORT).show());
                     // Skip to next item when offline and current failed
                     mainHandler.post(() -> {
@@ -183,25 +183,25 @@ public class PlaybackService extends Service {
                         cancelErrorNotification();
                     });
                 } else {
-                    Log.e("PlaybackService", "Playback error online: " + error.getMessage());
+                    // Debug: Playback error online
                     int count = retryCounts.getOrDefault(uriStr, 0);
                     if (count < 1) {
                         retryCounts.put(uriStr, count + 1);
                         com.repeatquran.analytics.AnalyticsLogger.get(PlaybackService.this).log("error_retry", java.util.Collections.singletonMap("uri", uriStr));
                         int idx = player.getCurrentMediaItemIndex();
-                        Log.w("PlaybackService", "Retrying item once: index=" + idx + ", uri=" + uriStr);
+                        // Debug: Retrying item once
                         mainHandler.post(() -> {
                             try {
                                 player.seekTo(Math.max(idx, 0), 0);
                                 player.prepare();
                                 player.play();
                             } catch (Exception e) {
-                                Log.e("PlaybackService", "Retry failed to start", e);
+                                // Debug: Retry failed to start
                                 if (player.hasNextMediaItem()) player.seekToNextMediaItem(); else player.stop();
                             }
                         });
                     } else {
-                        Log.e("PlaybackService", "Item failed after retry; showing actions");
+                        // Debug: Item failed after retry, showing actions
                         com.repeatquran.analytics.AnalyticsLogger.get(PlaybackService.this).log("error_actionable", java.util.Collections.singletonMap("uri", uriStr));
                         showErrorNotification("Playback failed", "Retry this ayah or skip to next");
                     }
@@ -313,13 +313,13 @@ public class PlaybackService extends Service {
                 resetToIdle();
                 return result;
             } catch (Exception e) {
-                Log.e("PlaybackService", "Action " + action + " failed", e);
+                // Debug: Action failed
                 resetToIdle();
                 return START_STICKY;
             }
         }
         
-        Log.w("PlaybackService", "Unknown action: " + action);
+        // Debug: Unknown action
         return START_STICKY;
     }
     
@@ -350,13 +350,13 @@ public class PlaybackService extends Service {
             return START_NOT_STICKY;
         }
         if (ACTION_SIMULATE_FOCUS_LOSS.equals(action)) {
-            Log.w("PlaybackService", "Simulated focus loss (call) — pausing");
+            // Debug: Simulated focus loss, pausing
             if (player != null) player.pause();
             broadcastState();
             return START_STICKY;
         }
         if (ACTION_SIMULATE_FOCUS_GAIN.equals(action)) {
-            Log.w("PlaybackService", "Simulated focus gain — resuming if queue exists");
+            // Debug: Simulated focus gain, resuming if queue exists
             if (player != null && player.getMediaItemCount() > 0) player.play();
             broadcastState();
             return START_STICKY;
@@ -401,7 +401,7 @@ public class PlaybackService extends Service {
             if (player.getMediaItemCount() > 0) {
                 player.play();
             } else {
-                Log.d("PlaybackService", "Play pressed with empty queue; not seeding provider.");
+                // Debug: Play pressed with empty queue
             }
             broadcastState();
         } else if (ACTION_START.equals(action) || action == null) {
