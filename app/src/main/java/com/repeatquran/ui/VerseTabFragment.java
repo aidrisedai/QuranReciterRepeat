@@ -24,6 +24,8 @@ import com.repeatquran.playback.PlaybackService;
 
 public class VerseTabFragment extends Fragment {
     private android.content.BroadcastReceiver playbackBr;
+    private boolean isPlaying = false;
+    private boolean hasQueue = false;
 
     @Nullable
     @Override
@@ -66,9 +68,11 @@ public class VerseTabFragment extends Fragment {
             public void onReceive(android.content.Context context, android.content.Intent intent) {
                 android.view.View rootView = getView();
                 if (rootView == null) return;
-                boolean hasQueue = intent.getBooleanExtra("hasQueue", false);
-                boolean playing = intent.getBooleanExtra("playing", false);
-                updatePlayPauseButton(rootView, hasQueue, playing);
+                
+                hasQueue = intent.getBooleanExtra("hasQueue", false);
+                isPlaying = intent.getBooleanExtra("playing", false);
+                
+                updatePlayPauseButton(rootView);
             }
         };
         
@@ -106,18 +110,22 @@ public class VerseTabFragment extends Fragment {
     
     private void handlePlayPauseToggle(View root) {
         android.view.View btn = root.findViewById(R.id.btnPlayPause);
-        if (btn instanceof com.google.android.material.button.MaterialButton) {
-            com.google.android.material.button.MaterialButton playPauseBtn = (com.google.android.material.button.MaterialButton) btn;
-            String currentText = playPauseBtn.getText().toString();
-            
-            if ("Play".equals(currentText)) {
-                // Play mode - load and start new content
-                loadAndPlayVerse(root);
-            } else {
-                // Pause/Resume mode - toggle playback
-                sendService(PlaybackService.ACTION_PAUSE);
-            }
+        if (!btn.isEnabled()) return;
+        
+        // If currently playing, pause
+        if (isPlaying) {
+            sendService(PlaybackService.ACTION_PAUSE);
+            return;
         }
+        
+        // If has queue but not playing, resume
+        if (hasQueue && !isPlaying) {
+            sendService(PlaybackService.ACTION_PLAY);
+            return;
+        }
+        
+        // Otherwise, load new content
+        loadAndPlayVerse(root);
     }
     
     private void loadAndPlayVerse(View root) {
@@ -166,17 +174,19 @@ public class VerseTabFragment extends Fragment {
         playPauseBtn.postDelayed(() -> playPauseBtn.setEnabled(true), 1200);
     }
     
-    private void updatePlayPauseButton(View rootView, boolean hasQueue, boolean playing) {
+    private void updatePlayPauseButton(View rootView) {
         android.view.View btn = rootView.findViewById(R.id.btnPlayPause);
         if (btn instanceof com.google.android.material.button.MaterialButton) {
             com.google.android.material.button.MaterialButton playPauseBtn = (com.google.android.material.button.MaterialButton) btn;
             
-            if (playing) {
+            playPauseBtn.setEnabled(true);
+            
+            if (isPlaying) {
                 playPauseBtn.setText("Pause");
                 playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
                 playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CA383)); // Teal for pause
             } else if (hasQueue) {
-                playPauseBtn.setText("Resume");
+                playPauseBtn.setText("Play");
                 playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
                 playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(requireContext().getColor(R.color.md_theme_primary))); // Primary for resume
             } else {
@@ -184,8 +194,6 @@ public class VerseTabFragment extends Fragment {
                 playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
                 playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(requireContext().getColor(R.color.md_theme_primary))); // Primary for play
             }
-            
-            playPauseBtn.setEnabled(true);
         }
     }
     
