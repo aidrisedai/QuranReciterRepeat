@@ -33,12 +33,15 @@ public class VerseTabFragment extends Fragment implements PlaybackStateManager.S
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.d("VerseTabFragment", "onCreateView called");
         View v = inflater.inflate(R.layout.fragment_verse_tab, container, false);
         setupUi(v);
+        Log.d("VerseTabFragment", "onCreateView completed");
         return v;
     }
 
     private void setupUi(View root) {
+        Log.d("VerseTabFragment", "setupUi called");
         AutoCompleteTextView ddSurah = root.findViewById(R.id.surahDropdown);
         TextInputLayout surahLayout = root.findViewById(R.id.surahInputLayout);
         TextInputLayout ayahLayout = root.findViewById(R.id.ayahInputLayout);
@@ -78,6 +81,7 @@ public class VerseTabFragment extends Fragment implements PlaybackStateManager.S
 
     @Override public void onStart() {
         super.onStart();
+        Log.d("VerseTabFragment", "onStart: adding listener to PlaybackStateManager");
         PlaybackStateManager.getInstance().addListener(this);
     }
 
@@ -168,33 +172,45 @@ public class VerseTabFragment extends Fragment implements PlaybackStateManager.S
     
     @Override
     public void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying) {
+        Log.d("VerseTabFragment", "onPlaybackStateChanged: hasQueue=" + hasQueue + ", isPlaying=" + isPlaying);
+        
         this.hasQueue = hasQueue;
         this.isPlaying = isPlaying;
         
         // Update UI on main thread if needed
         if (playPauseButton != null) {
+            Log.d("VerseTabFragment", "Posting updateButtonUI to main thread");
             playPauseButton.post(() -> updateButtonUI());
+        } else {
+            Log.w("VerseTabFragment", "playPauseButton is null, cannot update UI");
         }
     }
     
     private void updateButtonUI() {
-        if (playPauseButton == null) return;
+        Log.d("VerseTabFragment", "updateButtonUI called: hasQueue=" + hasQueue + ", isPlaying=" + isPlaying);
+        
+        if (playPauseButton == null) {
+            Log.w("VerseTabFragment", "playPauseButton is null in updateButtonUI");
+            return;
+        }
         
         playPauseButton.setEnabled(true);
         
         if (isPlaying) {
-            Log.d("VerseTabFragment", "Button -> Pause");
+            Log.d("VerseTabFragment", "Setting button to Pause state");
             playPauseButton.setText("Pause");
             playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
         } else if (hasQueue) {
-            Log.d("VerseTabFragment", "Button -> Play (Resume)");
+            Log.d("VerseTabFragment", "Setting button to Play (Resume) state");
             playPauseButton.setText("Play");
             playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
         } else {
-            Log.d("VerseTabFragment", "Button -> Play (Load)");
+            Log.d("VerseTabFragment", "Setting button to Play (Load) state");
             playPauseButton.setText("Play");
             playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
         }
+        
+        Log.d("VerseTabFragment", "Button UI updated successfully");
     }
     
     private void setupTestEnvironment() {

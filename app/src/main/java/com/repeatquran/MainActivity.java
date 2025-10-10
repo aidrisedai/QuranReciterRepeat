@@ -26,6 +26,8 @@ import com.repeatquran.data.db.SessionEntity;
 import com.repeatquran.data.PresetRepository;
 import com.repeatquran.data.db.PresetEntity;
 import com.repeatquran.ui.ModesPagerAdapter;
+import com.repeatquran.playback.PlaybackStateManager;
+import android.util.Log;
 
 public class MainActivity extends AppCompatActivity {
     private android.content.BroadcastReceiver playbackStateReceiver;
@@ -144,6 +146,10 @@ public class MainActivity extends AppCompatActivity {
 
         setupRepeatDropdown();
         setupSpeedDropdown();
+        
+        // DEBUG: Test PlaybackStateManager directly
+        Log.d("MainActivity", "Testing PlaybackStateManager: hasQueue=" + PlaybackStateManager.getInstance().hasQueue() + ", isPlaying=" + PlaybackStateManager.getInstance().isPlaying());
+        
         // Analytics: app open
         com.repeatquran.analytics.AnalyticsLogger.get(this).log("app_open", java.util.Collections.emptyMap());
     }
