@@ -23,15 +23,6 @@
             app:navigationIconTint="@color/md_theme_onPrimary"
             app:popupTheme="@style/ThemeOverlay.RepeatQuran.Popup"
             app:menu="@menu/menu_main" />
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/modeTabs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:tabIndicatorColor="@color/md_theme_onPrimary"
-            app:tabSelectedTextColor="@color/md_theme_onPrimary"
-            app:tabTextColor="@color/md_theme_onPrimary"
-            android:background="?attr/colorPrimary"/>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -45,369 +36,164 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
-    <!-- Global pills: Repeat, Reciters, Speed (no scrolling needed) -->
-    <LinearLayout
-        android:id="@+id/globalPills"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-        
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/repeatInlineLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:hint="Repeat">
-            <AutoCompleteTextView
-                android:id="@+id/repeatInlineDropdown"
-                android:layout_width="match_parent"
+            <!-- Global Pills: Repeat, Reciters, Speed in horizontal scrollable row -->
+            <HorizontalScrollView
+                android:id="@+id/globalPillsScroll"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:importantForAutofill="no"
-                android:imeOptions="actionDone" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:scrollbars="none"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
 
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chipReciters"
-            style="@style/Widget.MaterialComponents.Chip.Choice"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Reciters: 0"
-            app:chipIconEnabled="false" />
+                <LinearLayout
+                    android:id="@+id/globalPills"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/repeatInlineLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:hint="Repeat">
+                        <AutoCompleteTextView
+                            android:id="@+id/repeatInlineDropdown"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:importantForAutofill="no"
+                            android:imeOptions="actionDone" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/speedInlineLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:hint="Speed">
-            <AutoCompleteTextView
-                android:id="@+id/speedInlineDropdown"
-                android:layout_width="match_parent"
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipReciters"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="Reciters: 1 selected"
+                        app:chipIconEnabled="false" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/speedInlineLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:hint="Speed">
+                        <AutoCompleteTextView
+                            android:id="@+id/speedInlineDropdown"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:importantForAutofill="no" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Main Surah Selection -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/mainSurahLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:inputType="none"
-                android:importantForAutofill="no" />
-        </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
+                android:layout_marginTop="24dp"
+                app:layout_constraintTop_toBottomOf="@id/globalPillsScroll"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+                
+                <AutoCompleteTextView
+                    android:id="@+id/mainSurahDropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:textSize="18sp"
+                    android:importantForAutofill="no" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/modePager"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:minHeight="400dp"
-        app:layout_constraintTop_toBottomOf="@id/globalPills"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+            <!-- Main Action Buttons -->
+            <LinearLayout
+                android:id="@+id/mainActionButtons"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp"
+                app:layout_constraintTop_toBottomOf="@id/mainSurahLayout"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/surahInputLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Surah"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/modePager"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/ayahInputLayout"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="8dp">
-        <AutoCompleteTextView
-            android:id="@+id/surahSingleDropdown"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="none"
-            android:importantForAutofill="no" />
-    </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPlay"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:paddingVertical="12dp"
+                    android:text="PLAY"
+                    app:icon="@drawable/ic_play_arrow"
+                    app:iconGravity="textStart"
+                    android:backgroundTint="@color/md_theme_primary" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/ayahInputLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Ayah (>=1)"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/modePager"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/surahInputLayout"
-        android:layout_marginTop="12dp"
-        android:layout_marginStart="8dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editAyah"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:imeOptions="actionDone" />
-    </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPause"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:paddingVertical="12dp"
+                    android:text="PAUSE"
+                    app:icon="@drawable/ic_pause"
+                    app:iconGravity="textStart"
+                    android:backgroundTint="#4CA383" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnLoadAyah"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Load Ayah"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/ayahInputLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStop"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:paddingVertical="12dp"
+                    android:text="STOP"
+                    app:icon="@drawable/ic_stop"
+                    app:iconGravity="textStart"
+                    android:backgroundTint="#C15150" />
+            </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/controlsRow"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:paddingTop="16dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/globalPills"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-        <!-- Real play/pause controls live inside tab fragments; this row intentionally empty. -->
-    </LinearLayout>
+            <!-- Divider -->
+            <View
+                android:id="@+id/dividerHistory"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:background="@color/md_theme_outline"
+                app:layout_constraintTop_toBottomOf="@id/mainActionButtons"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="24dp" />
 
-    <!-- Range selection (Start Surah:Ayah -> End Surah:Ayah) -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/startSurahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Start Surah"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/controlsRow"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/endSurahLayout"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="8dp">
-        <AutoCompleteTextView
-            android:id="@+id/startSurahDropdown"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="none"
-            android:importantForAutofill="no" />
-    </com.google.android.material.textfield.TextInputLayout>
+            <!-- Recent Sessions -->
+            <TextView
+                android:id="@+id/historyTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/TextAppearance.RepeatQuran.Section"
+                android:text="@string/title_recent_sessions"
+                app:layout_constraintTop_toBottomOf="@id/dividerHistory"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginTop="16dp" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/startAyahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Start Ayah"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/startSurahLayout"
-        app:layout_constraintStart_toStartOf="@id/startSurahLayout"
-        app:layout_constraintEnd_toEndOf="@id/startSurahLayout"
-        android:layout_marginTop="8dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editStartAyah"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:imeOptions="actionNext" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/endSurahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="End Surah"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/controlsRow"
-        app:layout_constraintStart_toEndOf="@id/startSurahLayout"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="8dp">
-        <AutoCompleteTextView
-            android:id="@+id/endSurahDropdown"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="none"
-            android:importantForAutofill="no" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/endAyahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="End Ayah"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/endSurahLayout"
-        app:layout_constraintStart_toStartOf="@id/endSurahLayout"
-        app:layout_constraintEnd_toEndOf="@id/endSurahLayout"
-        android:layout_marginTop="8dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editEndAyah"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:imeOptions="actionDone" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnLoadRange"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Load Range"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/endAyahLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp" />
-
-    <!-- Page selection (1..604) -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/pageInputLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Page (1–604)"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnLoadRange"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editPage"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:imeOptions="actionDone" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnLoadPage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Load Page"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/pageInputLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp" />
-
-    <!-- Surah selection -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/surahSelectLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Surah"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnLoadPage"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp">
-        <AutoCompleteTextView
-            android:id="@+id/surahDropdown"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="none"
-            android:importantForAutofill="no" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnLoadSurah"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Load Surah"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/surahSelectLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnChooseReciters"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Choose Reciters"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnLoadSurah"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp" />
-
-    <TextView
-        android:id="@+id/txtReciters"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Selected reciters: (none)"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnChooseReciters"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSavePreset"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Save Preset"
-        app:layout_constraintTop_toBottomOf="@id/txtReciters"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="12dp" />
-
-    <!-- Downloads navigation -->
-    <!-- Divider -->
-    <View
-        android:id="@+id/dividerHistory"
-        android:layout_width="0dp"
-        android:layout_height="1dp"
-        android:background="@color/md_theme_outline"
-        app:layout_constraintTop_toBottomOf="@id/modePager"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp" />
-
-    <!-- Recent Sessions -->
-    <TextView
-        android:id="@+id/historyTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        style="@style/TextAppearance.RepeatQuran.Section"
-        android:text="@string/title_recent_sessions"
-        app:layout_constraintTop_toBottomOf="@id/dividerHistory"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp" />
-
-    <LinearLayout
-        android:id="@+id/historyContainer"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintTop_toBottomOf="@id/historyTitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
-
-    <!-- Presets -->
-    <TextView
-        android:id="@+id/presetsTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/title_presets"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/historyContainer"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp" />
-
-    <LinearLayout
-        android:id="@+id/presetContainer"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintTop_toBottomOf="@id/presetsTitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
+            <LinearLayout
+                android:id="@+id/historyContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintTop_toBottomOf="@id/historyTitle"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="8dp" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 

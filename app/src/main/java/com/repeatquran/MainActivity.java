@@ -90,48 +90,14 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Setup tabs skeleton (Verse | Range | Page | Surah)
-        androidx.viewpager2.widget.ViewPager2 pager = findViewById(R.id.modePager);
-        if (pager != null) {
-            pager.setAdapter(new com.repeatquran.ui.ModesPagerAdapter(this));
-            com.google.android.material.tabs.TabLayout tabs = findViewById(R.id.modeTabs);
-            if (tabs != null) {
-                new com.google.android.material.tabs.TabLayoutMediator(tabs, pager,
-                        (tab, position) -> {
-                            switch (position) {
-                                case 0: tab.setText("Verse"); break;
-                                case 1: tab.setText("Range"); break;
-                                case 2: tab.setText("Page"); break;
-                                case 3: tab.setText("Surah"); break;
-                            }
-                        }).attach();
-            }
+        // Setup main surah dropdown
+        setupMainSurahDropdown();
 
-            // Restore last mode selection if enabled
-            SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
-            boolean remember = prefs.getBoolean("ui.remember.mode", true);
-            int last = prefs.getInt("ui.last.mode", 0);
-            if (remember && last >= 0 && last < 4) pager.setCurrentItem(last, false);
-
-            // Save selection when page changes if enabled
-            pager.registerOnPageChangeCallback(new androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
-                @Override public void onPageSelected(int position) {
-                    boolean rem = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.remember.mode", true);
-                    if (rem) getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("ui.last.mode", position).apply();
-                    java.util.Map<String,Object> ev = new java.util.HashMap<>();
-                    ev.put("tab", positionName(position));
-                    com.repeatquran.analytics.AnalyticsLogger.get(MainActivity.this).log("tab_selected", ev);
-                }
-            });
-        }
-
-        // Global pills: summary + interactions
-        refreshGlobalPills();
-        // Inline repeat control (dropdown + editable number)
-        android.view.View chipReciters = findViewById(R.id.chipReciters);
-        if (chipReciters != null) {
-            chipReciters.setOnClickListener(v -> showReciterPicker());
-        }
+        // Setup global controls
+        setupGlobalControls();
+        
+        // Setup main action buttons
+        setupMainActionButtons();
 
         // Request notifications permission on Android 13+ so we can show the media notification
         if (Build.VERSION.SDK_INT >= 33) {
@@ -142,52 +108,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Inline controls row removed; real controls live inside tab fragments
 
-        setupRepeatDropdown();
-        setupSpeedDropdown();
         // Analytics: app open
         com.repeatquran.analytics.AnalyticsLogger.get(this).log("app_open", java.util.Collections.emptyMap());
-
-        findViewById(R.id.btnLoadAyah).setOnClickListener(v -> {
-            TextInputLayout surahLayout = findViewById(R.id.surahInputLayout);
-            TextInputLayout ayahLayout = findViewById(R.id.ayahInputLayout);
-            AutoCompleteTextView surahDd = findViewById(R.id.surahSingleDropdown);
-            TextInputEditText ayahEdit = findViewById(R.id.editAyah);
-
-            clearError(surahLayout);
-            clearError(ayahLayout);
-
-            String surahText = surahDd.getText() != null ? surahDd.getText().toString().trim() : "";
-            if (surahText.length() < 3) { showError(surahLayout, "Select surah"); return; }
-            String surahNumStr = surahText.substring(0, 3);
-            int surah;
-            try { surah = Integer.parseInt(surahNumStr); } catch (Exception e) { showError(surahLayout, "Select surah"); return; }
-            if (surah < 1 || surah > 114) { showError(surahLayout, "Select 001..114"); return; }
-
-            int ayah = parseIntSafe(ayahEdit);
-            if (ayah < 1) { showError(ayahLayout, "Enter >=1"); return; }
-            int maxAyah = getAyahCount(surah);
-            if (ayah > maxAyah) { showError(ayahLayout, "Max: " + maxAyah); return; }
-
-            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-
-            getSharedPreferences("rq_prefs", MODE_PRIVATE).edit()
-                    .putInt("repeat.count", repeat)
-                    .putInt("last.surah.single", surah)
-                    .apply();
-            String msg = "Loading Surah " + surahNumStr + " — " + surahName(surah) + ", Ayah " + ayah + " (repeat=" + (repeat==-1?"∞":repeat) + ")";
-            android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
-
-            View btn = findViewById(R.id.btnLoadAyah);
-            btn.setEnabled(false);
-            btn.postDelayed(() -> btn.setEnabled(true), 800);
-
-            Intent intent = new Intent(this, PlaybackService.class);
-            intent.setAction(PlaybackService.ACTION_LOAD_SINGLE);
-            intent.putExtra("sura", surah);
-            intent.putExtra("ayah", ayah);
-            intent.putExtra("repeat", repeat);
-            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
-        });
     }
 
     @Override
@@ -270,128 +192,6 @@ public class MainActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) {}
         });
 
-        // Load Range click
-        findViewById(R.id.btnLoadRange).setOnClickListener(v -> {
-            TextInputLayout startSurahLayout = findViewById(R.id.startSurahLayout);
-            TextInputLayout startAyahLayout = findViewById(R.id.startAyahLayout);
-            TextInputLayout endSurahLayout = findViewById(R.id.endSurahLayout);
-            TextInputLayout endAyahLayout = findViewById(R.id.endAyahLayout);
-
-            AutoCompleteTextView ddStartSurah = findViewById(R.id.startSurahDropdown);
-            TextInputEditText editStartAyah = findViewById(R.id.editStartAyah);
-            AutoCompleteTextView ddEndSurah = findViewById(R.id.endSurahDropdown);
-            TextInputEditText editEndAyah = findViewById(R.id.editEndAyah);
-
-            clearError(startSurahLayout);
-            clearError(startAyahLayout);
-            clearError(endSurahLayout);
-            clearError(endAyahLayout);
-
-            // Extract surah numbers from dropdowns (format "NNN — Name" or "NNN")
-            String startTxt = ddStartSurah.getText() != null ? ddStartSurah.getText().toString().trim() : "";
-            String endTxt = ddEndSurah.getText() != null ? ddEndSurah.getText().toString().trim() : "";
-            if (startTxt.length() < 3) { showError(startSurahLayout, "Select start"); return; }
-            if (endTxt.length() < 3) { showError(endSurahLayout, "Select end"); return; }
-            int ss;
-            int es;
-            try { ss = Integer.parseInt(startTxt.substring(0,3)); } catch (Exception e) { showError(startSurahLayout, "Select start"); return; }
-            try { es = Integer.parseInt(endTxt.substring(0,3)); } catch (Exception e) { showError(endSurahLayout, "Select end"); return; }
-            if (ss < 1 || ss > 114) { showError(startSurahLayout, "1..114"); return; }
-            if (es < 1 || es > 114) { showError(endSurahLayout, "1..114"); return; }
-            int sa = parseIntSafe(editStartAyah);
-            int ea = parseIntSafe(editEndAyah);
-
-            if (!validateSurahAyah(startSurahLayout, startAyahLayout, ss, sa)) return;
-            if (!validateSurahAyah(endSurahLayout, endAyahLayout, es, ea)) return;
-            if (!isStartBeforeOrEqual(ss, sa, es, ea)) {
-                showError(endSurahLayout, "End before start");
-                showError(endAyahLayout, "End before start");
-                return;
-            }
-
-            // Get current repeat from prefs (inline control already persisted it)
-            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-            getSharedPreferences("rq_prefs", MODE_PRIVATE).edit()
-                    .putInt("repeat.count", repeat)
-                    .putInt("last.surah.range.start", ss)
-                    .putInt("last.surah.range.end", es)
-                    .putInt("last.ayah.range.start", sa)
-                    .putInt("last.ayah.range.end", ea)
-                    .apply();
-            java.util.Map<String, Object> ev = new java.util.HashMap<>();
-            ev.put("repeat", repeat);
-            ev.put("type", "range");
-            ev.put("ss", ss); ev.put("sa", sa); ev.put("es", es); ev.put("ea", ea);
-            com.repeatquran.analytics.AnalyticsLogger.get(this).log("load_range", ev);
-
-            String msg = "Loading Range " + String.format("%03d", ss) + " — " + surahName(ss) + ":" + sa +
-                    " → " + String.format("%03d", es) + " — " + surahName(es) + ":" + ea +
-                    " (repeat=" + (repeat==-1?"∞":repeat) + ")";
-            android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
-
-            View btn = findViewById(R.id.btnLoadRange);
-            btn.setEnabled(false);
-            btn.postDelayed(() -> btn.setEnabled(true), 800);
-
-            Intent intent = new Intent(this, PlaybackService.class);
-            intent.setAction(PlaybackService.ACTION_LOAD_RANGE);
-            intent.putExtra("ss", ss);
-            intent.putExtra("sa", sa);
-            intent.putExtra("es", es);
-            intent.putExtra("ea", ea);
-            intent.putExtra("repeat", repeat);
-            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
-        });
-
-        // Preload range surah dropdowns
-        setupRangeSurahDropdowns();
-
-        // Choose Reciters (multi-select with ordered numbering)
-        findViewById(R.id.btnChooseReciters).setOnClickListener(v -> showReciterPicker());
-        renderSelectedReciters();
-
-        // Page input: preload last page
-        TextInputEditText editPage = findViewById(R.id.editPage);
-        int lastPage = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("last.page", 1);
-        editPage.setText(String.valueOf(lastPage));
-
-        // Load Page button (wires to service in UHW-28)
-        findViewById(R.id.btnLoadPage).setOnClickListener(v -> {
-            TextInputLayout pageLayout = findViewById(R.id.pageInputLayout);
-            clearError(pageLayout);
-            int page = parseIntSafe(editPage);
-            if (page < 1 || page > 604) {
-                showError(pageLayout, "Enter 1–604");
-                return;
-            }
-            getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("last.page", page).apply();
-            // Read repeat from prefs
-            int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-            Intent intent = new Intent(this, com.repeatquran.playback.PlaybackService.class);
-            intent.setAction(com.repeatquran.playback.PlaybackService.ACTION_LOAD_PAGE);
-            intent.putExtra("page", page);
-            intent.putExtra("repeat", repeat);
-            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
-            android.widget.Toast.makeText(this, "Loading page " + page + " (repeat=" + (repeat==-1?"∞":repeat) + ")", android.widget.Toast.LENGTH_SHORT).show();
-            java.util.Map<String, Object> ev = new java.util.HashMap<>();
-            ev.put("repeat", repeat);
-            ev.put("page", page);
-            com.repeatquran.analytics.AnalyticsLogger.get(this).log("load_page", ev);
-        });
-
-        // Surah dropdown setup
-        setupSurahDropdown();
-        setupSingleSurahDropdown();
-        findViewById(R.id.btnLoadSurah).setOnClickListener(v -> onLoadSurah());
-
-        // Downloads and QA are now accessible from Settings only
-
-        android.view.View savePreset = findViewById(R.id.btnSavePreset);
-        if (savePreset != null) savePreset.setVisibility(View.GONE);
-        android.view.View presetsTitle = findViewById(R.id.presetsTitle);
-        if (presetsTitle != null) presetsTitle.setVisibility(View.GONE);
-        android.view.View presetContainer = findViewById(R.id.presetContainer);
-        if (presetContainer != null) presetContainer.setVisibility(View.GONE);
     }
 
     // Speed controls in Home are provided via the inline dropdown near Reciters.
@@ -532,92 +332,6 @@ public class MainActivity extends AppCompatActivity {
     };
 
     // ---- Surah selection ----
-    private void setupSurahDropdown() {
-        AutoCompleteTextView dd = findViewById(R.id.surahDropdown);
-        String[] nums = getResources().getStringArray(R.array.surah_numbers);
-        String[] display = new String[nums.length];
-        for (int i = 0; i < nums.length; i++) {
-            String name = (i < SURAH_NAMES_EN.length) ? SURAH_NAMES_EN[i] : "";
-            display[i] = nums[i] + " — " + name;
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, display);
-        dd.setAdapter(adapter);
-        dd.setThreshold(0);
-        // preload last surah
-        int last = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("last.surah", 1);
-        if (last >= 1 && last <= 114) dd.setText(display[last - 1], false);
-    }
-
-    private void setupSingleSurahDropdown() {
-        AutoCompleteTextView dd = findViewById(R.id.surahSingleDropdown);
-        String[] nums = getResources().getStringArray(R.array.surah_numbers);
-        String[] display = new String[nums.length];
-        for (int i = 0; i < nums.length; i++) {
-            String name = (i < SURAH_NAMES_EN.length) ? SURAH_NAMES_EN[i] : "";
-            display[i] = nums[i] + " — " + name;
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, display);
-        dd.setAdapter(adapter);
-        dd.setThreshold(0);
-        int last = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("last.surah.single", 1);
-        if (last >= 1 && last <= 114) dd.setText(display[last - 1], false);
-
-        TextInputLayout ayahLayout = findViewById(R.id.ayahInputLayout);
-        // Initialize helper for last
-        ayahLayout.setHelperText("Max ayah: " + getAyahCount(Math.max(1, Math.min(114, last))));
-        dd.setOnItemClickListener((parent, view, position, id) -> {
-            int surah = position + 1;
-            ayahLayout.setHelperText("Max ayah: " + getAyahCount(surah));
-        });
-        dd.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s != null && s.length() >= 3) {
-                    try {
-                        int surah = Integer.parseInt(s.subSequence(0, 3).toString());
-                        if (surah >= 1 && surah <= 114) ayahLayout.setHelperText("Max ayah: " + getAyahCount(surah));
-                    } catch (Exception ignored) {}
-                }
-            }
-            @Override public void afterTextChanged(Editable s) {}
-        });
-    }
-
-    private void setupRangeSurahDropdowns() {
-        AutoCompleteTextView ddStart = findViewById(R.id.startSurahDropdown);
-        AutoCompleteTextView ddEnd = findViewById(R.id.endSurahDropdown);
-        String[] nums = getResources().getStringArray(R.array.surah_numbers);
-        String[] display = new String[nums.length];
-        for (int i = 0; i < nums.length; i++) {
-            String name = (i < SURAH_NAMES_EN.length) ? SURAH_NAMES_EN[i] : "";
-            display[i] = nums[i] + " — " + name;
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, display);
-        ddStart.setAdapter(adapter);
-        ddStart.setThreshold(0);
-        ddEnd.setAdapter(adapter);
-        ddEnd.setThreshold(0);
-        SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
-        int lastStart = prefs.getInt("last.surah.range.start", 1);
-        int lastEnd = prefs.getInt("last.surah.range.end", 1);
-        if (lastStart >= 1 && lastStart <= 114) ddStart.setText(display[lastStart - 1], false);
-        if (lastEnd >= 1 && lastEnd <= 114) ddEnd.setText(display[lastEnd - 1], false);
-
-        TextInputLayout startAyahLayout = findViewById(R.id.startAyahLayout);
-        TextInputLayout endAyahLayout = findViewById(R.id.endAyahLayout);
-        startAyahLayout.setHelperText("Max ayah: " + getAyahCount(Math.max(1, Math.min(114, lastStart))));
-        endAyahLayout.setHelperText("Max ayah: " + getAyahCount(Math.max(1, Math.min(114, lastEnd))));
-        ddStart.setOnItemClickListener((p, v, pos, id) -> startAyahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
-        ddEnd.setOnItemClickListener((p, v, pos, id) -> endAyahLayout.setHelperText("Max ayah: " + getAyahCount(pos + 1)));
-
-        // Prefill last ayahs if available
-        TextInputEditText editStartAyah = findViewById(R.id.editStartAyah);
-        TextInputEditText editEndAyah = findViewById(R.id.editEndAyah);
-        int lastStartAyah = prefs.getInt("last.ayah.range.start", -1);
-        int lastEndAyah = prefs.getInt("last.ayah.range.end", -1);
-        if (lastStartAyah > 0) editStartAyah.setText(String.valueOf(lastStartAyah));
-        if (lastEndAyah > 0) editEndAyah.setText(String.valueOf(lastEndAyah));
-    }
 
     // ---- Quick History UI (last 4 sessions) ----
 
@@ -660,51 +374,9 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    private void renderPresets() {
-        View container = findViewById(R.id.presetContainer);
-        if (!(container instanceof android.widget.LinearLayout)) return;
-        android.widget.LinearLayout ll = (android.widget.LinearLayout) container;
-        ll.removeAllViews();
-        new Thread(() -> {
-            PresetRepository repo = new PresetRepository(this);
-            java.util.List<PresetEntity> presets = repo.getAll();
-            runOnUiThread(() -> {
-                if (presets == null || presets.isEmpty()) {
-                    android.widget.TextView tv = new android.widget.TextView(this);
-                    tv.setText("No presets yet");
-                    ll.addView(tv);
-                } else {
-                    for (PresetEntity p : presets) {
-                        ll.addView(buildPresetItemView(p));
-                    }
-                }
-            });
-        }).start();
-    }
+    // Presets functionality is now handled in Settings
 
-    private View buildPresetItemView(PresetEntity p) {
-        android.widget.LinearLayout row = new android.widget.LinearLayout(this);
-        row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-        row.setPadding(8, 8, 8, 8);
-        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        android.widget.TextView name = new android.widget.TextView(this);
-        name.setText(p.name + "  (" + p.sourceType + ")");
-        name.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        row.addView(name);
-        android.widget.Button btnPlay = new android.widget.Button(this);
-        btnPlay.setText("Play");
-        btnPlay.setOnClickListener(v -> playPreset(p));
-        row.addView(btnPlay);
-        android.widget.Button btnEdit = new android.widget.Button(this);
-        btnEdit.setText("Edit");
-        btnEdit.setOnClickListener(v -> editPreset(p));
-        row.addView(btnEdit);
-        android.widget.Button btnDel = new android.widget.Button(this);
-        btnDel.setText("Del");
-        btnDel.setOnClickListener(v -> deletePreset(p));
-        row.addView(btnDel);
-        return row;
-    }
+    // Preset UI is now handled in Settings
 
     private void playPreset(PresetEntity p) {
         Intent intent = new Intent(this, PlaybackService.class);
@@ -733,143 +405,79 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
     }
 
-    private void editPreset(PresetEntity p) {
-        final android.widget.EditText input = new android.widget.EditText(this);
-        input.setText(p.name);
-        input.setHint("Name");
-        final android.widget.EditText repeat = new android.widget.EditText(this);
-        repeat.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_SIGNED);
-        repeat.setHint("Repeat (-1 = ∞)");
-        repeat.setText(String.valueOf(p.repeatCount));
-        android.widget.LinearLayout ll = new android.widget.LinearLayout(this);
-        ll.setOrientation(android.widget.LinearLayout.VERTICAL);
-        ll.setPadding(24, 16, 24, 0);
-        ll.addView(input);
-        ll.addView(repeat);
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Edit Preset")
-                .setView(ll)
-                .setPositiveButton("Save", (d, w) -> {
-                    p.name = input.getText() == null ? p.name : input.getText().toString().trim();
-                    try { p.repeatCount = Integer.parseInt(repeat.getText()==null?String.valueOf(p.repeatCount):repeat.getText().toString().trim()); } catch (Exception ignored) {}
-                    p.updatedAt = System.currentTimeMillis();
-                    new Thread(() -> { new PresetRepository(this).update(p); runOnUiThread(this::renderPresets); }).start();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
+    // Preset editing is now handled in Settings
 
-    private void deletePreset(PresetEntity p) {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Delete preset?")
-                .setMessage(p.name)
-                .setPositiveButton("Delete", (d, w) -> new Thread(() -> { new PresetRepository(this).delete(p); runOnUiThread(this::renderPresets); }).start())
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
+    // Preset deletion is now handled in Settings
 
-    private void onSavePreset() {
-        String[] types = new String[]{"single", "range", "page", "surah"};
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Save Preset")
-                .setItems(types, (dialog, which) -> doSavePreset(types[which]))
-                .show();
-    }
+    // Preset saving is now handled in Settings
 
-    private void doSavePreset(String type) {
-        PresetEntity p = new PresetEntity();
-        p.name = "Preset " + android.text.format.DateFormat.format("MM-dd HH:mm", System.currentTimeMillis());
-        p.sourceType = type;
-        p.recitersCsv = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
-        p.repeatCount = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-        p.createdAt = p.updatedAt = System.currentTimeMillis();
-        boolean ok = false;
-        if ("single".equals(type)) {
-            AutoCompleteTextView surahDd = findViewById(R.id.surahSingleDropdown);
-            com.google.android.material.textfield.TextInputEditText ayahEdit = findViewById(R.id.editAyah);
-            String text = surahDd.getText() != null ? surahDd.getText().toString().trim() : "";
-            if (text.length() >= 3) try { p.startSurah = Integer.parseInt(text.substring(0,3)); } catch (Exception ignored) {}
-            try { p.startAyah = Integer.parseInt(ayahEdit.getText()==null?"":ayahEdit.getText().toString().trim()); } catch (Exception ignored) {}
-            ok = p.startSurah != null && p.startAyah != null && p.startSurah >=1 && p.startSurah<=114 && p.startAyah>=1;
-        } else if ("range".equals(type)) {
-            AutoCompleteTextView s1 = findViewById(R.id.startSurahDropdown);
-            AutoCompleteTextView s2 = findViewById(R.id.endSurahDropdown);
-            com.google.android.material.textfield.TextInputEditText a1 = findViewById(R.id.editStartAyah);
-            com.google.android.material.textfield.TextInputEditText a2 = findViewById(R.id.editEndAyah);
-            String t1 = s1.getText() != null ? s1.getText().toString().trim() : "";
-            String t2 = s2.getText() != null ? s2.getText().toString().trim() : "";
-            if (t1.length()>=3) try { p.startSurah = Integer.parseInt(t1.substring(0,3)); } catch (Exception ignored) {}
-            if (t2.length()>=3) try { p.endSurah = Integer.parseInt(t2.substring(0,3)); } catch (Exception ignored) {}
-            try { p.startAyah = Integer.parseInt(a1.getText()==null?"":a1.getText().toString().trim()); } catch (Exception ignored) {}
-            try { p.endAyah = Integer.parseInt(a2.getText()==null?"":a2.getText().toString().trim()); } catch (Exception ignored) {}
-            ok = p.startSurah != null && p.endSurah != null && p.startAyah != null && p.endAyah != null;
-        } else if ("page".equals(type)) {
-            com.google.android.material.textfield.TextInputEditText editPage = findViewById(R.id.editPage);
-            try { p.page = Integer.parseInt(editPage.getText()==null?"":editPage.getText().toString().trim()); } catch (Exception ignored) {}
-            ok = p.page != null && p.page >= 1 && p.page <= 604;
-        } else if ("surah".equals(type)) {
-            AutoCompleteTextView dd = findViewById(R.id.surahDropdown);
-            String txt = dd.getText() != null ? dd.getText().toString().trim() : "";
-            if (txt.length()>=3) try { p.startSurah = Integer.parseInt(txt.substring(0,3)); } catch (Exception ignored) {}
-            ok = p.startSurah != null && p.startSurah >= 1 && p.startSurah <= 114;
-        }
-        if (!ok) {
-            android.widget.Toast.makeText(this, "Incomplete inputs for " + type, android.widget.Toast.LENGTH_SHORT).show();
-            return;
-        }
-        final android.widget.EditText name = new android.widget.EditText(this);
-        name.setHint("Name (optional)");
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Name Preset")
-                .setView(name)
-                .setPositiveButton("Save", (d,w) -> {
-                    String n = name.getText()==null?"":name.getText().toString().trim();
-                    if (!n.isEmpty()) p.name = n;
-                    new Thread(() -> { new PresetRepository(this).insert(p); runOnUiThread(this::renderPresets); }).start();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
+    // Preset saving is now handled in Settings
 
     private View buildHistoryItemView(SessionEntity e) {
         android.widget.LinearLayout item = new android.widget.LinearLayout(this);
         item.setOrientation(android.widget.LinearLayout.VERTICAL);
-        int pad = (int) (8 * getResources().getDisplayMetrics().density);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
         item.setPadding(pad, pad, pad, pad);
-        item.setBackgroundColor(0x0D000000); // light divider background
+        
+        // Create a more Material Design card-like appearance
+        android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
+        background.setColor(0xF5F5F5); // Light gray background
+        background.setCornerRadius(8 * getResources().getDisplayMetrics().density);
+        item.setBackground(background);
+        
+        // Add margin between items
+        android.widget.LinearLayout.LayoutParams params = new android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(0, 0, 0, (int)(8 * getResources().getDisplayMetrics().density));
+        item.setLayoutParams(params);
 
         String title;
+        String subtitle = "";
         if ("single".equals(e.sourceType)) {
             String sss = String.format("%03d", e.startSurah);
-            title = "Single • " + sss + " — " + surahName(e.startSurah) + ":" + e.startAyah;
+            title = "Single | " + sss + " — " + surahName(e.startSurah) + " : " + e.startAyah;
         } else if ("range".equals(e.sourceType)) {
             String s1 = String.format("%03d", e.startSurah);
             String s2 = String.format("%03d", e.endSurah);
-            title = "Range • " + s1 + " — " + surahName(e.startSurah) + ":" + e.startAyah +
+            title = "Range | " + s1 + " — " + surahName(e.startSurah) + ":" + e.startAyah +
                     " → " + s2 + " — " + surahName(e.endSurah) + ":" + e.endAyah;
         } else if ("page".equals(e.sourceType)) {
-            title = "Page • (number not stored)";
+            title = "Page | (number not stored)";
         } else if ("surah".equals(e.sourceType)) {
             String sss = String.format("%03d", e.startSurah != null ? e.startSurah : 0);
-            title = "Surah • " + sss + " — " + surahName(e.startSurah != null ? e.startSurah : 1);
+            title = "Surah | " + sss + " — " + surahName(e.startSurah != null ? e.startSurah : 1);
         } else {
             title = "Provider";
         }
 
         android.widget.TextView tvTitle = new android.widget.TextView(this);
         tvTitle.setText(title);
+        tvTitle.setTextSize(16);
         tvTitle.setTypeface(tvTitle.getTypeface(), android.graphics.Typeface.BOLD);
+        tvTitle.setTextColor(0xFF212121); // Dark text
         item.addView(tvTitle);
 
-        // Reciters summary
+        // Reciters and repeat info
         String recSummary = recitersSummary(e.recitersCsv);
         android.widget.TextView tvSub = new android.widget.TextView(this);
-        tvSub.setText("Reciters: " + recSummary + "  •  Repeat: " + (e.repeatCount == -1 ? "∞" : e.repeatCount));
+        tvSub.setText("Reciters: " + recSummary + " | Repeat: " + (e.repeatCount == -1 ? "∞" : e.repeatCount));
+        tvSub.setTextSize(14);
+        tvSub.setTextColor(0xFF757575); // Gray text
+        tvSub.setPadding(0, (int)(4 * getResources().getDisplayMetrics().density), 0, 0);
         item.addView(tvSub);
 
         // Click to replay where possible
         if (!"provider".equals(e.sourceType)) {
             item.setOnClickListener(v -> replaySession(e));
+            // Add ripple effect for better feedback
+            android.graphics.drawable.RippleDrawable ripple = new android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(0x1A000000),
+                background,
+                null
+            );
+            item.setBackground(ripple);
         }
         return item;
     }
@@ -917,31 +525,6 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
     }
 
-    private void onLoadSurah() {
-        TextInputLayout layout = findViewById(R.id.surahSelectLayout);
-        AutoCompleteTextView dd = findViewById(R.id.surahDropdown);
-        clearError(layout);
-        String txt = dd.getText() != null ? dd.getText().toString() : "";
-        if (txt.isEmpty() || txt.length() < 3) { showError(layout, "Select a surah"); return; }
-        // Extract number prefix
-        String numStr = txt.substring(0, 3);
-        int surah;
-        try { surah = Integer.parseInt(numStr); } catch (Exception e) { showError(layout, "Select a surah"); return; }
-        if (surah < 1 || surah > 114) { showError(layout, "Invalid surah"); return; }
-        getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("last.surah", surah).apply();
-        // Read repeat from prefs
-        int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-        Intent intent = new Intent(this, com.repeatquran.playback.PlaybackService.class);
-        intent.setAction(com.repeatquran.playback.PlaybackService.ACTION_LOAD_SURAH);
-        intent.putExtra("surah", surah);
-        intent.putExtra("repeat", repeat);
-        if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
-        android.widget.Toast.makeText(this, "Loading surah " + numStr + " (repeat=" + (repeat==-1?"∞":repeat) + ")", android.widget.Toast.LENGTH_SHORT).show();
-        java.util.Map<String, Object> ev = new java.util.HashMap<>();
-        ev.put("repeat", repeat);
-        ev.put("surah", surah);
-        com.repeatquran.analytics.AnalyticsLogger.get(this).log("load_surah", ev);
-    }
 
     // ---- Reciter multi-select ----
     private void showReciterPicker() {
@@ -1008,26 +591,7 @@ public class MainActivity extends AppCompatActivity {
     
 
     private void renderSelectedReciters() {
-        String[] names = getResources().getStringArray(R.array.reciter_names);
-        String[] ids = getResources().getStringArray(R.array.reciter_ids);
-        java.util.Map<String, String> idToName = new java.util.HashMap<>();
-        for (int i = 0; i < ids.length; i++) idToName.put(ids[i], names[i]);
-        SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
-        String saved = prefs.getString("reciters.order", "");
-        StringBuilder sb = new StringBuilder();
-        if (saved.isEmpty()) {
-            sb.append("Selected reciters: (none)");
-        } else {
-            String[] parts = saved.split(",");
-            sb.append("Selected reciters:\n");
-            int n = 1;
-            for (String id : parts) {
-                String label = idToName.getOrDefault(id, id);
-                sb.append(n++).append(". ").append(label).append("\n");
-            }
-        }
-        android.widget.TextView tv = findViewById(R.id.txtReciters);
-        tv.setText(sb.toString().trim());
+        // Just update the pills - no detailed text view in new UI
         refreshGlobalPills();
     }
 
@@ -1047,15 +611,6 @@ public class MainActivity extends AppCompatActivity {
         return ids.size() + " selected";
     }
 
-    private String positionName(int pos) {
-        switch (pos) {
-            case 0: return "verse";
-            case 1: return "range";
-            case 2: return "page";
-            case 3: return "surah";
-        }
-        return String.valueOf(pos);
-    }
 
     @Override
     public boolean onOptionsItemSelected(android.view.MenuItem item) {
@@ -1064,5 +619,110 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    // ---- New methods for home-focused UI ----
+    
+    private void setupMainSurahDropdown() {
+        AutoCompleteTextView mainSurah = findViewById(R.id.mainSurahDropdown);
+        if (mainSurah == null) return;
+        
+        String[] nums = getResources().getStringArray(R.array.surah_numbers);
+        String[] display = new String[nums.length];
+        for (int i = 0; i < nums.length; i++) {
+            String name = (i < SURAH_NAMES_EN.length) ? SURAH_NAMES_EN[i] : "";
+            display[i] = nums[i] + " — " + name;
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, display);
+        mainSurah.setAdapter(adapter);
+        mainSurah.setThreshold(0);
+        
+        // Preload last surah
+        int last = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("last.surah", 1);
+        if (last >= 1 && last <= 114) {
+            mainSurah.setText(display[last - 1], false);
+        }
+    }
+    
+    private void setupGlobalControls() {
+        setupRepeatDropdown();
+        setupSpeedDropdown();
+        
+        // Reciters chip
+        android.view.View chipReciters = findViewById(R.id.chipReciters);
+        if (chipReciters != null) {
+            chipReciters.setOnClickListener(v -> showReciterPicker());
+        }
+        
+        refreshGlobalPills();
+        renderSelectedReciters();
+    }
+    
+    private void setupMainActionButtons() {
+        // Play button - loads selected surah
+        findViewById(R.id.btnPlay).setOnClickListener(v -> {
+            playMainSelection();
+        });
+        
+        // Pause button
+        findViewById(R.id.btnPause).setOnClickListener(v -> {
+            sendServiceAction(PlaybackService.ACTION_TOGGLE);
+        });
+        
+        // Stop button
+        findViewById(R.id.btnStop).setOnClickListener(v -> {
+            sendServiceAction(PlaybackService.ACTION_STOP);
+        });
+    }
+    
+    private void playMainSelection() {
+        // Check reciter selection first
+        String saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
+        if (saved.isEmpty()) {
+            android.widget.Toast.makeText(this, "Select at least one reciter", android.widget.Toast.LENGTH_SHORT).show();
+            showReciterPicker();
+            return;
+        }
+        
+        AutoCompleteTextView mainSurah = findViewById(R.id.mainSurahDropdown);
+        String txt = mainSurah.getText() != null ? mainSurah.getText().toString() : "";
+        if (txt.isEmpty() || txt.length() < 3) {
+            android.widget.Toast.makeText(this, "Select a surah", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Extract number prefix
+        String numStr = txt.substring(0, 3);
+        int surah;
+        try {
+            surah = Integer.parseInt(numStr);
+        } catch (Exception e) {
+            android.widget.Toast.makeText(this, "Invalid surah selection", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        if (surah < 1 || surah > 114) {
+            android.widget.Toast.makeText(this, "Invalid surah number", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Save selection and start playback
+        getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("last.surah", surah).apply();
+        
+        int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+        Intent intent = new Intent(this, PlaybackService.class);
+        intent.setAction(PlaybackService.ACTION_LOAD_SURAH);
+        intent.putExtra("surah", surah);
+        intent.putExtra("repeat", repeat);
+        if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
+        
+        String msg = "Loading surah " + numStr + " (repeat=" + (repeat==-1?"∞":repeat) + ")";
+        android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
+        
+        // Analytics
+        java.util.Map<String, Object> ev = new java.util.HashMap<>();
+        ev.put("repeat", repeat);
+        ev.put("surah", surah);
+        com.repeatquran.analytics.AnalyticsLogger.get(this).log("load_surah", ev);
     }
 }
