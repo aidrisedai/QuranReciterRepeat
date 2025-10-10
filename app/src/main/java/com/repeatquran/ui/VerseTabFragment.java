@@ -57,50 +57,10 @@ public class VerseTabFragment extends Fragment {
             setupAyahDropdown(ddAyah, ayahLayout, surahNumber);
         });
 
-        root.findViewById(R.id.btnPlay).setOnClickListener(v -> {
-            // UI guard: require at least one reciter selected
-            String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
-            if (savedOrder == null || savedOrder.trim().isEmpty()) {
-                android.widget.Toast.makeText(requireContext(), "Select at least one reciter", android.widget.Toast.LENGTH_SHORT).show();
-                return;
-            }
-            clearError(surahLayout); clearError(ayahLayout);
-            String txt = ddSurah.getText() != null ? ddSurah.getText().toString().trim() : "";
-            if (txt.length() < 3) { showError(surahLayout, "Select surah"); return; }
-            int surah;
-            try { surah = Integer.parseInt(txt.substring(0,3)); } catch (Exception e) { showError(surahLayout, "Select surah"); return; }
-            if (surah < 1 || surah > 114) { showError(surahLayout, "1..114"); return; }
-            int ayah = parseIntSafe(ddAyah);
-            if (ayah < 1 || ayah > getAyahCount(surah)) { showError(ayahLayout, "Ayah 1.." + getAyahCount(surah)); return; }
-
-            // Persist last selected
-            requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit()
-                    .putInt("last.surah.single", surah).apply();
-
-            // Repeat comes from prefs (set on Home controls); pass through
-            int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
-
-            Intent intent = new Intent(requireContext(), PlaybackService.class);
-            intent.setAction(PlaybackService.ACTION_LOAD_SINGLE);
-            intent.putExtra("sura", surah);
-            intent.putExtra("ayah", ayah);
-            intent.putExtra("repeat", repeat);
-            if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
-            android.widget.Toast.makeText(requireContext(),
-                    "Loading Surah " + String.format("%03d", surah) + " — " + com.repeatquran.util.SurahNames.name(surah) +
-                            ", Ayah " + ayah + " (repeat=" + (repeat==-1?"∞":repeat) + ")",
-                    android.widget.Toast.LENGTH_SHORT).show();
-            View btn = root.findViewById(R.id.btnPlay);
-            btn.setEnabled(false);
-            btn.postDelayed(() -> btn.setEnabled(true), 1200);
+        root.findViewById(R.id.btnPlayPause).setOnClickListener(v -> {
+            handlePlayPauseToggle(root);
         });
 
-        root.findViewById(R.id.btnPause).setOnClickListener(v -> sendService(PlaybackService.ACTION_PAUSE));
-        root.findViewById(R.id.btnPause).setOnLongClickListener(v -> {
-            sendService(PlaybackService.ACTION_STOP);
-            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
-            return true;
-        });
         playbackBr = new android.content.BroadcastReceiver() {
             @Override 
             public void onReceive(android.content.Context context, android.content.Intent intent) {
@@ -108,12 +68,7 @@ public class VerseTabFragment extends Fragment {
                 if (rootView == null) return;
                 boolean hasQueue = intent.getBooleanExtra("hasQueue", false);
                 boolean playing = intent.getBooleanExtra("playing", false);
-                android.view.View btn = rootView.findViewById(R.id.btnPause);
-                if (btn instanceof com.google.android.material.button.MaterialButton) {
-                    com.google.android.material.button.MaterialButton b = (com.google.android.material.button.MaterialButton) btn;
-                    b.setText(playing ? "Pause" : "Resume");
-                    b.setEnabled(hasQueue);
-                }
+                updatePlayPauseButton(rootView, hasQueue, playing);
             }
         };
         
@@ -148,6 +103,91 @@ public class VerseTabFragment extends Fragment {
     private void showError(TextInputLayout layout, String msg) { layout.setError(msg); }
     private void clearError(TextInputLayout layout) { layout.setError(null); layout.setErrorEnabled(false); }
     private int parseIntSafe(AutoCompleteTextView edit) { try { return Integer.parseInt(edit.getText()==null?"":edit.getText().toString().trim()); } catch (Exception e) { return -1; } }
+    
+    private void handlePlayPauseToggle(View root) {
+        android.view.View btn = root.findViewById(R.id.btnPlayPause);
+        if (btn instanceof com.google.android.material.button.MaterialButton) {
+            com.google.android.material.button.MaterialButton playPauseBtn = (com.google.android.material.button.MaterialButton) btn;
+            String currentText = playPauseBtn.getText().toString();
+            
+            if ("Play".equals(currentText)) {
+                // Play mode - load and start new content
+                loadAndPlayVerse(root);
+            } else {
+                // Pause/Resume mode - toggle playback
+                sendService(PlaybackService.ACTION_PAUSE);
+            }
+        }
+    }
+    
+    private void loadAndPlayVerse(View root) {
+        AutoCompleteTextView ddSurah = root.findViewById(R.id.surahDropdown);
+        TextInputLayout surahLayout = root.findViewById(R.id.surahInputLayout);
+        TextInputLayout ayahLayout = root.findViewById(R.id.ayahInputLayout);
+        AutoCompleteTextView ddAyah = root.findViewById(R.id.ayahDropdown);
+        
+        // UI guard: require at least one reciter selected
+        String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
+        if (savedOrder == null || savedOrder.trim().isEmpty()) {
+            android.widget.Toast.makeText(requireContext(), "Select at least one reciter", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        clearError(surahLayout); clearError(ayahLayout);
+        String txt = ddSurah.getText() != null ? ddSurah.getText().toString().trim() : "";
+        if (txt.length() < 3) { showError(surahLayout, "Select surah"); return; }
+        int surah;
+        try { surah = Integer.parseInt(txt.substring(0,3)); } catch (Exception e) { showError(surahLayout, "Select surah"); return; }
+        if (surah < 1 || surah > 114) { showError(surahLayout, "1..114"); return; }
+        int ayah = parseIntSafe(ddAyah);
+        if (ayah < 1 || ayah > getAyahCount(surah)) { showError(ayahLayout, "Ayah 1.." + getAyahCount(surah)); return; }
+
+        // Persist last selected
+        requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit()
+                .putInt("last.surah.single", surah).apply();
+
+        // Repeat comes from prefs (set on Home controls); pass through
+        int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
+
+        Intent intent = new Intent(requireContext(), PlaybackService.class);
+        intent.setAction(PlaybackService.ACTION_LOAD_SINGLE);
+        intent.putExtra("sura", surah);
+        intent.putExtra("ayah", ayah);
+        intent.putExtra("repeat", repeat);
+        if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
+        android.widget.Toast.makeText(requireContext(),
+                "Loading Surah " + String.format("%03d", surah) + " — " + com.repeatquran.util.SurahNames.name(surah) +
+                        ", Ayah " + ayah + " (repeat=" + (repeat==-1?"∞":repeat) + ")",
+                android.widget.Toast.LENGTH_SHORT).show();
+        
+        // Temporarily disable button to prevent double-clicks
+        android.view.View playPauseBtn = root.findViewById(R.id.btnPlayPause);
+        playPauseBtn.setEnabled(false);
+        playPauseBtn.postDelayed(() -> playPauseBtn.setEnabled(true), 1200);
+    }
+    
+    private void updatePlayPauseButton(View rootView, boolean hasQueue, boolean playing) {
+        android.view.View btn = rootView.findViewById(R.id.btnPlayPause);
+        if (btn instanceof com.google.android.material.button.MaterialButton) {
+            com.google.android.material.button.MaterialButton playPauseBtn = (com.google.android.material.button.MaterialButton) btn;
+            
+            if (playing) {
+                playPauseBtn.setText("Pause");
+                playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+                playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CA383)); // Teal for pause
+            } else if (hasQueue) {
+                playPauseBtn.setText("Resume");
+                playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+                playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(requireContext().getColor(R.color.md_theme_primary))); // Primary for resume
+            } else {
+                playPauseBtn.setText("Play");
+                playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+                playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(requireContext().getColor(R.color.md_theme_primary))); // Primary for play
+            }
+            
+            playPauseBtn.setEnabled(true);
+        }
+    }
     
     private void setupAyahDropdown(AutoCompleteTextView ddAyah, TextInputLayout ayahLayout, int surahNumber) {
         int maxAyah = getAyahCount(surahNumber);

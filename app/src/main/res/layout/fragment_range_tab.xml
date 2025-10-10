@@ -73,55 +73,37 @@
         android:layout_marginTop="20dp">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPlay"
+            android:id="@+id/btnPlayPause"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            android:paddingVertical="10dp"
-            android:paddingHorizontal="8dp"
+            android:layout_weight="2"
+            android:layout_marginEnd="8dp"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="12dp"
             android:text="Play"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:maxLines="1"
             android:ellipsize="end"
             app:icon="@drawable/ic_play_arrow"
             app:iconGravity="textStart"
-            app:iconSize="16dp"
+            app:iconSize="18dp"
             android:backgroundTint="@color/md_theme_primary" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPause"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="3dp"
-            android:paddingVertical="10dp"
-            android:paddingHorizontal="8dp"
-            android:text="Pause"
-            android:textSize="12sp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            app:icon="@drawable/ic_pause"
-            app:iconGravity="textStart"
-            app:iconSize="16dp"
-            android:backgroundTint="#4CA383" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStop"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="6dp"
-            android:paddingVertical="10dp"
-            android:paddingHorizontal="8dp"
+            android:layout_marginStart="8dp"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="12dp"
             android:text="Stop"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:maxLines="1"
             android:ellipsize="end"
             app:icon="@drawable/ic_stop"
             app:iconGravity="textStart"
-            app:iconSize="16dp"
+            app:iconSize="18dp"
             android:backgroundTint="#C15150" />
     </LinearLayout>
 
