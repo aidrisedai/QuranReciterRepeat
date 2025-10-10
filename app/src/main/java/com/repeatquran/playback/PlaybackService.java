@@ -398,17 +398,25 @@ public class PlaybackService extends Service {
             return START_STICKY;
         }
         if (ACTION_PLAY.equals(action)) {
+            Log.d("PlaybackService", "ACTION_PLAY received, mediaItemCount=" + (player != null ? player.getMediaItemCount() : 0));
             if (player.getMediaItemCount() > 0) {
                 player.play();
+                // Delayed broadcast to ensure UI gets updated after ExoPlayer state change
+                mainHandler.postDelayed(() -> broadcastState(), 200);
             } else {
-                // Debug: Play pressed with empty queue
+                Log.d("PlaybackService", "Play pressed with empty queue");
             }
             broadcastState();
         } else if (ACTION_START.equals(action) || action == null) {
             // Warm service only; never auto-play on start
             broadcastState();
         } else if (ACTION_PAUSE.equals(action)) {
-            if (player != null) player.pause();
+            Log.d("PlaybackService", "ACTION_PAUSE received");
+            if (player != null) {
+                player.pause();
+                // Delayed broadcast to ensure UI gets updated after ExoPlayer state change
+                mainHandler.postDelayed(() -> broadcastState(), 200);
+            }
             broadcastState();
         } else if (ACTION_NEXT.equals(action)) {
             if (player != null) player.seekToNextMediaItem();
@@ -938,6 +946,7 @@ public class PlaybackService extends Service {
             int state = player != null ? player.getPlaybackState() : Player.STATE_IDLE;
             boolean playing = player != null && player.isPlaying();
             boolean active = playing;
+            Log.d("PlaybackService", "Broadcasting state: hasQueue=" + hasQueue + ", playing=" + playing + ", state=" + state);
             android.content.Intent i = new android.content.Intent(ACTION_PLAYBACK_STATE);
             i.putExtra("hasQueue", hasQueue);
             i.putExtra("state", state);
@@ -1249,7 +1258,10 @@ public class PlaybackService extends Service {
                         enqueueCycles(cycle.items, repeat);
                         player.prepare();
                         player.play();
+                        // Immediate broadcast after starting play
                         broadcastState();
+                        // Also delayed broadcast to ensure UI gets the correct state after ExoPlayer is ready
+                        mainHandler.postDelayed(() -> broadcastState(), 500);
                         
                         currentCyclesRequested = repeat;
                         

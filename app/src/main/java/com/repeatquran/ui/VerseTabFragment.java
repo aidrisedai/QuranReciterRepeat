@@ -5,6 +5,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -72,6 +73,8 @@ public class VerseTabFragment extends Fragment {
                 hasQueue = intent.getBooleanExtra("hasQueue", false);
                 isPlaying = intent.getBooleanExtra("playing", false);
                 
+                Log.d("VerseTabFragment", "Broadcast received: hasQueue=" + hasQueue + ", isPlaying=" + isPlaying);
+                
                 updatePlayPauseButton(rootView);
             }
         };
@@ -89,6 +92,9 @@ public class VerseTabFragment extends Fragment {
             android.content.IntentFilter f = new android.content.IntentFilter(PlaybackService.ACTION_PLAYBACK_STATE);
             if (android.os.Build.VERSION.SDK_INT >= 33) requireContext().registerReceiver(playbackBr, f, android.content.Context.RECEIVER_NOT_EXPORTED); else requireContext().registerReceiver(playbackBr, f);
         }
+        
+        // Request initial state from service
+        sendService(PlaybackService.ACTION_START);
     }
 
     @Override public void onStop() {
@@ -112,19 +118,24 @@ public class VerseTabFragment extends Fragment {
         android.view.View btn = root.findViewById(R.id.btnPlayPause);
         if (!btn.isEnabled()) return;
         
+        Log.d("VerseTabFragment", "handlePlayPauseToggle: isPlaying=" + isPlaying + ", hasQueue=" + hasQueue);
+        
         // If currently playing, pause
         if (isPlaying) {
+            Log.d("VerseTabFragment", "Sending ACTION_PAUSE");
             sendService(PlaybackService.ACTION_PAUSE);
             return;
         }
         
         // If has queue but not playing, resume
         if (hasQueue && !isPlaying) {
+            Log.d("VerseTabFragment", "Sending ACTION_PLAY");
             sendService(PlaybackService.ACTION_PLAY);
             return;
         }
         
         // Otherwise, load new content
+        Log.d("VerseTabFragment", "Loading new content");
         loadAndPlayVerse(root);
     }
     
@@ -182,14 +193,17 @@ public class VerseTabFragment extends Fragment {
             playPauseBtn.setEnabled(true);
             
             if (isPlaying) {
+                Log.d("VerseTabFragment", "Updating button to Pause");
                 playPauseBtn.setText("Pause");
                 playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
                 playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CA383)); // Teal for pause
             } else if (hasQueue) {
+                Log.d("VerseTabFragment", "Updating button to Play (with queue)");
                 playPauseBtn.setText("Play");
                 playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
                 playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(requireContext().getColor(R.color.md_theme_primary))); // Primary for resume
             } else {
+                Log.d("VerseTabFragment", "Updating button to Play (no queue)");
                 playPauseBtn.setText("Play");
                 playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
                 playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(requireContext().getColor(R.color.md_theme_primary))); // Primary for play
