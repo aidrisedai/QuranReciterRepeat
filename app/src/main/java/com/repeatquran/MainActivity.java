@@ -379,7 +379,7 @@ public class MainActivity extends AppCompatActivity {
         // Load sessions off-main and then render
         new Thread(() -> {
             SessionRepository repo = new SessionRepository(this);
-            java.util.List<SessionEntity> latest = repo.getLastSessions(10); // fetch more to filter duplicates
+            java.util.List<SessionEntity> latest = repo.getLastSessions(6); // Reduced from 10 to 6 to save space
             java.util.LinkedHashMap<String, SessionEntity> distinct = new java.util.LinkedHashMap<>();
             for (SessionEntity e : latest) {
                 String key;
@@ -395,7 +395,7 @@ public class MainActivity extends AppCompatActivity {
                     key = e.sourceType != null ? e.sourceType : "unknown";
                 }
                 if (!distinct.containsKey(key)) distinct.put(key, e);
-                if (distinct.size() == 2) break;
+                if (distinct.size() == 2) break; // Keep maximum of 2 items to prevent overflow
             }
             java.util.List<SessionEntity> sessions = new java.util.ArrayList<>(distinct.values());
             runOnUiThread(() -> {
@@ -452,25 +452,24 @@ public class MainActivity extends AppCompatActivity {
     private View buildHistoryItemView(SessionEntity e) {
         android.widget.LinearLayout item = new android.widget.LinearLayout(this);
         item.setOrientation(android.widget.LinearLayout.VERTICAL);
-        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        int pad = (int) (12 * getResources().getDisplayMetrics().density); // Reduced from 16 to 12
         item.setPadding(pad, pad, pad, pad);
         
         // Create a more Material Design card-like appearance
         android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
-        background.setColor(0xF5F5F5); // Light gray background
-        background.setCornerRadius(8 * getResources().getDisplayMetrics().density);
+        background.setColor(0xF8F8F8); // Slightly lighter gray
+        background.setCornerRadius(6 * getResources().getDisplayMetrics().density); // Reduced from 8 to 6
         item.setBackground(background);
         
-        // Add margin between items
+        // Add smaller margin between items
         android.widget.LinearLayout.LayoutParams params = new android.widget.LinearLayout.LayoutParams(
             android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
             android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
         );
-        params.setMargins(0, 0, 0, (int)(8 * getResources().getDisplayMetrics().density));
+        params.setMargins(0, 0, 0, (int)(6 * getResources().getDisplayMetrics().density)); // Reduced from 8 to 6
         item.setLayoutParams(params);
 
         String title;
-        String subtitle = "";
         if ("single".equals(e.sourceType)) {
             String sss = String.format("%03d", e.startSurah);
             title = "Single | " + sss + " — " + surahName(e.startSurah) + " : " + e.startAyah;
@@ -490,18 +489,22 @@ public class MainActivity extends AppCompatActivity {
 
         android.widget.TextView tvTitle = new android.widget.TextView(this);
         tvTitle.setText(title);
-        tvTitle.setTextSize(16);
+        tvTitle.setTextSize(14); // Reduced from 16 to 14
         tvTitle.setTypeface(tvTitle.getTypeface(), android.graphics.Typeface.BOLD);
-        tvTitle.setTextColor(0xFF212121); // Dark text
+        tvTitle.setTextColor(0xFF212121);
+        tvTitle.setMaxLines(1);
+        tvTitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
         item.addView(tvTitle);
 
         // Reciters and repeat info
         String recSummary = recitersSummary(e.recitersCsv);
         android.widget.TextView tvSub = new android.widget.TextView(this);
         tvSub.setText("Reciters: " + recSummary + " | Repeat: " + (e.repeatCount == -1 ? "∞" : e.repeatCount));
-        tvSub.setTextSize(14);
-        tvSub.setTextColor(0xFF757575); // Gray text
-        tvSub.setPadding(0, (int)(4 * getResources().getDisplayMetrics().density), 0, 0);
+        tvSub.setTextSize(12); // Reduced from 14 to 12
+        tvSub.setTextColor(0xFF757575);
+        tvSub.setPadding(0, (int)(2 * getResources().getDisplayMetrics().density), 0, 0); // Reduced from 4 to 2
+        tvSub.setMaxLines(1);
+        tvSub.setEllipsize(android.text.TextUtils.TruncateAt.END);
         item.addView(tvSub);
 
         // Click to replay where possible

@@ -123,7 +123,7 @@
                 app:layout_constraintTop_toBottomOf="@id/modePager"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                android:layout_marginTop="24dp" />
+                android:layout_marginTop="16dp" />
 
             <!-- Recent Sessions -->
             <TextView
@@ -132,9 +132,10 @@
                 android:layout_height="wrap_content"
                 style="@style/TextAppearance.RepeatQuran.Section"
                 android:text="@string/title_recent_sessions"
+                android:textSize="16sp"
                 app:layout_constraintTop_toBottomOf="@id/dividerHistory"
                 app:layout_constraintStart_toStartOf="parent"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="12dp" />
 
             <LinearLayout
                 android:id="@+id/historyContainer"
@@ -144,7 +145,7 @@
                 app:layout_constraintTop_toBottomOf="@id/historyTitle"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                android:layout_marginTop="8dp" />
+                android:layout_marginTop="6dp" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 
