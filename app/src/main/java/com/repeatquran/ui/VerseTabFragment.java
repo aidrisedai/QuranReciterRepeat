@@ -15,6 +15,7 @@ import android.widget.AutoCompleteTextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import com.google.android.material.button.MaterialButton;
 
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -22,11 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import com.repeatquran.R;
 import com.repeatquran.playback.PlaybackService;
+import com.repeatquran.playback.PlaybackStateManager;
 
-public class VerseTabFragment extends Fragment {
-    private android.content.BroadcastReceiver playbackBr;
+public class VerseTabFragment extends Fragment implements PlaybackStateManager.StateChangeListener {
     private boolean isPlaying = false;
     private boolean hasQueue = false;
+    private MaterialButton playPauseButton;
 
     @Nullable
     @Override
@@ -60,48 +62,28 @@ public class VerseTabFragment extends Fragment {
             setupAyahDropdown(ddAyah, ayahLayout, surahNumber);
         });
 
-        root.findViewById(R.id.btnPlayPause).setOnClickListener(v -> {
-            handlePlayPauseToggle(root);
-        });
-
-        playbackBr = new android.content.BroadcastReceiver() {
-            @Override 
-            public void onReceive(android.content.Context context, android.content.Intent intent) {
-                android.view.View rootView = getView();
-                if (rootView == null) return;
-                
-                hasQueue = intent.getBooleanExtra("hasQueue", false);
-                isPlaying = intent.getBooleanExtra("playing", false);
-                
-                Log.d("VerseTabFragment", "Broadcast received: hasQueue=" + hasQueue + ", isPlaying=" + isPlaying);
-                
-                updatePlayPauseButton(rootView);
-            }
-        };
+        // Get button reference
+        playPauseButton = root.findViewById(R.id.btnPlayPause);
+        playPauseButton.setOnClickListener(v -> handlePlayPauseToggle());
         
         // Stop button
         root.findViewById(R.id.btnStop).setOnClickListener(v -> {
             sendService(PlaybackService.ACTION_STOP);
             android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
         });
+        
+        // Debug: Set up test reciter on fragment start
+        setupTestEnvironment();
     }
 
     @Override public void onStart() {
         super.onStart();
-        if (playbackBr != null) {
-            android.content.IntentFilter f = new android.content.IntentFilter(PlaybackService.ACTION_PLAYBACK_STATE);
-            if (android.os.Build.VERSION.SDK_INT >= 33) requireContext().registerReceiver(playbackBr, f, android.content.Context.RECEIVER_NOT_EXPORTED); else requireContext().registerReceiver(playbackBr, f);
-        }
-        
-        // Request initial state from service
-        sendService(PlaybackService.ACTION_START);
+        PlaybackStateManager.getInstance().addListener(this);
     }
 
     @Override public void onStop() {
         super.onStop();
-        if (playbackBr != null) {
-            try { requireContext().unregisterReceiver(playbackBr); } catch (Exception ignored) {}
-        }
+        PlaybackStateManager.getInstance().removeListener(this);
     }
 
     private void sendService(String action) {
@@ -114,9 +96,8 @@ public class VerseTabFragment extends Fragment {
     private void clearError(TextInputLayout layout) { layout.setError(null); layout.setErrorEnabled(false); }
     private int parseIntSafe(AutoCompleteTextView edit) { try { return Integer.parseInt(edit.getText()==null?"":edit.getText().toString().trim()); } catch (Exception e) { return -1; } }
     
-    private void handlePlayPauseToggle(View root) {
-        android.view.View btn = root.findViewById(R.id.btnPlayPause);
-        if (!btn.isEnabled()) return;
+    private void handlePlayPauseToggle() {
+        if (!playPauseButton.isEnabled()) return;
         
         Log.d("VerseTabFragment", "handlePlayPauseToggle: isPlaying=" + isPlaying + ", hasQueue=" + hasQueue);
         
@@ -124,22 +105,23 @@ public class VerseTabFragment extends Fragment {
         if (isPlaying) {
             Log.d("VerseTabFragment", "Sending ACTION_PAUSE");
             sendService(PlaybackService.ACTION_PAUSE);
-            return;
         }
-        
-        // If has queue but not playing, resume
-        if (hasQueue && !isPlaying) {
+        // If has queue but not playing, resume  
+        else if (hasQueue) {
             Log.d("VerseTabFragment", "Sending ACTION_PLAY");
             sendService(PlaybackService.ACTION_PLAY);
-            return;
         }
-        
         // Otherwise, load new content
-        Log.d("VerseTabFragment", "Loading new content");
-        loadAndPlayVerse(root);
+        else {
+            Log.d("VerseTabFragment", "Loading new content");
+            loadAndPlayVerse();
+        }
     }
     
-    private void loadAndPlayVerse(View root) {
+    private void loadAndPlayVerse() {
+        View root = getView();
+        if (root == null) return;
+        
         AutoCompleteTextView ddSurah = root.findViewById(R.id.surahDropdown);
         TextInputLayout surahLayout = root.findViewById(R.id.surahInputLayout);
         TextInputLayout ayahLayout = root.findViewById(R.id.ayahInputLayout);
@@ -180,34 +162,51 @@ public class VerseTabFragment extends Fragment {
                 android.widget.Toast.LENGTH_SHORT).show();
         
         // Temporarily disable button to prevent double-clicks
-        android.view.View playPauseBtn = root.findViewById(R.id.btnPlayPause);
-        playPauseBtn.setEnabled(false);
-        playPauseBtn.postDelayed(() -> playPauseBtn.setEnabled(true), 1200);
+        playPauseButton.setEnabled(false);
+        playPauseButton.postDelayed(() -> playPauseButton.setEnabled(true), 1200);
     }
     
-    private void updatePlayPauseButton(View rootView) {
-        android.view.View btn = rootView.findViewById(R.id.btnPlayPause);
-        if (btn instanceof com.google.android.material.button.MaterialButton) {
-            com.google.android.material.button.MaterialButton playPauseBtn = (com.google.android.material.button.MaterialButton) btn;
-            
-            playPauseBtn.setEnabled(true);
-            
-            if (isPlaying) {
-                Log.d("VerseTabFragment", "Updating button to Pause");
-                playPauseBtn.setText("Pause");
-                playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
-                playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CA383)); // Teal for pause
-            } else if (hasQueue) {
-                Log.d("VerseTabFragment", "Updating button to Play (with queue)");
-                playPauseBtn.setText("Play");
-                playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
-                playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(requireContext().getColor(R.color.md_theme_primary))); // Primary for resume
-            } else {
-                Log.d("VerseTabFragment", "Updating button to Play (no queue)");
-                playPauseBtn.setText("Play");
-                playPauseBtn.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
-                playPauseBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(requireContext().getColor(R.color.md_theme_primary))); // Primary for play
-            }
+    @Override
+    public void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying) {
+        this.hasQueue = hasQueue;
+        this.isPlaying = isPlaying;
+        
+        // Update UI on main thread if needed
+        if (playPauseButton != null) {
+            playPauseButton.post(() -> updateButtonUI());
+        }
+    }
+    
+    private void updateButtonUI() {
+        if (playPauseButton == null) return;
+        
+        playPauseButton.setEnabled(true);
+        
+        if (isPlaying) {
+            Log.d("VerseTabFragment", "Button -> Pause");
+            playPauseButton.setText("Pause");
+            playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+        } else if (hasQueue) {
+            Log.d("VerseTabFragment", "Button -> Play (Resume)");
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        } else {
+            Log.d("VerseTabFragment", "Button -> Play (Load)");
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        }
+    }
+    
+    private void setupTestEnvironment() {
+        // Ensure we have a reciter configured for testing
+        String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
+        if (savedOrder == null || savedOrder.trim().isEmpty()) {
+            // Set up a default reciter for testing
+            requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE)
+                .edit()
+                .putString("reciters.order", "Abdurrahmaan_As-Sudais_64kbps")
+                .apply();
+            Log.d("VerseTabFragment", "Setup test reciter: Abdurrahmaan_As-Sudais_64kbps");
         }
     }
     

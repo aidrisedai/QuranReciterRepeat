@@ -264,6 +264,9 @@ public class PlaybackService extends Service {
         
         // Ensure foreground service requirement is met immediately
         createInitialNotification();
+        
+        // Register player with simple state manager
+        PlaybackStateManager.getInstance().setPlayer(player);
 
         broadcastState();
     }
