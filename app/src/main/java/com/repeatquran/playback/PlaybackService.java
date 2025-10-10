@@ -261,6 +261,9 @@ public class PlaybackService extends Service {
         notificationManager.setMediaSessionToken(mediaSession.getSessionToken());
         notificationManager.setSmallIcon(R.drawable.ic_launcher_foreground);
         notificationManager.setPlayer(player);
+        
+        // Ensure foreground service requirement is met immediately
+        createInitialNotification();
 
         broadcastState();
     }
@@ -915,6 +918,23 @@ public class PlaybackService extends Service {
             err.setDescription("Playback error actions");
             manager.createNotificationChannel(err);
         }
+    }
+    
+    private void createInitialNotification() {
+        // Create a simple notification to satisfy foreground service requirement
+        PendingIntent contentIntent = TaskStackBuilder.create(this)
+                .addNextIntentWithParentStack(new Intent(this, MainActivity.class))
+                .getPendingIntent(0, Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0);
+                
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle("Repeat Quran")
+                .setContentText("Ready")
+                .setContentIntent(contentIntent)
+                .setOngoing(false)
+                .setSilent(true);
+                
+        startForeground(NOTIFICATION_ID, builder.build());
     }
 
     private boolean ensureRecitersSelectedGuard() {
