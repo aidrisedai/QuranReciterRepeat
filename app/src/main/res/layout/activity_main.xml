@@ -23,6 +23,15 @@
             app:navigationIconTint="@color/md_theme_onPrimary"
             app:popupTheme="@style/ThemeOverlay.RepeatQuran.Popup"
             app:menu="@menu/menu_main" />
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/modeTabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:tabIndicatorColor="@color/md_theme_onPrimary"
+            app:tabSelectedTextColor="@color/md_theme_onPrimary"
+            app:tabTextColor="@color/md_theme_onPrimary"
+            android:background="?attr/colorPrimary"/>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -94,74 +103,16 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <!-- Main Surah Selection -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/mainSurahLayout"
-                style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+            <!-- ViewPager2 for tab content -->
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/modePager"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:minHeight="400dp"
                 app:layout_constraintTop_toBottomOf="@id/globalPillsScroll"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
-                
-                <AutoCompleteTextView
-                    android:id="@+id/mainSurahDropdown"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:textSize="18sp"
-                    android:importantForAutofill="no" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Main Action Buttons -->
-            <LinearLayout
-                android:id="@+id/mainActionButtons"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp"
-                app:layout_constraintTop_toBottomOf="@id/mainSurahLayout"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPlay"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:paddingVertical="12dp"
-                    android:text="PLAY"
-                    app:icon="@drawable/ic_play_arrow"
-                    app:iconGravity="textStart"
-                    android:backgroundTint="@color/md_theme_primary" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPause"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:paddingVertical="12dp"
-                    android:text="PAUSE"
-                    app:icon="@drawable/ic_pause"
-                    app:iconGravity="textStart"
-                    android:backgroundTint="#4CA383" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnStop"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:paddingVertical="12dp"
-                    android:text="STOP"
-                    app:icon="@drawable/ic_stop"
-                    app:iconGravity="textStart"
-                    android:backgroundTint="#C15150" />
-            </LinearLayout>
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="16dp" />
 
             <!-- Divider -->
             <View
@@ -169,7 +120,7 @@
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:background="@color/md_theme_outline"
-                app:layout_constraintTop_toBottomOf="@id/mainActionButtons"
+                app:layout_constraintTop_toBottomOf="@id/modePager"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 android:layout_marginTop="24dp" />

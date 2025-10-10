@@ -90,14 +90,48 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Setup main surah dropdown
-        setupMainSurahDropdown();
+        // Setup tabs skeleton (Verse | Range | Page | Surah)
+        androidx.viewpager2.widget.ViewPager2 pager = findViewById(R.id.modePager);
+        if (pager != null) {
+            pager.setAdapter(new com.repeatquran.ui.ModesPagerAdapter(this));
+            com.google.android.material.tabs.TabLayout tabs = findViewById(R.id.modeTabs);
+            if (tabs != null) {
+                new com.google.android.material.tabs.TabLayoutMediator(tabs, pager,
+                        (tab, position) -> {
+                            switch (position) {
+                                case 0: tab.setText("VERSE"); break;
+                                case 1: tab.setText("RANGE"); break;
+                                case 2: tab.setText("PAGE"); break;
+                                case 3: tab.setText("SURAH"); break;
+                            }
+                        }).attach();
+            }
 
-        // Setup global controls
-        setupGlobalControls();
-        
-        // Setup main action buttons
-        setupMainActionButtons();
+            // Restore last mode selection if enabled
+            SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
+            boolean remember = prefs.getBoolean("ui.remember.mode", true);
+            int last = prefs.getInt("ui.last.mode", 0);
+            if (remember && last >= 0 && last < 4) pager.setCurrentItem(last, false);
+
+            // Save selection when page changes if enabled
+            pager.registerOnPageChangeCallback(new androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
+                @Override public void onPageSelected(int position) {
+                    boolean rem = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.remember.mode", true);
+                    if (rem) getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("ui.last.mode", position).apply();
+                    java.util.Map<String,Object> ev = new java.util.HashMap<>();
+                    ev.put("tab", positionName(position));
+                    com.repeatquran.analytics.AnalyticsLogger.get(MainActivity.this).log("tab_selected", ev);
+                }
+            });
+        }
+
+        // Global pills: summary + interactions
+        refreshGlobalPills();
+        // Inline repeat control (dropdown + editable number)
+        android.view.View chipReciters = findViewById(R.id.chipReciters);
+        if (chipReciters != null) {
+            chipReciters.setOnClickListener(v -> showReciterPicker());
+        }
 
         // Request notifications permission on Android 13+ so we can show the media notification
         if (Build.VERSION.SDK_INT >= 33) {
@@ -108,6 +142,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Inline controls row removed; real controls live inside tab fragments
 
+        setupRepeatDropdown();
+        setupSpeedDropdown();
         // Analytics: app open
         com.repeatquran.analytics.AnalyticsLogger.get(this).log("app_open", java.util.Collections.emptyMap());
     }
@@ -591,7 +627,7 @@ public class MainActivity extends AppCompatActivity {
     
 
     private void renderSelectedReciters() {
-        // Just update the pills - no detailed text view in new UI
+        // Update the global pills to show reciter count
         refreshGlobalPills();
     }
 
@@ -621,108 +657,13 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    // ---- New methods for home-focused UI ----
-    
-    private void setupMainSurahDropdown() {
-        AutoCompleteTextView mainSurah = findViewById(R.id.mainSurahDropdown);
-        if (mainSurah == null) return;
-        
-        String[] nums = getResources().getStringArray(R.array.surah_numbers);
-        String[] display = new String[nums.length];
-        for (int i = 0; i < nums.length; i++) {
-            String name = (i < SURAH_NAMES_EN.length) ? SURAH_NAMES_EN[i] : "";
-            display[i] = nums[i] + " — " + name;
+    private String positionName(int pos) {
+        switch (pos) {
+            case 0: return "verse";
+            case 1: return "range";
+            case 2: return "page";
+            case 3: return "surah";
         }
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, display);
-        mainSurah.setAdapter(adapter);
-        mainSurah.setThreshold(0);
-        
-        // Preload last surah
-        int last = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("last.surah", 1);
-        if (last >= 1 && last <= 114) {
-            mainSurah.setText(display[last - 1], false);
-        }
-    }
-    
-    private void setupGlobalControls() {
-        setupRepeatDropdown();
-        setupSpeedDropdown();
-        
-        // Reciters chip
-        android.view.View chipReciters = findViewById(R.id.chipReciters);
-        if (chipReciters != null) {
-            chipReciters.setOnClickListener(v -> showReciterPicker());
-        }
-        
-        refreshGlobalPills();
-        renderSelectedReciters();
-    }
-    
-    private void setupMainActionButtons() {
-        // Play button - loads selected surah
-        findViewById(R.id.btnPlay).setOnClickListener(v -> {
-            playMainSelection();
-        });
-        
-        // Pause button
-        findViewById(R.id.btnPause).setOnClickListener(v -> {
-            sendServiceAction(PlaybackService.ACTION_TOGGLE);
-        });
-        
-        // Stop button
-        findViewById(R.id.btnStop).setOnClickListener(v -> {
-            sendServiceAction(PlaybackService.ACTION_STOP);
-        });
-    }
-    
-    private void playMainSelection() {
-        // Check reciter selection first
-        String saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getString("reciters.order", "");
-        if (saved.isEmpty()) {
-            android.widget.Toast.makeText(this, "Select at least one reciter", android.widget.Toast.LENGTH_SHORT).show();
-            showReciterPicker();
-            return;
-        }
-        
-        AutoCompleteTextView mainSurah = findViewById(R.id.mainSurahDropdown);
-        String txt = mainSurah.getText() != null ? mainSurah.getText().toString() : "";
-        if (txt.isEmpty() || txt.length() < 3) {
-            android.widget.Toast.makeText(this, "Select a surah", android.widget.Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        // Extract number prefix
-        String numStr = txt.substring(0, 3);
-        int surah;
-        try {
-            surah = Integer.parseInt(numStr);
-        } catch (Exception e) {
-            android.widget.Toast.makeText(this, "Invalid surah selection", android.widget.Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        if (surah < 1 || surah > 114) {
-            android.widget.Toast.makeText(this, "Invalid surah number", android.widget.Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        // Save selection and start playback
-        getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putInt("last.surah", surah).apply();
-        
-        int repeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
-        Intent intent = new Intent(this, PlaybackService.class);
-        intent.setAction(PlaybackService.ACTION_LOAD_SURAH);
-        intent.putExtra("surah", surah);
-        intent.putExtra("repeat", repeat);
-        if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent); else startService(intent);
-        
-        String msg = "Loading surah " + numStr + " (repeat=" + (repeat==-1?"∞":repeat) + ")";
-        android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
-        
-        // Analytics
-        java.util.Map<String, Object> ev = new java.util.HashMap<>();
-        ev.put("repeat", repeat);
-        ev.put("surah", surah);
-        com.repeatquran.analytics.AnalyticsLogger.get(this).log("load_surah", ev);
+        return String.valueOf(pos);
     }
 }
