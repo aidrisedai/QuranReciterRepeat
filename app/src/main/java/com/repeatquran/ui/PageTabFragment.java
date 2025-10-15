@@ -1,125 +1,149 @@
 package com.repeatquran.ui;
 
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.Fragment;
 
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.repeatquran.R;
 import com.repeatquran.playback.PlaybackService;
 
-public class PageTabFragment extends Fragment {
-    private android.content.BroadcastReceiver playbackBr;
-    private boolean isPlaying = false;
-    private boolean hasQueue = false;
+public class PageTabFragment extends BaseTabFragment {
+    private AutoCompleteTextView ddPage;
+    
+    @Override
+    protected String getFragmentTag() {
+        return "PageTabFragment";
+    }
+    
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_page_tab, container, false);
         setupUi(v);
+        setupCommonButtons(v);
         return v;
     }
 
     private void setupUi(View root) {
         TextInputLayout pageLayout = root.findViewById(R.id.pageInputLayout);
-        TextInputEditText editPage = root.findViewById(R.id.editPage);
+        ddPage = root.findViewById(R.id.pageDropdown);
+        
+        // Set up page dropdown with common pages (1-604)
+        setupPageDropdown(ddPage, pageLayout);
+        
+        // Restore last selected page
         int last = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("last.page", 1);
-        editPage.setText(String.valueOf(last));
-
-        // Half-split now controlled via Settings only
-
-        root.findViewById(R.id.btnPlayPause).setOnClickListener(v -> {
-            // Guard against rapid clicks
-            android.view.View btn = root.findViewById(R.id.btnPlayPause);
-            if (!btn.isEnabled()) return;
-            
-            // If currently playing, pause
-            if (isPlaying) {
-                sendService(PlaybackService.ACTION_PAUSE);
-                return;
+        ddPage.setText(String.valueOf(last), false);
+    }
+    
+    private void setupPageDropdown(AutoCompleteTextView ddPage, TextInputLayout pageLayout) {
+        // Create list of common page numbers (we'll make it searchable)
+        java.util.List<String> pageNumbers = new java.util.ArrayList<>();
+        // Add common page ranges for easy selection
+        for (int i = 1; i <= 604; i += 10) {
+            pageNumbers.add(String.valueOf(i));
+        }
+        // Add last 10 pages individually for common use
+        for (int i = 595; i <= 604; i++) {
+            if (!pageNumbers.contains(String.valueOf(i))) {
+                pageNumbers.add(String.valueOf(i));
             }
-            
-            // If has queue but not playing, resume
-            if (hasQueue && !isPlaying) {
-                sendService(PlaybackService.ACTION_PLAY);
-                return;
-            }
-            
-            // Otherwise, load new page
-            loadAndPlayPage(root, btn, editPage, pageLayout);
-        });
-
-        // Setup broadcast receiver to handle playback state changes
-        playbackBr = new android.content.BroadcastReceiver() {
-            @Override 
-            public void onReceive(android.content.Context context, android.content.Intent intent) {
-                android.view.View rootView = getView();
-                if (rootView == null) return;
-                
-                hasQueue = intent.getBooleanExtra("hasQueue", false);
-                isPlaying = intent.getBooleanExtra("playing", false);
-                
-                updatePlayPauseButton(rootView);
+        }
+        
+        // Create adapter with filtering support - use dropdown layout for rotation resistance
+        ArrayAdapter<String> pageAdapter = new ArrayAdapter<String>(requireContext(), android.R.layout.simple_dropdown_item_1line, pageNumbers) {
+            @Override
+            public android.widget.Filter getFilter() {
+                return new android.widget.Filter() {
+                    @Override
+                    protected FilterResults performFiltering(CharSequence constraint) {
+                        FilterResults results = new FilterResults();
+                        java.util.List<String> allPages = new java.util.ArrayList<>();
+                        for (int i = 1; i <= 604; i++) {
+                            allPages.add(String.valueOf(i));
+                        }
+                        
+                        if (constraint == null || constraint.length() == 0) {
+                            results.values = pageNumbers; // Show common pages by default
+                            results.count = pageNumbers.size();
+                        } else {
+                            java.util.List<String> filtered = new java.util.ArrayList<>();
+                            String filterString = constraint.toString().toLowerCase();
+                            for (String page : allPages) {
+                                if (page.startsWith(filterString)) {
+                                    filtered.add(page);
+                                }
+                            }
+                            results.values = filtered;
+                            results.count = filtered.size();
+                        }
+                        return results;
+                    }
+                    
+                    @Override
+                    protected void publishResults(CharSequence constraint, FilterResults results) {
+                        if (results.values != null) {
+                            clear();
+                            addAll((java.util.List<String>) results.values);
+                            notifyDataSetChanged();
+                        }
+                    }
+                };
             }
         };
         
-        // Stop button
-        root.findViewById(R.id.btnStop).setOnClickListener(v -> {
-            sendService(PlaybackService.ACTION_STOP);
-            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
+        ddPage.setAdapter(pageAdapter);
+        ddPage.setThreshold(Integer.MAX_VALUE); // Disable text filtering to show all items
+        ddPage.setDropDownHeight(android.widget.ListPopupWindow.WRAP_CONTENT);
+        
+        // When page is selected from dropdown, dismiss keyboard
+        ddPage.setOnItemClickListener((p, v, pos, id) -> {
+            // Dismiss dropdown and keyboard reliably
+            ddPage.dismissDropDown();
+            hideKeyboard(ddPage);
+            ddPage.clearFocus();
+            View rootView = getView();
+            if (rootView != null) rootView.requestFocus();
         });
+        
+        pageLayout.setHelperText("Enter page 1–604");
     }
 
-    @Override public void onStart() {
-        super.onStart();
-        if (playbackBr != null) {
-            android.content.IntentFilter f = new android.content.IntentFilter(PlaybackService.ACTION_PLAYBACK_STATE);
-            if (android.os.Build.VERSION.SDK_INT >= 33) requireContext().registerReceiver(playbackBr, f, android.content.Context.RECEIVER_NOT_EXPORTED); else requireContext().registerReceiver(playbackBr, f);
-        }
-    }
-
-    @Override public void onStop() {
-        super.onStop();
-        if (playbackBr != null) {
-            try { requireContext().unregisterReceiver(playbackBr); } catch (Exception ignored) {}
-        }
-    }
-
-    private void sendService(String action) {
-        Intent intent = new Intent(requireContext(), PlaybackService.class);
-        intent.setAction(action);
-        if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
-    }
-
-    private void showError(TextInputLayout layout, String msg) { layout.setError(msg); }
-    private void clearError(TextInputLayout layout) { layout.setError(null); layout.setErrorEnabled(false); }
-    private int parseIntSafe(TextInputEditText edit) { try { return Integer.parseInt(edit.getText()==null?"":edit.getText().toString().trim()); } catch (Exception e) { return -1; } }
-    
-    private void loadAndPlayPage(View root, View btn, TextInputEditText editPage, TextInputLayout pageLayout) {
+    @Override
+    protected void loadAndPlay() {
+        View root = getView();
+        if (root == null) return;
+        
+        TextInputLayout pageLayout = root.findViewById(R.id.pageInputLayout);
         clearError(pageLayout);
-        int page = parseIntSafe(editPage);
-        if (page < 1 || page > 604) { showError(pageLayout, "Enter 1–604"); return; }
         
-        // Check for reciter selection before proceeding
-        String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
-        if (savedOrder == null || savedOrder.trim().isEmpty()) {
-            android.widget.Toast.makeText(requireContext(), "Select at least one reciter first", android.widget.Toast.LENGTH_SHORT).show();
-            return;
+        int page = parseIntSafe(ddPage);
+        if (page < 1 || page > 604) { 
+            showError(pageLayout, "Enter 1–604"); 
+            return; 
         }
         
-        requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit().putInt("last.page", page).apply();
-        int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
-        boolean half = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getBoolean("ui.half.split", false);
+        // Validate reciter selection
+        if (!validateReciterSelection()) return;
+        
+        requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE)
+            .edit()
+            .putInt("last.page", page)
+            .apply();
+            
+        int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE)
+            .getInt("repeat.count", 1);
+        boolean half = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE)
+            .getBoolean("ui.half.split", false);
         
         Intent intent = new Intent(requireContext(), PlaybackService.class);
         intent.setAction(PlaybackService.ACTION_LOAD_PAGE);
@@ -127,38 +151,50 @@ public class PageTabFragment extends Fragment {
         intent.putExtra("repeat", repeat);
         intent.putExtra("halfSplit", half);
         
-        // Disable button immediately and show loading state
-        btn.setEnabled(false);
-        android.widget.Toast.makeText(requireContext(), "Loading page " + page + "…", android.widget.Toast.LENGTH_SHORT).show();
+        sendService(null, intent);
         
-        if (Build.VERSION.SDK_INT >= 26) requireContext().startForegroundService(intent); else requireContext().startService(intent);
+        android.widget.Toast.makeText(requireContext(), 
+            "Loading page " + page + "…", 
+            android.widget.Toast.LENGTH_SHORT).show();
         
-        // Re-enable after shorter delay, but service broadcast will manage state properly
-        btn.postDelayed(() -> {
-            if (btn.isEnabled() == false) { // Only re-enable if still disabled
-                btn.setEnabled(true);
-            }
-        }, 800); // Reduced from 1200ms
+        // Set expected playing state and update button
+        isCurrentlyPlaying = true;
+        reenableAtMs = android.os.SystemClock.uptimeMillis() + 1200;
     }
-    
-    private void updatePlayPauseButton(View rootView) {
-        Button playPauseBtn = rootView.findViewById(R.id.btnPlayPause);
-        if (playPauseBtn == null) return;
-        
-        playPauseBtn.setEnabled(true);
-        
-        if (isPlaying) {
-            playPauseBtn.setText("Pause");
-            playPauseBtn.setCompoundDrawablesWithIntrinsicBounds(
-                ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_media_pause), null, null, null);
-        } else if (hasQueue) {
-            playPauseBtn.setText("Play");
-            playPauseBtn.setCompoundDrawablesWithIntrinsicBounds(
-                ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_media_play), null, null, null);
-        } else {
-            playPauseBtn.setText("Play");
-            playPauseBtn.setCompoundDrawablesWithIntrinsicBounds(
-                ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_media_play), null, null, null);
+
+    @Override
+    protected boolean isContentForThisFragment() {
+        try {
+            // Check the resume state from SharedPreferences
+            android.content.SharedPreferences prefs = requireContext()
+                .getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE);
+            String sourceType = prefs.getString("resume.sourceType", "");
+            
+            // This fragment handles "page" content
+            boolean isPageType = "page".equals(sourceType);
+            Log.d(getFragmentTag(), "Content validation: sourceType=" + sourceType + ", isPage=" + isPageType);
+            
+            return isPageType;
+        } catch (Exception e) {
+            Log.e(getFragmentTag(), "Error checking content ownership", e);
+            return false;
+        }
+    }
+
+    @Override
+    protected void onSaveFragmentState(@NonNull Bundle outState) {
+        // Save dropdown state
+        if (ddPage != null && ddPage.getText() != null) {
+            outState.putString("page", ddPage.getText().toString());
+        }
+    }
+
+    @Override
+    protected void onRestoreFragmentState(@NonNull Bundle savedInstanceState) {
+        // Restore dropdown state
+        String page = savedInstanceState.getString("page");
+        if (page != null && ddPage != null) {
+            ddPage.setText(page, false);
         }
     }
 }
