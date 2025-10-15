@@ -104,7 +104,7 @@ public class SurahTabFragment extends BaseTabFragment {
         intent.putExtra("repeat", repeat);
         intent.putExtra("halfSplit", half);
         
-        sendService(null, intent);
+        sendService(PlaybackService.ACTION_LOAD_SURAH, intent);
         android.widget.Toast.makeText(requireContext(), 
             "Loading surah " + String.format("%03d", surah) + "…", 
             android.widget.Toast.LENGTH_SHORT).show();

@@ -10,13 +10,13 @@
 
     <application
         android:name=".RepeatQuranApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RepeatQuran">
-        <activity android:name=".settings.SettingsActivity" />
+        <activity android:name=".settings.SettingsActivity" android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -25,14 +25,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".onboarding.OnboardingActivity" />
+        <activity android:name=".onboarding.OnboardingActivity" android:exported="false" />
 
         <service
             android:name=".playback.PlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
-        <activity android:name=".qa.QAActivity" />
+        <activity android:name=".qa.QAActivity" android:exported="false" />
     </application>
 
 </manifest>

@@ -9,14 +9,17 @@ android {
         applicationId 'com.repeatquran'
         minSdkVersion 21
         targetSdkVersion 35
-        versionCode 4
-        versionName '1.2'
+        versionCode 6
+        versionName '1.2.2'
     }
+
+    // Determine if signing properties are available
+    def hasReleaseSigning = project.hasProperty('RQ_STORE_FILE') && project.hasProperty('RQ_STORE_PASSWORD') && project.hasProperty('RQ_KEY_ALIAS') && project.hasProperty('RQ_KEY_PASSWORD')
 
     signingConfigs {
         release {
             // Values are read from gradle.properties; do not commit secrets
-            if (project.hasProperty('RQ_STORE_FILE')) {
+            if (hasReleaseSigning) {
                 storeFile file(RQ_STORE_FILE)
                 storePassword RQ_STORE_PASSWORD
                 keyAlias RQ_KEY_ALIAS
@@ -29,7 +32,12 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            } else {
+                // Build unsigned release when keystore is not configured (e.g., CI or local dev)
+                // You can sign the generated APK/AAB later using your keystore
+            }
         }
     }
 
@@ -37,12 +45,19 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.media:media:1.7.0'
 
     // Hilt (DI)
     implementation 'com.google.dagger:hilt-android:2.52'

@@ -1,0 +1,321 @@
+package com.repeatquran.ui;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import com.google.android.material.button.MaterialButton;
+
+import com.google.android.material.textfield.TextInputLayout;
+import com.repeatquran.R;
+import com.repeatquran.playback.PlaybackService;
+import com.repeatquran.playback.PlaybackStateManager;
+
+public class SurahTabFragment extends Fragment implements PlaybackStateManager.FragmentStateChangeListener {
+    private com.google.android.exoplayer2.ExoPlayer player;
+    private boolean isCurrentlyPlaying = false; // Track play state locally
+    private boolean justStopped = false; // Flag to prevent periodic updater from overriding stop state
+    private MaterialButton playPauseButton;
+    private long reenableAtMs = 0L; // debounce window for Play button
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.fragment_surah_tab, container, false);
+        setupUi(v);
+        return v;
+    }
+
+    private void setupUi(View root) {
+        Log.d("SurahTabFragment", "setupUi called");
+        AutoCompleteTextView dd = root.findViewById(R.id.surahDropdown);
+        TextInputLayout layout = root.findViewById(R.id.surahSelectLayout);
+
+        String[] display = com.repeatquran.util.SurahNames.displayList();
+        // Use dropdown layout for maximum compatibility and rotation resistance
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), 
+            android.R.layout.simple_dropdown_item_1line, display);
+        dd.setAdapter(adapter);
+        dd.setThreshold(Integer.MAX_VALUE); // Disable text filtering to show all items
+        dd.setDropDownHeight(android.widget.ListPopupWindow.WRAP_CONTENT);
+
+        int last = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("last.surah", 1);
+        if (last>=1 && last<=114) dd.setText(com.repeatquran.util.SurahNames.display(last), false);
+
+        // Close keyboard on Surah selection
+        dd.setOnItemClickListener((p, v, pos, id) -> {
+            dd.dismissDropDown();
+            hideKeyboard(dd);
+            dd.clearFocus();
+            View rv = getView();
+            if (rv != null) rv.requestFocus();
+        });
+
+        // Get button reference
+        playPauseButton = root.findViewById(R.id.btnPlayPause);
+        playPauseButton.setOnClickListener(v -> {
+            Log.d("SurahTabFragment", "Play/Pause button clicked!");
+            handlePlayPauseToggle(root, dd, layout);
+        });
+        
+        // Register for centralized state updates instead of individual periodic updates
+        PlaybackStateManager.getInstance().addListener(this);
+        
+        // Stop button
+        root.findViewById(R.id.btnStop).setOnClickListener(v -> {
+            Log.d("SurahTabFragment", "STOP clicked - resetting state");
+            sendService(PlaybackService.ACTION_STOP);
+            // Reset local state when stopping
+            isCurrentlyPlaying = false;
+            reenableAtMs = 0L;
+            player = null; // Clear player reference so next getPlayerReference() fetches fresh state
+            justStopped = true; // Prevent periodic updater from overriding our state
+            Log.d("SurahTabFragment", "State reset: isCurrentlyPlaying=false, reenableAtMs=0, player=null, justStopped=true");
+            // Update button UI immediately
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+            playPauseButton.setEnabled(true);
+            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    @Override 
+    public void onResume() {
+        super.onResume();
+        Log.d("SurahTabFragment", "onResume - requesting immediate state update");
+        // Force an immediate state update when fragment becomes visible
+        PlaybackStateManager.getInstance().forceStateUpdate();
+    }
+
+    @Override 
+    public void onPause() {
+        super.onPause();
+        Log.d("SurahTabFragment", "onPause called");
+    }
+    
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Remove listener from centralized manager
+        PlaybackStateManager.getInstance().removeListener(this);
+        Log.d("SurahTabFragment", "onDestroy - removed from PlaybackStateManager");
+    }
+
+    private void sendService(String action) {
+        sendService(action, null);
+    }
+    
+    private void sendService(String action, Intent baseIntent) {
+        Intent intent = baseIntent != null ? new Intent(baseIntent) : new Intent(requireContext(), PlaybackService.class);
+        intent.setAction(action);
+
+        boolean needsForeground =
+                PlaybackService.ACTION_PLAY.equals(action) ||
+                PlaybackService.ACTION_LOAD_SINGLE.equals(action) ||
+                PlaybackService.ACTION_LOAD_RANGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_PAGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_SURAH.equals(action) ||
+                PlaybackService.ACTION_RESUME.equals(action) ||
+                PlaybackService.ACTION_SET_SPEED.equals(action);
+
+        if (Build.VERSION.SDK_INT >= 26) {
+            if (needsForeground) {
+                requireContext().startForegroundService(intent);
+            } else {
+                // Non-foreground actions: avoid startForeground timeout risk
+                requireContext().startService(intent);
+            }
+        } else {
+            requireContext().startService(intent);
+        }
+    }
+
+    private void showError(TextInputLayout layout, String msg) { layout.setError(msg); }
+    private void clearError(TextInputLayout layout) { layout.setError(null); layout.setErrorEnabled(false); }
+
+    private void hideKeyboard(View view) {
+        try {
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            if (imm != null && view != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        } catch (Exception ignored) {}
+    }
+    
+    private void loadAndPlaySurah(View root, View btn, AutoCompleteTextView dd, TextInputLayout layout) {
+        clearError(layout);
+        String txt = dd.getText()!=null?dd.getText().toString().trim():"";
+        if (txt.length()<3) { showError(layout, "Select a surah"); return; }
+        int surah;
+        try { surah = Integer.parseInt(txt.substring(0,3)); } catch (Exception e) { showError(layout, "Select a surah"); return; }
+        if (surah<1||surah>114) { showError(layout, "Invalid surah"); return; }
+        
+        requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit().putInt("last.surah", surah).apply();
+        int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
+        boolean half = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getBoolean("ui.half.split", false);
+        
+        Intent intent = new Intent(requireContext(), PlaybackService.class);
+        intent.setAction(PlaybackService.ACTION_LOAD_SURAH);
+        intent.putExtra("surah", surah);
+        intent.putExtra("repeat", repeat);
+        intent.putExtra("halfSplit", half);
+        
+        // Use sendService to properly handle foreground requirements
+        sendService(PlaybackService.ACTION_LOAD_SURAH, intent);
+        android.widget.Toast.makeText(requireContext(), "Loading surah " + String.format("%03d", surah) + "…", android.widget.Toast.LENGTH_SHORT).show();
+        
+        // Set expected playing state and update button
+        isCurrentlyPlaying = true;
+        playPauseButton.setText("Pause");
+        playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+        
+        // Debounce: disable button briefly to prevent double-taps
+        reenableAtMs = android.os.SystemClock.uptimeMillis() + 1200;
+        btn.setEnabled(false);
+    }
+    
+    
+    private void handlePlayPauseToggle(View root, AutoCompleteTextView dd, TextInputLayout layout) {
+        // Check if in cooldown period - if so, ignore click to prevent issues during service startup
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now < reenableAtMs) {
+            Log.d("SurahTabFragment", "Button click ignored - still in cooldown");
+            return;
+        }
+        
+        getPlayerReference();
+        
+        // Check actual player state
+        boolean actuallyPlaying = player != null && player.isPlaying();
+        boolean hasContent = player != null && player.getMediaItemCount() > 0;
+        
+        Log.d("SurahTabFragment", "=== PLAY/PAUSE TOGGLE ===");
+        Log.d("SurahTabFragment", "actuallyPlaying=" + actuallyPlaying + ", hasContent=" + hasContent + ", localState=" + isCurrentlyPlaying);
+        Log.d("SurahTabFragment", "justStopped=" + justStopped);
+        // Clear justStopped flag when user interacts (they're ready to play again)
+        justStopped = false;
+        
+        if (actuallyPlaying) {
+            // Currently playing - pause it
+            Log.d("SurahTabFragment", "Pausing playback");
+            sendService(PlaybackService.ACTION_PAUSE);
+            isCurrentlyPlaying = false;
+            reenableAtMs = 0L; // allow immediate interaction after pause
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        } else if (hasContent) {
+            // Has content but not playing - check if it belongs to this fragment
+            if (isContentForThisFragment()) {
+                Log.d("SurahTabFragment", "Resuming surah playback");
+                sendService(PlaybackService.ACTION_PLAY);
+                isCurrentlyPlaying = true;
+                playPauseButton.setText("Pause");
+                playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+                // Add cooldown to prevent periodic updater from overriding this immediately
+                reenableAtMs = android.os.SystemClock.uptimeMillis() + 800;
+                playPauseButton.setEnabled(false);
+            } else {
+                Log.d("SurahTabFragment", "Content belongs to different tab - loading surah content");
+                loadAndPlaySurah(root, playPauseButton, dd, layout);
+            }
+        } else {
+            // No content - load new
+            Log.d("SurahTabFragment", "Loading new content");
+            loadAndPlaySurah(root, playPauseButton, dd, layout);
+        }
+    }
+    
+    private void getPlayerReference() {
+        try {
+            player = PlaybackStateManager.getInstance().getPlayer();
+            if (player != null) {
+                Log.d("SurahTabFragment", "Got player reference successfully");
+            } else {
+                Log.w("SurahTabFragment", "Player reference is null");
+            }
+        } catch (Exception e) {
+            Log.e("SurahTabFragment", "Error getting player reference", e);
+            player = null;
+        }
+    }
+    
+    
+    /**
+     * Centralized state change listener - replaces individual periodic updates
+     */
+    @Override
+    public void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying, com.google.android.exoplayer2.ExoPlayer player) {
+        // Update player reference from centralized manager
+        this.player = player;
+        
+        if (playPauseButton == null) return;
+        
+        // If we just stopped, don't let centralized updater override our state for a brief moment
+        if (justStopped) {
+            Log.d("SurahTabFragment", "onPlaybackStateChanged: just stopped, skipping update to preserve stop state");
+            // Clear the flag after a short delay to allow user interaction
+            playPauseButton.postDelayed(() -> {
+                justStopped = false;
+                Log.d("SurahTabFragment", "justStopped flag cleared");
+            }, 1000);
+            return;
+        }
+        
+        // Respect cooldown window - don't update UI during debounce period
+        long now = android.os.SystemClock.uptimeMillis();
+        boolean inCooldown = now < reenableAtMs;
+        
+        if (inCooldown) {
+            // During cooldown, keep button disabled and don't change its state
+            // This prevents flickering when service is starting up
+            playPauseButton.setEnabled(false);
+            Log.d("SurahTabFragment", "onPlaybackStateChanged: in cooldown, skipping update");
+            return;
+        }
+        
+        // Only sync state when not in cooldown
+        isCurrentlyPlaying = isPlaying;
+        
+        Log.d("SurahTabFragment", "onPlaybackStateChanged: isPlaying=" + isPlaying + ", hasQueue=" + hasQueue);
+        
+        // Update button UI based on centralized state
+        playPauseButton.setEnabled(true);
+        
+        if (isPlaying) {
+            playPauseButton.setText("Pause");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+        } else {
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        }
+    }
+    
+    /**
+     * Check if the currently loaded content belongs to this Surah fragment
+     */
+    private boolean isContentForThisFragment() {
+        try {
+            // Check the resume state from SharedPreferences
+            android.content.SharedPreferences prefs = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE);
+            String sourceType = prefs.getString("resume.sourceType", "");
+            
+            // This fragment handles "surah" content
+            boolean isSurahType = "surah".equals(sourceType);
+            Log.d("SurahTabFragment", "Content validation: sourceType=" + sourceType + ", isSurah=" + isSurahType);
+            
+            return isSurahType;
+        } catch (Exception e) {
+            Log.e("SurahTabFragment", "Error checking content ownership", e);
+            return false;
+        }
+    }
+}

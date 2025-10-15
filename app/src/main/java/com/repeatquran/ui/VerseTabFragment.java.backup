@@ -1,0 +1,506 @@
+package com.repeatquran.ui;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import com.google.android.material.button.MaterialButton;
+
+import com.google.android.material.textfield.TextInputLayout;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.repeatquran.R;
+import com.repeatquran.playback.PlaybackService;
+import com.repeatquran.playback.PlaybackStateManager;
+
+public class VerseTabFragment extends Fragment implements PlaybackStateManager.FragmentStateChangeListener {
+    private MaterialButton playPauseButton;
+    private com.google.android.exoplayer2.ExoPlayer player;
+    private boolean isCurrentlyPlaying = false; // Track play state locally
+    private boolean justStopped = false; // Flag to prevent periodic updater from overriding stop state
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.d("VerseTabFragment", "onCreateView called");
+        View v = inflater.inflate(R.layout.fragment_verse_tab, container, false);
+        setupUi(v);
+        Log.d("VerseTabFragment", "onCreateView completed");
+        return v;
+    }
+
+    private void setupUi(View root) {
+        Log.d("VerseTabFragment", "setupUi called");
+        AutoCompleteTextView ddSurah = root.findViewById(R.id.surahDropdown);
+        TextInputLayout surahLayout = root.findViewById(R.id.surahInputLayout);
+        TextInputLayout ayahLayout = root.findViewById(R.id.ayahInputLayout);
+        AutoCompleteTextView ddAyah = root.findViewById(R.id.ayahDropdown);
+
+        String[] display = com.repeatquran.util.SurahNames.displayList();
+        // Search-as-you-type adapter for Surah selection
+        com.repeatquran.ui.adapters.SurahAutoCompleteAdapter surahAdapter =
+                new com.repeatquran.ui.adapters.SurahAutoCompleteAdapter(requireContext(),
+                        android.R.layout.simple_dropdown_item_1line, display);
+        ddSurah.setAdapter(surahAdapter);
+        ddSurah.setThreshold(1); // Enable filtering after 1 character
+        ddSurah.setDropDownHeight(android.widget.ListPopupWindow.WRAP_CONTENT);
+        
+        // Prefill last surah if available
+        int lastSurah = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("last.surah.single", 1);
+        if (lastSurah >= 1 && lastSurah <= 114) {
+            ddSurah.setText(com.repeatquran.util.SurahNames.display(lastSurah), false);
+            setupAyahDropdown(ddAyah, ayahLayout, lastSurah);
+        }
+
+        // When surah changes, update ayah dropdown and hide keyboard
+        ddSurah.setOnItemClickListener((p, v, pos, id) -> {
+            int surahNumber = pos + 1;
+            setupAyahDropdown(ddAyah, ayahLayout, surahNumber);
+            // Dismiss dropdown and keyboard reliably using the field's token
+            ddSurah.dismissDropDown();
+            hideKeyboard(ddSurah);
+            ddSurah.clearFocus();
+            if (root != null) root.requestFocus();
+        });
+
+        // Get button reference
+        playPauseButton = root.findViewById(R.id.btnPlayPause);
+        playPauseButton.setOnClickListener(v -> {
+            Log.d("VerseTabFragment", "Play/Pause button clicked!");
+            handlePlayPauseToggle();
+        });
+        
+        // Register for centralized state updates instead of individual periodic updates
+        PlaybackStateManager.getInstance().addListener(this);
+        
+        // Stop button
+        root.findViewById(R.id.btnStop).setOnClickListener(v -> {
+            Log.d("VerseTabFragment", "STOP clicked - resetting state");
+            sendService(PlaybackService.ACTION_STOP);
+            // Reset local state when stopping
+            isCurrentlyPlaying = false;
+            reenableAtMs = 0L;
+            player = null; // Clear player reference so next getPlayerReference() fetches fresh state
+            justStopped = true; // Prevent periodic updater from overriding our state
+            Log.d("VerseTabFragment", "State reset: isCurrentlyPlaying=false, reenableAtMs=0, player=null, justStopped=true");
+            // Update button UI immediately
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+            playPauseButton.setEnabled(true);
+            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
+        });
+        
+        // Test-only helper to seed a reciter is disabled in production
+        setupTestEnvironment();
+    }
+
+    @Override 
+    public void onResume() {
+        super.onResume();
+        Log.d("VerseTabFragment", "onResume - requesting immediate state update");
+        // Force an immediate state update when fragment becomes visible
+        PlaybackStateManager.getInstance().forceStateUpdate();
+    }
+
+    @Override 
+    public void onPause() {
+        super.onPause();
+        Log.d("VerseTabFragment", "onPause called");
+    }
+
+    private void sendService(String action) {
+        sendService(action, null);
+    }
+    
+    private void sendService(String action, Intent baseIntent) {
+        Intent intent;
+        if (baseIntent != null) {
+            baseIntent.setAction(action);
+            intent = baseIntent; // preserve explicit component and extras
+        } else {
+            intent = new Intent(requireContext(), PlaybackService.class);
+            intent.setAction(action);
+        }
+
+        boolean needsForeground =
+                PlaybackService.ACTION_PLAY.equals(action) ||
+                PlaybackService.ACTION_LOAD_SINGLE.equals(action) ||
+                PlaybackService.ACTION_LOAD_RANGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_PAGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_SURAH.equals(action) ||
+                PlaybackService.ACTION_RESUME.equals(action) ||
+                PlaybackService.ACTION_SET_SPEED.equals(action);
+
+        if (Build.VERSION.SDK_INT >= 26) {
+            if (needsForeground) {
+                requireContext().startForegroundService(intent);
+            } else {
+                // Non-foreground actions: avoid startForeground timeout risk
+                requireContext().startService(intent);
+            }
+        } else {
+            requireContext().startService(intent);
+        }
+    }
+
+    private void showError(TextInputLayout layout, String msg) { layout.setError(msg); }
+    private void clearError(TextInputLayout layout) { layout.setError(null); layout.setErrorEnabled(false); }
+    private int parseIntSafe(AutoCompleteTextView edit) { try { return Integer.parseInt(edit.getText()==null?"":edit.getText().toString().trim()); } catch (Exception e) { return -1; } }
+    
+    private void handlePlayPauseToggle() {
+        // Check if in cooldown period - if so, ignore click to prevent issues during service startup
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now < reenableAtMs) {
+            Log.d("VerseTabFragment", "Button click ignored - still in cooldown");
+            return;
+        }
+        
+        getPlayerReference();
+        
+        // Check actual player state
+        boolean actuallyPlaying = player != null && player.isPlaying();
+        boolean hasContent = player != null && player.getMediaItemCount() > 0;
+        
+        Log.d("VerseTabFragment", "=== PLAY/PAUSE TOGGLE ===");
+        Log.d("VerseTabFragment", "actuallyPlaying=" + actuallyPlaying + ", hasContent=" + hasContent + ", localState=" + isCurrentlyPlaying);
+        Log.d("VerseTabFragment", "justStopped=" + justStopped);
+        // Clear justStopped flag when user interacts (they're ready to play again)
+        justStopped = false;
+        
+        if (actuallyPlaying) {
+            // Currently playing - pause it
+            Log.d("VerseTabFragment", "Pausing playback");
+            sendService(PlaybackService.ACTION_PAUSE);
+            isCurrentlyPlaying = false;
+            reenableAtMs = 0L; // allow immediate interaction after pause
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        } else if (hasContent) {
+            // Has content but not playing - check if it belongs to this fragment
+            if (isContentForThisFragment()) {
+                Log.d("VerseTabFragment", "Resuming verse playback");
+                sendService(PlaybackService.ACTION_PLAY);
+                isCurrentlyPlaying = true;
+                playPauseButton.setText("Pause");
+                playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+                // Add cooldown to prevent periodic updater from overriding this immediately
+                reenableAtMs = android.os.SystemClock.uptimeMillis() + 800;
+                playPauseButton.setEnabled(false);
+            } else {
+                Log.d("VerseTabFragment", "Content belongs to different tab - loading verse content");
+                loadAndPlayVerse();
+            }
+        } else {
+            // No content - load new
+            Log.d("VerseTabFragment", "Loading new content");
+            loadAndPlayVerse();
+            // loadAndPlayVerse will set the state when content starts playing
+        }
+    }
+    
+    private void loadAndPlayVerse() {
+        View root = getView();
+        if (root == null) return;
+        
+        AutoCompleteTextView ddSurah = root.findViewById(R.id.surahDropdown);
+        TextInputLayout surahLayout = root.findViewById(R.id.surahInputLayout);
+        TextInputLayout ayahLayout = root.findViewById(R.id.ayahInputLayout);
+        AutoCompleteTextView ddAyah = root.findViewById(R.id.ayahDropdown);
+        
+        // UI guard: require at least one reciter selected
+        String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
+        if (savedOrder == null || savedOrder.trim().isEmpty()) {
+            android.widget.Toast.makeText(requireContext(), "Select at least one reciter", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        clearError(surahLayout); clearError(ayahLayout);
+        String txt = ddSurah.getText() != null ? ddSurah.getText().toString().trim() : "";
+        if (txt.length() < 3) { showError(surahLayout, "Select surah"); return; }
+        int surah;
+        try { surah = Integer.parseInt(txt.substring(0,3)); } catch (Exception e) { showError(surahLayout, "Select surah"); return; }
+        if (surah < 1 || surah > 114) { showError(surahLayout, "1..114"); return; }
+        int ayah = parseIntSafe(ddAyah);
+        if (ayah < 1 || ayah > getAyahCount(surah)) { showError(ayahLayout, "Ayah 1.." + getAyahCount(surah)); return; }
+
+        // Persist last selected
+        requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit()
+                .putInt("last.surah.single", surah).apply();
+
+        // Repeat comes from prefs (set on Home controls); pass through
+        int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
+
+        Intent intent = new Intent(requireContext(), PlaybackService.class);
+        intent.setAction(PlaybackService.ACTION_LOAD_SINGLE);
+        intent.putExtra("sura", surah);
+        intent.putExtra("ayah", ayah);
+        intent.putExtra("repeat", repeat);
+        // Use sendService to properly handle foreground requirements and preserve extras
+        sendService(PlaybackService.ACTION_LOAD_SINGLE, intent);
+        android.widget.Toast.makeText(requireContext(),
+                "Loading Surah " + String.format("%03d", surah) + " — " + com.repeatquran.util.SurahNames.name(surah) +
+                        ", Ayah " + ayah + " (repeat=" + (repeat==-1?"∞":repeat) + ")",
+                android.widget.Toast.LENGTH_SHORT).show();
+        
+        // Set expected playing state and update button
+        isCurrentlyPlaying = true;
+        playPauseButton.setText("Pause");
+        playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+        
+        // Debounce: disable button briefly to prevent double-taps
+        reenableAtMs = android.os.SystemClock.uptimeMillis() + 1200;
+        playPauseButton.setEnabled(false);
+    }
+    
+    private long reenableAtMs = 0L; // debounce window for Play button
+    
+    private void getPlayerReference() {
+        try {
+            player = PlaybackStateManager.getInstance().getPlayer();
+            if (player != null) {
+                Log.d("VerseTabFragment", "Got player reference successfully");
+            } else {
+                Log.w("VerseTabFragment", "Player reference is null");
+            }
+        } catch (Exception e) {
+            Log.e("VerseTabFragment", "Error getting player reference", e);
+            player = null;
+        }
+    }
+    
+    
+    /**
+     * Centralized state change listener - replaces individual periodic updates
+     */
+    @Override
+    public void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying, com.google.android.exoplayer2.ExoPlayer player) {
+        // Update player reference from centralized manager
+        this.player = player;
+        
+        if (playPauseButton == null) return;
+        
+        // If we just stopped, don't let centralized updater override our state for a brief moment
+        if (justStopped) {
+            Log.d("VerseTabFragment", "onPlaybackStateChanged: just stopped, skipping update to preserve stop state");
+            // Clear the flag after a short delay to allow user interaction
+            playPauseButton.postDelayed(() -> {
+                justStopped = false;
+                Log.d("VerseTabFragment", "justStopped flag cleared");
+            }, 1000);
+            return;
+        }
+        
+        // Respect cooldown window - don't update UI during debounce period
+        long now = android.os.SystemClock.uptimeMillis();
+        boolean inCooldown = now < reenableAtMs;
+        
+        if (inCooldown) {
+            // During cooldown, keep button disabled and don't change its state
+            // This prevents flickering when service is starting up
+            playPauseButton.setEnabled(false);
+            Log.d("VerseTabFragment", "onPlaybackStateChanged: in cooldown, skipping update");
+            return;
+        }
+        
+        // Only sync state when not in cooldown
+        isCurrentlyPlaying = isPlaying;
+        
+        Log.d("VerseTabFragment", "onPlaybackStateChanged: isPlaying=" + isPlaying + ", hasQueue=" + hasQueue);
+        
+        // Update button UI based on centralized state
+        playPauseButton.setEnabled(true);
+        
+        if (isPlaying) {
+            playPauseButton.setText("Pause");
+            playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+        } else {
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(androidx.core.content.ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        }
+    }
+    
+    /**
+     * Check if the currently loaded content belongs to this Verse fragment
+     */
+    private boolean isContentForThisFragment() {
+        try {
+            // Check the resume state from SharedPreferences
+            android.content.SharedPreferences prefs = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE);
+            String sourceType = prefs.getString("resume.sourceType", "");
+            
+            // This fragment handles "single" ayah content
+            boolean isSingleType = "single".equals(sourceType);
+            Log.d("VerseTabFragment", "Content validation: sourceType=" + sourceType + ", isSingle=" + isSingleType);
+            
+            return isSingleType;
+        } catch (Exception e) {
+            Log.e("VerseTabFragment", "Error checking content ownership", e);
+            return false;
+        }
+    }
+    
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Remove listener from centralized manager
+        PlaybackStateManager.getInstance().removeListener(this);
+        Log.d("VerseTabFragment", "onDestroy - removed from PlaybackStateManager");
+    }
+    
+    private void setupTestEnvironment() {
+        try {
+            // In debug builds only, seed one reciter to ease local testing
+            if (android.os.Build.FINGERPRINT != null && android.os.Build.FINGERPRINT.contains("robolectric")) {
+                String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
+                if (savedOrder == null || savedOrder.trim().isEmpty()) {
+                    requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE)
+                        .edit()
+                        .putString("reciters.order", "Abdurrahmaan_As-Sudais_64kbps")
+                        .apply();
+                    Log.d("VerseTabFragment", "Setup test reciter (tests only)");
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+    
+    private void hideKeyboard(View view) {
+        try {
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            if (imm != null && view != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void setupAyahDropdown(AutoCompleteTextView ddAyah, TextInputLayout ayahLayout, int surahNumber) {
+        int maxAyah = getAyahCount(surahNumber);
+        
+        // Create list of ayah numbers
+        List<String> ayahNumbers = new ArrayList<>();
+        for (int i = 1; i <= maxAyah; i++) {
+            ayahNumbers.add(String.valueOf(i));
+        }
+        
+        // Create adapter with filtering support - use dropdown layout for rotation resistance
+        ArrayAdapter<String> ayahAdapter = new ArrayAdapter<String>(requireContext(), android.R.layout.simple_dropdown_item_1line, ayahNumbers) {
+            @Override
+            public android.widget.Filter getFilter() {
+                return new android.widget.Filter() {
+                    @Override
+                    protected FilterResults performFiltering(CharSequence constraint) {
+                        FilterResults results = new FilterResults();
+                        if (constraint == null || constraint.length() == 0) {
+                            results.values = ayahNumbers;
+                            results.count = ayahNumbers.size();
+                        } else {
+                            List<String> filtered = new ArrayList<>();
+                            String filterString = constraint.toString().toLowerCase();
+                            for (String ayah : ayahNumbers) {
+                                if (ayah.startsWith(filterString)) {
+                                    filtered.add(ayah);
+                                }
+                            }
+                            results.values = filtered;
+                            results.count = filtered.size();
+                        }
+                        return results;
+                    }
+                    
+                    @Override
+                    protected void publishResults(CharSequence constraint, FilterResults results) {
+                        if (results.values != null) {
+                            clear();
+                            addAll((List<String>) results.values);
+                            notifyDataSetChanged();
+                        }
+                    }
+                };
+            }
+        };
+        
+        ddAyah.setAdapter(ayahAdapter);
+        ddAyah.setThreshold(1);
+        
+        // When ayah is selected from dropdown, dismiss keyboard
+        ddAyah.setOnItemClickListener((p, v, pos, id) -> {
+            // Dismiss dropdown and keyboard reliably
+            ddAyah.dismissDropDown();
+            hideKeyboard(ddAyah);
+            ddAyah.clearFocus();
+            View rootView = getView();
+            if (rootView != null) rootView.requestFocus();
+        });
+        
+        // Set default to ayah 1
+        ddAyah.setText("1", false);
+        ayahLayout.setHelperText("Max ayah: " + maxAyah);
+        
+        // Clear any existing error
+        clearError(ayahLayout);
+        
+        // Add real-time validation with red border for invalid input
+        ddAyah.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            
+            @Override
+            public void afterTextChanged(Editable s) {
+                String input = s.toString().trim();
+                if (input.isEmpty()) {
+                    clearError(ayahLayout);
+                    return;
+                }
+                
+                try {
+                    int ayahNum = Integer.parseInt(input);
+                    if (ayahNum < 1 || ayahNum > maxAyah) {
+                        // Show red border with max ayah in helper text
+                        ayahLayout.setHelperText("Max ayah: " + maxAyah);
+                        ayahLayout.setError(" "); // Space to trigger red border without message
+                    } else {
+                        // Valid input - clear error
+                        clearError(ayahLayout);
+                        ayahLayout.setHelperText("Max ayah: " + maxAyah);
+                    }
+                } catch (NumberFormatException e) {
+                    // Invalid number format
+                    ayahLayout.setHelperText("Max ayah: " + maxAyah);
+                    ayahLayout.setError(" "); // Space to trigger red border without message
+                }
+            }
+        });
+    }
+
+    private int getAyahCount(int surah) {
+        final int[] AYAH_COUNTS = new int[] {
+                7, 286, 200, 176, 120, 165, 206, 75, 129, 109,
+                123, 111, 43, 52, 99, 128, 111, 110, 98, 135,
+                112, 78, 118, 64, 77, 227, 93, 88, 69, 60,
+                34, 30, 73, 54, 45, 83, 182, 88, 75, 85,
+                54, 53, 89, 59, 37, 35, 38, 29, 18, 45,
+                60, 49, 62, 55, 78, 96, 29, 22, 24, 13,
+                14, 11, 11, 18, 12, 12, 30, 52, 52, 44,
+                28, 28, 20, 56, 40, 31, 50, 40, 46, 42,
+                29, 19, 36, 25, 22, 17, 19, 26, 30, 20,
+                15, 21, 11, 8, 8, 19, 5, 8, 8, 11,
+                11, 8, 3, 9, 5, 4, 7, 3, 6, 3,
+                5, 4, 5, 6
+        };
+        return AYAH_COUNTS[surah - 1];
+    }
+}

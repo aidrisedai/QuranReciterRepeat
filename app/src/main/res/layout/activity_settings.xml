@@ -53,7 +53,10 @@
                     android:id="@+id/reciterDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none" />
+                    android:inputType="textNoSuggestions"
+                    android:editable="false"
+                    android:focusable="true"
+                    android:clickable="true" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <TextView
@@ -75,7 +78,10 @@
                     android:id="@+id/surahDropdownDl"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none" />
+                    android:inputType="textNoSuggestions"
+                    android:editable="false"
+                    android:focusable="true"
+                    android:clickable="true" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <TextView

@@ -87,6 +87,68 @@ public abstract class BaseTabFragment extends Fragment
      */
     protected abstract void onRestoreFragmentState(@NonNull Bundle savedInstanceState);
     
+    // ==================== NAVIGATION (Optional) ====================
+    
+    /**
+     * Navigate to previous content (verse/page/surah).
+     * Override in child fragments to implement navigation logic.
+     * 
+     * @return true if navigation succeeded, false if at boundary or not supported
+     */
+    protected boolean navigatePrevious() {
+        return false; // Default: not supported
+    }
+    
+    /**
+     * Navigate to next content (verse/page/surah).
+     * Override in child fragments to implement navigation logic.
+     * 
+     * @return true if navigation succeeded, false if at boundary or not supported
+     */
+    protected boolean navigateNext() {
+        return false; // Default: not supported
+    }
+    
+    /**
+     * Check if Previous button should be enabled.
+     * Override to provide fragment-specific logic.
+     * 
+     * @return true if can navigate to previous, false otherwise
+     */
+    protected boolean canNavigatePrevious() {
+        return false; // Default: disabled
+    }
+    
+    /**
+     * Check if Next button should be enabled.
+     * Override to provide fragment-specific logic.
+     * 
+     * @return true if can navigate to next, false otherwise
+     */
+    protected boolean canNavigateNext() {
+        return false; // Default: disabled
+    }
+    
+    /**
+     * Update navigation button states based on current selection.
+     * Call this after loading content or changing selection.
+     */
+    protected void updateNavigationButtons() {
+        View root = getView();
+        if (root == null) return;
+        
+        MaterialButton btnPrev = root.findViewById(R.id.btnPrevious);
+        MaterialButton btnNext = root.findViewById(R.id.btnNext);
+        
+        if (btnPrev != null) {
+            btnPrev.setEnabled(canNavigatePrevious());
+        }
+        
+        if (btnNext != null) {
+            btnNext.setEnabled(canNavigateNext());
+        }
+    }
+    
     // ==================== LIFECYCLE ====================
     
     @Override
@@ -193,8 +255,69 @@ public abstract class BaseTabFragment extends Fragment
             });
         }
         
+        // Setup navigation buttons (Previous/Next) if they exist
+        MaterialButton btnPrevious = root.findViewById(R.id.btnPrevious);
+        MaterialButton btnNext = root.findViewById(R.id.btnNext);
+        
+        if (btnPrevious != null) {
+            btnPrevious.setOnClickListener(v -> {
+                Log.d(getFragmentTag(), "Previous button clicked!");
+                handlePreviousButton();
+            });
+        }
+        
+        if (btnNext != null) {
+            btnNext.setOnClickListener(v -> {
+                Log.d(getFragmentTag(), "Next button clicked!");
+                handleNextButton();
+            });
+        }
+        
+        // Initial navigation button state
+        updateNavigationButtons();
+        
         // Register for centralized state updates
         PlaybackStateManager.getInstance().addListener(this);
+    }
+    
+    /**
+     * Handle Previous button press.
+     * Navigates to previous content and optionally resumes playback.
+     */
+    private void handlePreviousButton() {
+        if (navigatePrevious()) {
+            Log.d(getFragmentTag(), "Successfully navigated to previous");
+            updateNavigationButtons();
+            // Auto-play after navigation if currently playing
+            if (isCurrentlyPlaying) {
+                loadAndPlay();
+            }
+        } else {
+            Log.d(getFragmentTag(), "Cannot navigate to previous (at boundary)");
+            android.widget.Toast.makeText(requireContext(), 
+                "Already at the beginning", 
+                android.widget.Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    /**
+     * Handle Next button press.
+     * Navigates to next content and optionally resumes playback.
+     */
+    private void handleNextButton() {
+        if (navigateNext()) {
+            Log.d(getFragmentTag(), "Successfully navigated to next");
+            updateNavigationButtons();
+            // Auto-play after navigation if currently playing
+            if (isCurrentlyPlaying) {
+                loadAndPlay();
+            }
+        } else {
+            Log.d(getFragmentTag(), "Cannot navigate to next (at boundary)");
+            android.widget.Toast.makeText(requireContext(), 
+                "Already at the end", 
+                android.widget.Toast.LENGTH_SHORT).show();
+        }
     }
     
     // ==================== PLAY/PAUSE/STOP LOGIC ====================
@@ -271,7 +394,6 @@ public abstract class BaseTabFragment extends Fragment
         
         // Update button UI immediately
         if (playPauseButton != null) {
-            playPauseButton.setText("Play");
             playPauseButton.setIcon(ContextCompat.getDrawable(
                 requireContext(), R.drawable.ic_play_arrow));
             playPauseButton.setEnabled(true);
@@ -290,11 +412,9 @@ public abstract class BaseTabFragment extends Fragment
         if (playPauseButton == null) return;
         
         if (isPlaying) {
-            playPauseButton.setText("Pause");
             playPauseButton.setIcon(ContextCompat.getDrawable(
                 requireContext(), R.drawable.ic_pause));
         } else {
-            playPauseButton.setText("Play");
             playPauseButton.setIcon(ContextCompat.getDrawable(
                 requireContext(), R.drawable.ic_play_arrow));
         }

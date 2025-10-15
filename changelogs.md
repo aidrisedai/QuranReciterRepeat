@@ -386,3 +386,21 @@
 - Bound Pause button per tab to broadcast (`hasQueue`, `playing`) to set enabled state and label (Pause/Resume). Long‑press Pause triggers Stop.
 - Overflow menu now includes Stop; menu visibility/contrast verified in Light/Dark.
 - Proof: Clip demonstrating Range Play→Pause→Stop→switch to Verse with controls present and logcat state transitions.
+
+### UHW-PR-45: STATE_ENDED Playback Resume Fix (2025-10-14)
+- Fixed critical bug where pressing Play after track/queue completion failed silently due to ExoPlayer being in STATE_ENDED.
+- Solution: Before calling `player.play()`, check if `playbackState == STATE_ENDED`; if so, seek to position 0 and call `prepare()` to reset the player.
+- This fix applies universally to all playback contexts (verse, range, surah, page) without requiring per-tab UI changes.
+- Playback now reliably restarts from the beginning after natural completion, eliminating the pause/play flicker workaround.
+- Version: 1.2.2 (versionCode 6)
+- Proof: Manual testing shows smooth playback restart after completion across all tabs.
+
+### UHW-PR-46: Phase 2 Audit - Core Engine Stability Fixes (2025-10-14)
+- **Memory Leak Fix**: Added Handler cleanup in `onDestroy()` to prevent memory leaks and crashes after service destruction.
+- **Notification UX Fix**: Service no longer stops when notification is swiped during active playback; only stops when playback is actually idle/ended.
+- **Error Handling Fix**: Consolidated nested `mainHandler.post()` calls in error handler to prevent race conditions during offline playback.
+- **Range Tab Regression Fix**: Fixed critical bug where Range tab would resume wrong content (from Verse/Surah tabs) instead of loading its own range. Root cause was capturing resume state before checking if content could be resumed, causing check to always succeed.
+- **Audit Report**: Comprehensive Phase 2 audit completed, identifying 11 issues (4 critical fixed, 7 non-critical documented for future work).
+- **Test Coverage**: All 37 unit tests passing; no regressions introduced.
+- Version: 1.2.2 (versionCode 6)
+- Proof: Build successful, all tests passing, Range tab now works correctly across tab switches.

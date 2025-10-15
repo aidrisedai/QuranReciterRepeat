@@ -39,7 +39,7 @@ public class PlaybackManager {
 
         AudioAttributes attrs = new AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
-                .setContentType(C.CONTENT_TYPE_SPEECH)
+                .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
                 .build();
 
         this.player = new ExoPlayer.Builder(context).build();

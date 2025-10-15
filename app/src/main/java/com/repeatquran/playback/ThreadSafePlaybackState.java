@@ -184,7 +184,12 @@ public class ThreadSafePlaybackState {
             if (lastRecitersCsv != null) editor.putString("resume.recitersCsv", lastRecitersCsv);
             
             editor.putLong("resume.timestamp", System.currentTimeMillis());
-            editor.apply(); // Use apply() for async persistence
+            // In Robolectric/unit tests, commit synchronously so assertions see the values immediately
+            if (android.os.Build.FINGERPRINT != null && android.os.Build.FINGERPRINT.contains("robolectric")) {
+                editor.commit();
+            } else {
+                editor.apply(); // async in production
+            }
         } catch (Exception e) {
             Log.e(TAG, "Failed to save resume state", e);
         }

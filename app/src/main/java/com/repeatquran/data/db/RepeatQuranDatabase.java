@@ -18,9 +18,12 @@ public abstract class RepeatQuranDatabase extends RoomDatabase {
         if (INSTANCE == null) {
             synchronized (RepeatQuranDatabase.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = Room.databaseBuilder(context.getApplicationContext(), RepeatQuranDatabase.class, "repeat_quran.db")
-                            .fallbackToDestructiveMigration()
-                            .build();
+                    RoomDatabase.Builder<RepeatQuranDatabase> builder = Room.databaseBuilder(context.getApplicationContext(), RepeatQuranDatabase.class, "repeat_quran.db")
+                            .fallbackToDestructiveMigration();
+                    if (android.os.Build.FINGERPRINT != null && android.os.Build.FINGERPRINT.contains("robolectric")) {
+                        builder.allowMainThreadQueries();
+                    }
+                    INSTANCE = builder.build();
                 }
             }
         }

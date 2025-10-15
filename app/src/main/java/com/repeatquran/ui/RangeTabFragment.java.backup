@@ -1,0 +1,574 @@
+package com.repeatquran.ui;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputLayout;
+import com.repeatquran.R;
+import com.repeatquran.playback.PlaybackService;
+import com.repeatquran.playback.PlaybackStateManager;
+
+public class RangeTabFragment extends Fragment implements PlaybackStateManager.FragmentStateChangeListener {
+    private com.google.android.exoplayer2.ExoPlayer player;
+    private boolean isCurrentlyPlaying = false; // Track play state locally
+    private MaterialButton playPauseButton;
+    private long reenableAtMs = 0L; // debounce window for Play button
+    private int lastStartSurah = -1; // Track previous start surah for smart auto-sync
+    private boolean justStopped = false; // Flag to prevent periodic updater from overriding stop state
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.fragment_range_tab, container, false);
+        setupUi(v);
+        return v;
+    }
+
+    private void setupUi(View root) {
+        AutoCompleteTextView ddStart = root.findViewById(R.id.startSurahDropdown);
+        AutoCompleteTextView ddEnd = root.findViewById(R.id.endSurahDropdown);
+        TextInputLayout startSurahLayout = root.findViewById(R.id.startSurahLayout);
+        TextInputLayout endSurahLayout = root.findViewById(R.id.endSurahLayout);
+        TextInputLayout startAyahLayout = root.findViewById(R.id.startAyahLayout);
+        TextInputLayout endAyahLayout = root.findViewById(R.id.endAyahLayout);
+        AutoCompleteTextView ddStartAyah = root.findViewById(R.id.startAyahDropdown);
+        AutoCompleteTextView ddEndAyah = root.findViewById(R.id.endAyahDropdown);
+
+        String[] display = com.repeatquran.util.SurahNames.displayList();
+        // Search-as-you-type adapter for Surah selection
+        com.repeatquran.ui.adapters.SurahAutoCompleteAdapter startAdapter =
+                new com.repeatquran.ui.adapters.SurahAutoCompleteAdapter(requireContext(),
+                        android.R.layout.simple_dropdown_item_1line, display);
+        ddStart.setAdapter(startAdapter);
+        ddStart.setThreshold(1);
+        ddStart.setDropDownHeight(android.widget.ListPopupWindow.WRAP_CONTENT);
+        com.repeatquran.ui.adapters.SurahAutoCompleteAdapter endAdapter =
+                new com.repeatquran.ui.adapters.SurahAutoCompleteAdapter(requireContext(),
+                        android.R.layout.simple_dropdown_item_1line, display);
+        ddEnd.setAdapter(endAdapter);
+        ddEnd.setThreshold(1);
+        ddEnd.setDropDownHeight(android.widget.ListPopupWindow.WRAP_CONTENT);
+
+        android.content.SharedPreferences prefsRange = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE);
+        int lastStart = prefsRange.getInt("last.surah.range.start", 1);
+        int lastEnd = prefsRange.getInt("last.surah.range.end", 1);
+        
+        // Initialize start surah
+        if (lastStart>=1 && lastStart<=114) {
+            ddStart.setText(com.repeatquran.util.SurahNames.display(lastStart), false);
+            setupAyahDropdown(ddStartAyah, startAyahLayout, lastStart);
+            lastStartSurah = lastStart; // Track initial start surah
+        }
+        
+        // Initialize end surah - apply auto-sync logic even on initial load
+        if (lastEnd>=1 && lastEnd<=114) {
+            ddEnd.setText(com.repeatquran.util.SurahNames.display(lastEnd), false);
+            setupAyahDropdown(ddEndAyah, endAyahLayout, lastEnd);
+        } else if (lastStart>=1 && lastStart<=114) {
+            // If no end surah saved, default to start surah
+            ddEnd.setText(com.repeatquran.util.SurahNames.display(lastStart), false);
+            setupAyahDropdown(ddEndAyah, endAyahLayout, lastStart);
+        }
+        
+        // Restore last selected ayah values
+        int lastStartAyah = prefsRange.getInt("last.ayah.range.start", 1);
+        int lastEndAyah = prefsRange.getInt("last.ayah.range.end", 1);
+        if (lastStartAyah > 0) ddStartAyah.setText(String.valueOf(lastStartAyah), false);
+        if (lastEndAyah > 0) ddEndAyah.setText(String.valueOf(lastEndAyah), false);
+        
+        // Ensure all UI elements are visible initially
+        ensureUIElementsVisible(root);
+        
+        ddStart.setOnItemClickListener((parent, v, pos, id) -> {
+            // Parse surah number from selected label instead of relying on filtered index
+            int newStartSurah = -1;
+            try {
+                Object clicked = parent != null ? parent.getItemAtPosition(pos) : null;
+                String label = clicked != null ? String.valueOf(clicked) : (ddStart.getText() != null ? ddStart.getText().toString().trim() : "");
+                if (label != null && label.length() >= 3) {
+                    newStartSurah = Integer.parseInt(label.substring(0, 3));
+                } else {
+                    // Fallback: extract leading digits if formatting differs
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < (label != null ? label.length() : 0) && Character.isDigit(label.charAt(i)) && sb.length() < 3; i++) {
+                        sb.append(label.charAt(i));
+                    }
+                    if (sb.length() > 0) newStartSurah = Integer.parseInt(sb.toString());
+                }
+            } catch (Exception ignored) {}
+            if (newStartSurah < 1 || newStartSurah > 114) return;
+
+            setupAyahDropdown(ddStartAyah, startAyahLayout, newStartSurah);
+            
+            // Smart auto-sync: Copy Start → End if End is empty or End equals old Start
+            String currentEndText = ddEnd.getText() != null ? ddEnd.getText().toString().trim() : "";
+            int currentEndSurah = -1;
+            if (currentEndText.length() >= 3) {
+                try {
+                    currentEndSurah = Integer.parseInt(currentEndText.substring(0, 3));
+                } catch (Exception e) {
+                    // Invalid, treat as empty
+                }
+            }
+            
+            // Auto-set End Surah if: empty OR equals previous Start Surah
+            if (currentEndSurah == -1 || currentEndSurah == lastStartSurah) {
+                ddEnd.setText(com.repeatquran.util.SurahNames.display(newStartSurah), false);
+                setupAyahDropdown(ddEndAyah, endAyahLayout, newStartSurah);
+                Log.d("RangeTabFragment", "Auto-synced End Surah to " + newStartSurah);
+            }
+            
+            // Update tracker
+            lastStartSurah = newStartSurah;
+            
+            // Hide keyboard and clear focus when a Surah is selected
+            ddStart.dismissDropDown();
+            hideKeyboard(ddStart);
+            ddStart.clearFocus();
+            if (root != null) root.requestFocus();
+            // Refresh UI visibility after dropdown interaction
+            ensureUIElementsVisible(root);
+        });
+        
+        ddEnd.setOnItemClickListener((parent, v, pos, id) -> {
+            // Parse surah number from selected label instead of relying on filtered index
+            int surahNumber = -1;
+            try {
+                Object clicked = parent != null ? parent.getItemAtPosition(pos) : null;
+                String label = clicked != null ? String.valueOf(clicked) : (ddEnd.getText() != null ? ddEnd.getText().toString().trim() : "");
+                if (label != null && label.length() >= 3) {
+                    surahNumber = Integer.parseInt(label.substring(0, 3));
+                } else {
+                    // Fallback: extract leading digits if formatting differs
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < (label != null ? label.length() : 0) && Character.isDigit(label.charAt(i)) && sb.length() < 3; i++) {
+                        sb.append(label.charAt(i));
+                    }
+                    if (sb.length() > 0) surahNumber = Integer.parseInt(sb.toString());
+                }
+            } catch (Exception ignored) {}
+            if (surahNumber < 1 || surahNumber > 114) return;
+
+            setupAyahDropdown(ddEndAyah, endAyahLayout, surahNumber);
+            // Hide keyboard and clear focus when a Surah is selected
+            ddEnd.dismissDropDown();
+            hideKeyboard(ddEnd);
+            ddEnd.clearFocus();
+            if (root != null) root.requestFocus();
+            // Refresh UI visibility after dropdown interaction
+            ensureUIElementsVisible(root);
+        });
+
+        // Half-split now controlled via Settings only
+
+        // Get button reference
+        playPauseButton = root.findViewById(R.id.btnPlayPause);
+        playPauseButton.setOnClickListener(v -> {
+            Log.d("RangeTabFragment", "Play/Pause button clicked!");
+            handlePlayPauseToggle(root, ddStart, ddEnd, ddStartAyah, ddEndAyah, startSurahLayout, endSurahLayout, startAyahLayout, endAyahLayout);
+        });
+        
+        // Register for centralized state updates instead of individual periodic updates
+        PlaybackStateManager.getInstance().addListener(this);
+        
+        // Stop button
+        root.findViewById(R.id.btnStop).setOnClickListener(v -> {
+            Log.d("RangeTabFragment", "STOP clicked - resetting state");
+            sendService(PlaybackService.ACTION_STOP);
+            // Reset local state when stopping
+            isCurrentlyPlaying = false;
+            reenableAtMs = 0L;
+            player = null; // Clear player reference so next getPlayerReference() fetches fresh state
+            justStopped = true; // Prevent periodic updater from overriding our state
+            Log.d("RangeTabFragment", "State reset: isCurrentlyPlaying=false, reenableAtMs=0, player=null, justStopped=true");
+            // Update button UI immediately
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+            playPauseButton.setEnabled(true);
+            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    @Override 
+    public void onResume() {
+        super.onResume();
+        Log.d("RangeTabFragment", "onResume - requesting immediate state update");
+        // Force an immediate state update when fragment becomes visible
+        PlaybackStateManager.getInstance().forceStateUpdate();
+        // Ensure UI elements are visible when fragment becomes active
+        View rootView = getView();
+        if (rootView != null) {
+            ensureUIElementsVisible(rootView);
+        }
+    }
+
+    @Override 
+    public void onPause() {
+        super.onPause();
+        Log.d("RangeTabFragment", "onPause called");
+    }
+    
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Remove listener from centralized manager
+        PlaybackStateManager.getInstance().removeListener(this);
+        Log.d("RangeTabFragment", "onDestroy - removed from PlaybackStateManager");
+    }
+
+    private void sendService(String action) {
+        Intent intent = new Intent(requireContext(), PlaybackService.class);
+        intent.setAction(action);
+        sendService(intent);
+    }
+
+    private void sendService(Intent intent) {
+        String action = intent.getAction();
+        boolean needsForeground =
+                PlaybackService.ACTION_PLAY.equals(action) ||
+                PlaybackService.ACTION_LOAD_SINGLE.equals(action) ||
+                PlaybackService.ACTION_LOAD_RANGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_PAGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_SURAH.equals(action) ||
+                PlaybackService.ACTION_RESUME.equals(action) ||
+                PlaybackService.ACTION_SET_SPEED.equals(action);
+
+        if (Build.VERSION.SDK_INT >= 26) {
+            if (needsForeground) {
+                requireContext().startForegroundService(intent);
+            } else {
+                // Non-foreground actions: avoid startForeground timeout risk
+                requireContext().startService(intent);
+            }
+        } else {
+            requireContext().startService(intent);
+        }
+    }
+
+    private boolean isStartBeforeOrEqual(int ss, int sa, int es, int ea) {
+        if (ss < es) return true; if (ss > es) return false; return sa <= ea;
+    }
+    private void showError(TextInputLayout layout, String msg) { layout.setError(msg); }
+    private void clearError(TextInputLayout layout) { layout.setError(null); layout.setErrorEnabled(false); }
+    private int parseIntSafe(AutoCompleteTextView edit) { try { return Integer.parseInt(edit.getText()==null?"":edit.getText().toString().trim()); } catch (Exception e) { return -1; } }
+    private int getAyahCount(int surah) { return com.repeatquran.util.AyahCounts.getCount(surah); }
+
+    private void hideKeyboard(View view) {
+        try {
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            if (imm != null && view != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        } catch (Exception ignored) {}
+    }
+    
+    /**
+     * Ensures all UI elements are properly visible and laid out.
+     * This fixes the issue where End Ayah and Play buttons may not appear.
+     */
+    private void ensureUIElementsVisible(View root) {
+        // Force visibility of all key UI elements
+        View endAyahLayout = root.findViewById(R.id.endAyahLayout);
+        View endSurahLayout = root.findViewById(R.id.endSurahLayout);
+        View btnPlayPause = root.findViewById(R.id.btnPlayPause);
+        View btnStop = root.findViewById(R.id.btnStop);
+        
+        if (endAyahLayout != null) {
+            endAyahLayout.setVisibility(View.VISIBLE);
+            // Force layout refresh
+            endAyahLayout.requestLayout();
+        }
+        
+        if (endSurahLayout != null) {
+            endSurahLayout.setVisibility(View.VISIBLE);
+            endSurahLayout.requestLayout();
+        }
+        
+        if (btnPlayPause != null) {
+            btnPlayPause.setVisibility(View.VISIBLE);
+            btnPlayPause.requestLayout();
+        }
+        
+        if (btnStop != null) {
+            btnStop.setVisibility(View.VISIBLE);
+            btnStop.requestLayout();
+        }
+        
+        // Force the parent layout to refresh
+        root.requestLayout();
+        
+        // Post a layout update to ensure proper rendering
+        root.post(() -> {
+            if (getView() != null) {
+                getView().invalidate();
+            }
+        });
+    }
+    
+    private void loadAndPlayRange(View root, View btn, AutoCompleteTextView ddStart, AutoCompleteTextView ddEnd,
+                                 AutoCompleteTextView ddStartAyah, AutoCompleteTextView ddEndAyah,
+                                 TextInputLayout startSurahLayout, TextInputLayout endSurahLayout,
+                                 TextInputLayout startAyahLayout, TextInputLayout endAyahLayout) {
+        clearError(startSurahLayout); clearError(endSurahLayout); clearError(startAyahLayout); clearError(endAyahLayout);
+        
+        // Check for reciter selection before proceeding
+        String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
+        if (savedOrder == null || savedOrder.trim().isEmpty()) {
+            android.widget.Toast.makeText(requireContext(), "Select at least one reciter first", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        String s1 = ddStart.getText()!=null?ddStart.getText().toString().trim():"";
+        String s2 = ddEnd.getText()!=null?ddEnd.getText().toString().trim():"";
+        if (s1.length()<3) { showError(startSurahLayout, "Select start"); return; }
+        if (s2.length()<3) { showError(endSurahLayout, "Select end"); return; }
+        int ss, es;
+        try { ss = Integer.parseInt(s1.substring(0,3)); } catch (Exception e) { showError(startSurahLayout, "Select start"); return; }
+        try { es = Integer.parseInt(s2.substring(0,3)); } catch (Exception e) { showError(endSurahLayout, "Select end"); return; }
+        if (ss<1||ss>114) { showError(startSurahLayout, "1..114"); return; }
+        if (es<1||es>114) { showError(endSurahLayout, "1..114"); return; }
+        int sa = parseIntSafe(ddStartAyah);
+        int ea = parseIntSafe(ddEndAyah);
+        if (sa<1||sa>getAyahCount(ss)) { showError(startAyahLayout, "Ayah 1.."+getAyahCount(ss)); return; }
+        if (ea<1||ea>getAyahCount(es)) { showError(endAyahLayout, "Ayah 1.."+getAyahCount(es)); return; }
+        if (!isStartBeforeOrEqual(ss, sa, es, ea)) { showError(endSurahLayout, "End before start"); showError(endAyahLayout, "End before start"); return; }
+
+        requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit()
+                .putInt("last.surah.range.start", ss)
+                .putInt("last.surah.range.end", es)
+                .putInt("last.ayah.range.start", sa)
+                .putInt("last.ayah.range.end", ea)
+                .apply();
+
+        int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
+        boolean half = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getBoolean("ui.half.split", false);
+
+        // Disable button immediately and show loading state  
+        btn.setEnabled(false);
+        android.widget.Toast.makeText(requireContext(), "Loading range…", android.widget.Toast.LENGTH_SHORT).show();
+
+        Intent intent = new Intent(requireContext(), PlaybackService.class);
+        intent.setAction(PlaybackService.ACTION_LOAD_RANGE);
+        intent.putExtra("ss", ss);
+        intent.putExtra("sa", sa);
+        intent.putExtra("es", es);
+        intent.putExtra("ea", ea);
+        intent.putExtra("repeat", repeat);
+        intent.putExtra("halfSplit", half);
+        
+        // Use sendService to properly handle foreground requirements WITH EXTRAS
+        sendService(intent);
+        
+        // Set expected playing state and update button
+        isCurrentlyPlaying = true;
+        playPauseButton.setText("Pause");
+        playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+        
+        // Debounce: disable button briefly to prevent double-taps
+        reenableAtMs = android.os.SystemClock.uptimeMillis() + 1200;
+        playPauseButton.setEnabled(false);
+    }
+    
+    
+    private void handlePlayPauseToggle(View root, AutoCompleteTextView ddStart, AutoCompleteTextView ddEnd,
+                                     AutoCompleteTextView ddStartAyah, AutoCompleteTextView ddEndAyah,
+                                     TextInputLayout startSurahLayout, TextInputLayout endSurahLayout,
+                                     TextInputLayout startAyahLayout, TextInputLayout endAyahLayout) {
+        // Check if in cooldown period - if so, ignore click to prevent issues during service startup
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now < reenableAtMs) {
+            Log.d("RangeTabFragment", "Button click ignored - still in cooldown");
+            return;
+        }
+        
+        getPlayerReference();
+        
+        // Check actual player state
+        boolean actuallyPlaying = player != null && player.isPlaying();
+        boolean hasContent = player != null && player.getMediaItemCount() > 0;
+        
+        Log.d("RangeTabFragment", "=== PLAY/PAUSE TOGGLE ===");
+        Log.d("RangeTabFragment", "actuallyPlaying=" + actuallyPlaying + ", hasContent=" + hasContent + ", localState=" + isCurrentlyPlaying);
+        Log.d("RangeTabFragment", "cooldown: now=" + now + ", reenableAtMs=" + reenableAtMs + ", inCooldown=" + (now < reenableAtMs));
+        Log.d("RangeTabFragment", "justStopped=" + justStopped);
+        // Clear justStopped flag when user interacts (they're ready to play again)
+        justStopped = false;
+        
+        if (actuallyPlaying) {
+            // Currently playing - pause it
+            Log.d("RangeTabFragment", "Pausing playback");
+            sendService(PlaybackService.ACTION_PAUSE);
+            isCurrentlyPlaying = false;
+            reenableAtMs = 0L; // allow immediate interaction after pause
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        } else if (hasContent) {
+            // Has content but not playing - check if it belongs to this fragment
+            boolean belongsToRange = isContentForThisFragment();
+            Log.d("RangeTabFragment", "Has content: belongsToRange=" + belongsToRange);
+            
+            if (belongsToRange) {
+                Log.d("RangeTabFragment", "Resuming range playback");
+                sendService(PlaybackService.ACTION_PLAY);
+                isCurrentlyPlaying = true;
+                playPauseButton.setText("Pause");
+                playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+                // Add cooldown to prevent periodic updater from overriding this immediately
+                reenableAtMs = android.os.SystemClock.uptimeMillis() + 800;
+                playPauseButton.setEnabled(false);
+            } else {
+                Log.d("RangeTabFragment", "Content belongs to different tab (will load range) - calling loadAndPlayRange");
+                loadAndPlayRange(root, playPauseButton, ddStart, ddEnd, ddStartAyah, ddEndAyah, startSurahLayout, endSurahLayout, startAyahLayout, endAyahLayout);
+            }
+        } else {
+            // No content - load new
+            Log.d("RangeTabFragment", "Loading new content");
+            loadAndPlayRange(root, playPauseButton, ddStart, ddEnd, ddStartAyah, ddEndAyah, startSurahLayout, endSurahLayout, startAyahLayout, endAyahLayout);
+        }
+    }
+    
+    private void getPlayerReference() {
+        try {
+            player = PlaybackStateManager.getInstance().getPlayer();
+            if (player != null) {
+                Log.d("RangeTabFragment", "Got player reference successfully");
+            } else {
+                Log.w("RangeTabFragment", "Player reference is null");
+            }
+        } catch (Exception e) {
+            Log.e("RangeTabFragment", "Error getting player reference", e);
+            player = null;
+        }
+    }
+    
+    
+    /**
+     * Centralized state change listener - replaces individual periodic updates
+     */
+    @Override
+    public void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying, com.google.android.exoplayer2.ExoPlayer player) {
+        // Update player reference from centralized manager
+        this.player = player;
+        
+        if (playPauseButton == null) return;
+        
+        // If we just stopped, don't let centralized updater override our state for a brief moment
+        if (justStopped) {
+            Log.d("RangeTabFragment", "onPlaybackStateChanged: just stopped, skipping update to preserve stop state");
+            // Clear the flag after a short delay to allow user interaction
+            playPauseButton.postDelayed(() -> {
+                justStopped = false;
+                Log.d("RangeTabFragment", "justStopped flag cleared");
+            }, 1000);
+            return;
+        }
+        
+        // Respect cooldown window - don't update UI during debounce period
+        long now = android.os.SystemClock.uptimeMillis();
+        boolean inCooldown = now < reenableAtMs;
+        
+        if (inCooldown) {
+            // During cooldown, keep button disabled and don't change its state
+            // This prevents flickering when service is starting up
+            playPauseButton.setEnabled(false);
+            Log.d("RangeTabFragment", "onPlaybackStateChanged: in cooldown, skipping update");
+            return;
+        }
+        
+        // Only sync state when not in cooldown
+        isCurrentlyPlaying = isPlaying;
+        
+        Log.d("RangeTabFragment", "onPlaybackStateChanged: isPlaying=" + isPlaying + ", hasQueue=" + hasQueue);
+        
+        // Update button UI based on centralized state
+        playPauseButton.setEnabled(true);
+        
+        if (isPlaying) {
+            playPauseButton.setText("Pause");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+        } else {
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        }
+    }
+    
+    private void setupAyahDropdown(AutoCompleteTextView ddAyah, TextInputLayout ayahLayout, int surahNumber) {
+        int maxAyah = getAyahCount(surahNumber);
+        
+        // Capture current value to preserve if still valid
+        String currentText = ddAyah.getText() != null ? ddAyah.getText().toString().trim() : "";
+        int currentVal = -1;
+        try { currentVal = Integer.parseInt(currentText); } catch (Exception ignored) {}
+        
+        // Create list of ayah numbers
+        java.util.List<String> ayahNumbers = new java.util.ArrayList<>();
+        for (int i = 1; i <= maxAyah; i++) {
+            ayahNumbers.add(String.valueOf(i));
+        }
+        
+        // Create adapter - use dropdown layout for rotation resistance
+        ArrayAdapter<String> ayahAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, ayahNumbers);
+        ddAyah.setAdapter(ayahAdapter);
+        ddAyah.setThreshold(Integer.MAX_VALUE); // Disable text filtering to show all items
+        ddAyah.setDropDownHeight(android.widget.ListPopupWindow.WRAP_CONTENT);
+        
+        // When ayah is selected from dropdown, dismiss keyboard
+        ddAyah.setOnItemClickListener((p, v, pos, id) -> {
+            // Dismiss dropdown and keyboard reliably
+            ddAyah.dismissDropDown();
+            hideKeyboard(ddAyah);
+            ddAyah.clearFocus();
+            View rootView = getView();
+            if (rootView != null) rootView.requestFocus();
+        });
+        
+        // Decide what value to show after surah change
+        String newText;
+        if (currentVal >= 1 && currentVal <= maxAyah) {
+            newText = String.valueOf(currentVal);
+        } else if (currentVal > maxAyah) {
+            newText = String.valueOf(maxAyah); // clamp down to max
+        } else {
+            newText = "1"; // default
+        }
+        ddAyah.setText(newText, false);
+        ayahLayout.setHelperText("Max ayah: " + maxAyah);
+        // Clear any prior error if value is now valid
+        try {
+            int nv = Integer.parseInt(newText);
+            if (nv >= 1 && nv <= maxAyah) clearError(ayahLayout);
+        } catch (Exception ignored) {}
+    }
+    
+    /**
+     * Check if the currently loaded content belongs to this Range fragment
+     */
+    private boolean isContentForThisFragment() {
+        try {
+            // Check the resume state from SharedPreferences
+            android.content.SharedPreferences prefs = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE);
+            String sourceType = prefs.getString("resume.sourceType", "");
+            
+            // This fragment handles "range" content
+            boolean isRangeType = "range".equals(sourceType);
+            Log.d("RangeTabFragment", "Content validation: sourceType=" + sourceType + ", isRange=" + isRangeType);
+            
+            return isRangeType;
+        } catch (Exception e) {
+            Log.e("RangeTabFragment", "Error checking content ownership", e);
+            return false;
+        }
+    }
+}

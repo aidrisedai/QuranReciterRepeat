@@ -65,14 +65,19 @@
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/repeatInlineLayout"
                         style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
-                        android:layout_width="120dp"
+                        android:layout_width="105dp"
                         android:layout_height="wrap_content"
-                        android:hint="Repeat">
+                        android:hint="Repeat"
+                        app:hintTextAppearance="@style/TextAppearance.MaterialComponents.Caption">
                         <AutoCompleteTextView
                             android:id="@+id/repeatInlineDropdown"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="number"
+                            android:textSize="13sp"
+                            android:inputType="textNoSuggestions"
+                            android:editable="false"
+                            android:focusable="true"
+                            android:clickable="true"
                             android:importantForAutofill="no"
                             android:imeOptions="actionDone" />
                     </com.google.android.material.textfield.TextInputLayout>
@@ -84,20 +89,26 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:text="Reciters: 1 selected"
+                        android:textSize="13sp"
                         app:chipIconEnabled="false" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/speedInlineLayout"
                         style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
-                        android:layout_width="120dp"
+                        android:layout_width="100dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:hint="Speed">
+                        android:hint="Speed"
+                        app:hintTextAppearance="@style/TextAppearance.MaterialComponents.Caption">
                         <AutoCompleteTextView
                             android:id="@+id/speedInlineDropdown"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="none"
+                            android:textSize="13sp"
+                            android:inputType="textNoSuggestions"
+                            android:editable="false"
+                            android:focusable="true"
+                            android:clickable="true"
                             android:importantForAutofill="no" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>

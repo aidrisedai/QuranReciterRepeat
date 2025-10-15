@@ -113,6 +113,8 @@ public class PageTabFragment extends BaseTabFragment {
             ddPage.clearFocus();
             View rootView = getView();
             if (rootView != null) rootView.requestFocus();
+            // Update navigation button states
+            updateNavigationButtons();
         });
         
         pageLayout.setHelperText("Enter page 1–604");
@@ -151,7 +153,7 @@ public class PageTabFragment extends BaseTabFragment {
         intent.putExtra("repeat", repeat);
         intent.putExtra("halfSplit", half);
         
-        sendService(null, intent);
+        sendService(PlaybackService.ACTION_LOAD_PAGE, intent);
         
         android.widget.Toast.makeText(requireContext(), 
             "Loading page " + page + "…", 
@@ -194,6 +196,66 @@ public class PageTabFragment extends BaseTabFragment {
         String page = savedInstanceState.getString("page");
         if (page != null && ddPage != null) {
             ddPage.setText(page, false);
+        }
+    }
+    
+    // ==================== NAVIGATION ====================
+    
+    @Override
+    protected boolean navigatePrevious() {
+        int currentPage = getCurrentPage();
+        if (currentPage > 1) {
+            setPage(currentPage - 1);
+            return true;
+        }
+        return false;
+    }
+    
+    @Override
+    protected boolean navigateNext() {
+        int currentPage = getCurrentPage();
+        if (currentPage < 604) {
+            setPage(currentPage + 1);
+            return true;
+        }
+        return false;
+    }
+    
+    @Override
+    protected boolean canNavigatePrevious() {
+        int currentPage = getCurrentPage();
+        return currentPage > 1;
+    }
+    
+    @Override
+    protected boolean canNavigateNext() {
+        int currentPage = getCurrentPage();
+        return currentPage < 604;
+    }
+    
+    /**
+     * Get current page number from dropdown.
+     * @return current page number, or 1 if invalid
+     */
+    private int getCurrentPage() {
+        if (ddPage == null) return 1;
+        int page = parseIntSafe(ddPage);
+        return (page >= 1 && page <= 604) ? page : 1;
+    }
+    
+    /**
+     * Set page number in dropdown.
+     * @param page page number to set (1-604)
+     */
+    private void setPage(int page) {
+        if (ddPage != null && page >= 1 && page <= 604) {
+            ddPage.setText(String.valueOf(page), false);
+            // Save to preferences
+            requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE)
+                .edit()
+                .putInt("last.page", page)
+                .apply();
+            Log.d(getFragmentTag(), "Page set to: " + page);
         }
     }
 }

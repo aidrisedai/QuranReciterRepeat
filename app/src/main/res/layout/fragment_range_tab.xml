@@ -6,63 +6,97 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <com.google.android.material.textfield.TextInputLayout
+<com.google.android.material.textfield.TextInputLayout
         android:id="@+id/startSurahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Start Surah">
+android:hint="Start Surah"
+        app:endIconMode="dropdown_menu"
+        app:boxStrokeColor="@color/md_theme_primary"
+        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidthFocused="2dp"
+        app:boxBackgroundColor="@color/md_theme_surface">
         <AutoCompleteTextView
             android:id="@+id/startSurahDropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="16sp"
-            android:inputType="none"/>
+            android:inputType="textNoSuggestions"
+            android:editable="false"
+            android:focusable="true"
+            android:clickable="true"/>
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
+<com.google.android.material.textfield.TextInputLayout
         android:id="@+id/startAyahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Start Ayah"
+        app:endIconMode="dropdown_menu"
+        app:boxStrokeColor="@color/md_theme_primary"
+        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidthFocused="2dp"
+        app:boxBackgroundColor="@color/md_theme_surface"
         android:layout_marginTop="12dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editStartAyah"
+        <AutoCompleteTextView
+            android:id="@+id/startAyahDropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="16sp"
-            android:inputType="number"/>
+            android:inputType="textNoSuggestions"
+            android:editable="false"
+            android:focusable="true"
+            android:clickable="true"
+            android:imeOptions="actionDone" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
+<com.google.android.material.textfield.TextInputLayout
         android:id="@+id/endSurahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="End Surah"
+android:hint="End Surah"
+        app:endIconMode="dropdown_menu"
+        app:boxStrokeColor="@color/md_theme_primary"
+        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidthFocused="2dp"
+        app:boxBackgroundColor="@color/md_theme_surface"
         android:layout_marginTop="12dp">
         <AutoCompleteTextView
             android:id="@+id/endSurahDropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="16sp"
-            android:inputType="none"/>
+            android:inputType="textNoSuggestions"
+            android:editable="false"
+            android:focusable="true"
+            android:clickable="true"/>
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
+<com.google.android.material.textfield.TextInputLayout
         android:id="@+id/endAyahLayout"
-        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="End Ayah"
+        app:endIconMode="dropdown_menu"
+        app:boxStrokeColor="@color/md_theme_primary"
+        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidthFocused="2dp"
+        app:boxBackgroundColor="@color/md_theme_surface"
         android:layout_marginTop="12dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editEndAyah"
+        <AutoCompleteTextView
+            android:id="@+id/endAyahDropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="16sp"
-            android:inputType="number"/>
+            android:inputType="textNoSuggestions"
+            android:editable="false"
+            android:focusable="true"
+            android:clickable="true"
+            android:imeOptions="actionDone" />
     </com.google.android.material.textfield.TextInputLayout>
 
 
@@ -70,40 +104,45 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="20dp">
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:paddingHorizontal="24dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPlayPause"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="2"
+            android:layout_height="48dp"
+            android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:paddingVertical="12dp"
-            android:paddingHorizontal="12dp"
-            android:text="Play"
-            android:textSize="13sp"
-            android:maxLines="1"
-            android:ellipsize="end"
+            android:paddingVertical="8dp"
+            android:paddingHorizontal="16dp"
             app:icon="@drawable/ic_play_arrow"
             app:iconGravity="textStart"
             app:iconSize="18dp"
-            android:backgroundTint="@color/md_theme_primary" />
+            app:iconPadding="8dp"
+android:backgroundTint="@color/md_theme_surface"
+            android:textColor="@color/md_theme_primary"
+            app:iconTint="@color/md_theme_primary"
+            app:strokeColor="@color/md_theme_primary"
+            app:strokeWidth="1dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStop"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:paddingVertical="12dp"
-            android:paddingHorizontal="12dp"
-            android:text="Stop"
-            android:textSize="13sp"
+            android:paddingVertical="8dp"
+            android:paddingHorizontal="16dp"
+            android:text="STOP"
+            android:textAllCaps="true"
+            android:textSize="14sp"
             android:maxLines="1"
             android:ellipsize="end"
             app:icon="@drawable/ic_stop"
             app:iconGravity="textStart"
             app:iconSize="18dp"
+            app:iconPadding="8dp"
             android:backgroundTint="#C15150" />
     </LinearLayout>
 

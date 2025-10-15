@@ -17,9 +17,24 @@ public class PlaybackStateManager {
     private ExoPlayer player;
     private boolean hasQueue = false;
     private boolean isPlaying = false;
+    private android.os.Handler updateHandler;
+    private Runnable periodicUpdateRunnable;
+    private boolean isPeriodicMonitoringActive = false;
     
     public interface StateChangeListener {
         void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying);
+    }
+    
+    /**
+     * Enhanced listener interface for fragments that need additional state info
+     */
+    public interface FragmentStateChangeListener extends StateChangeListener {
+        void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying, ExoPlayer player);
+        
+        @Override
+        default void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying) {
+            onPlaybackStateChanged(hasQueue, isPlaying, PlaybackStateManager.getInstance().getPlayer());
+        }
     }
     
     public static synchronized PlaybackStateManager getInstance() {
@@ -56,6 +71,12 @@ public class PlaybackStateManager {
         if (!listeners.contains(listener)) {
             listeners.add(listener);
             Log.d("PlaybackStateManager", "Added listener. Total listeners: " + listeners.size());
+            
+            // Start periodic monitoring if this is the first listener
+            if (listeners.size() == 1 && !isPeriodicMonitoringActive) {
+                startPeriodicMonitoring();
+            }
+            
             // Immediately notify with current state
             Log.d("PlaybackStateManager", "Immediately notifying new listener: hasQueue=" + hasQueue + ", isPlaying=" + isPlaying);
             listener.onPlaybackStateChanged(hasQueue, isPlaying);
@@ -66,6 +87,11 @@ public class PlaybackStateManager {
     
     public void removeListener(StateChangeListener listener) {
         listeners.remove(listener);
+        
+        // Stop periodic monitoring if no listeners remain
+        if (listeners.isEmpty()) {
+            stopPeriodicMonitoring();
+        }
     }
     
     public boolean hasQueue() {
@@ -74,6 +100,11 @@ public class PlaybackStateManager {
     
     public boolean isPlaying() {
         return isPlaying;
+    }
+    
+    @Nullable
+    public ExoPlayer getPlayer() {
+        return player;
     }
     
     private void updateState() {
@@ -119,4 +150,67 @@ public class PlaybackStateManager {
             updateState();
         }
     };
+    
+    /**
+     * Start centralized periodic monitoring to replace individual fragment timers
+     */
+    private void startPeriodicMonitoring() {
+        if (isPeriodicMonitoringActive) {
+            Log.d("PlaybackStateManager", "Periodic monitoring already active");
+            return;
+        }
+        
+        if (updateHandler == null) {
+            updateHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        }
+        
+        periodicUpdateRunnable = new Runnable() {
+            @Override
+            public void run() {
+                // Only run periodic updates if we have listeners
+                if (!listeners.isEmpty()) {
+                    Log.d("PlaybackStateManager", "Periodic update: " + listeners.size() + " listeners");
+                    updateState();
+                    
+                    // Schedule next update
+                    if (updateHandler != null && isPeriodicMonitoringActive) {
+                        updateHandler.postDelayed(this, 500);
+                    }
+                } else {
+                    Log.d("PlaybackStateManager", "No listeners, stopping periodic monitoring");
+                    stopPeriodicMonitoring();
+                }
+            }
+        };
+        
+        isPeriodicMonitoringActive = true;
+        Log.d("PlaybackStateManager", "Started periodic monitoring");
+        updateHandler.post(periodicUpdateRunnable);
+    }
+    
+    /**
+     * Stop centralized periodic monitoring
+     */
+    private void stopPeriodicMonitoring() {
+        if (!isPeriodicMonitoringActive) {
+            return;
+        }
+        
+        isPeriodicMonitoringActive = false;
+        
+        if (updateHandler != null && periodicUpdateRunnable != null) {
+            updateHandler.removeCallbacks(periodicUpdateRunnable);
+            Log.d("PlaybackStateManager", "Stopped periodic monitoring");
+        }
+        
+        periodicUpdateRunnable = null;
+    }
+    
+    /**
+     * Force an immediate state update (useful for user interactions)
+     */
+    public void forceStateUpdate() {
+        Log.d("PlaybackStateManager", "Force state update requested");
+        updateState();
+    }
 }

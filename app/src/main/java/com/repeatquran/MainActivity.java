@@ -83,9 +83,8 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(new android.content.Intent(this, com.repeatquran.settings.SettingsActivity.class));
                     return true;
                 } else if (mi.getItemId() == R.id.action_stop) {
-                    Intent i = new Intent(this, PlaybackService.class);
-                    i.setAction(PlaybackService.ACTION_STOP);
-                    if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(i); else startService(i);
+                    // Use consistent service invocation pattern
+                    sendServiceAction(PlaybackService.ACTION_STOP);
                     return true;
                 }
                 return false;
@@ -169,16 +168,101 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
     }
+    
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // Save current speed setting to ensure it persists through rotation
+        float currentSpeed = getSharedPreferences("rq_prefs", MODE_PRIVATE).getFloat("playback.speed", 1.0f);
+        outState.putFloat("current_speed", currentSpeed);
+        
+        // Save current repeat setting to ensure it persists through rotation
+        int currentRepeat = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+        outState.putInt("current_repeat", currentRepeat);
+    }
+    
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        // Speed will be restored from SharedPreferences in setupSpeedDropdown(),
+        // but this ensures we have the state available if needed
+        if (savedInstanceState != null && savedInstanceState.containsKey("current_speed")) {
+            float restoredSpeed = savedInstanceState.getFloat("current_speed", 1.0f);
+            // The speed is already in SharedPreferences, so this is mainly for validation
+            
+            // Post a refresh to ensure dropdowns are properly configured after restoration
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                refreshSpeedDropdownState();
+                refreshRepeatDropdownState();
+            }, 100);
+        }
+    }
+    
+    private void refreshSpeedDropdownState() {
+        AutoCompleteTextView dd = findViewById(R.id.speedInlineDropdown);
+        if (dd != null && dd.getAdapter() != null) {
+            // Force adapter to refresh
+            ((android.widget.ArrayAdapter<?>) dd.getAdapter()).notifyDataSetChanged();
+            
+            // Restore the correct text
+            float saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getFloat("playback.speed", 1.0f);
+            String[] labels = new String[]{"0.5×","0.75×","1.0×","1.25×","1.5×","1.75×","2.0×"};
+            float[] values = new float[]{0.5f,0.75f,1.0f,1.25f,1.5f,1.75f,2.0f};
+            
+            int sel = 2;
+            float min = Float.MAX_VALUE;
+            for (int i = 0; i < values.length; i++) { 
+                float d = Math.abs(values[i] - saved); 
+                if (d < min) { min = d; sel = i; } 
+            }
+            
+            dd.setText(labels[sel], false);
+        }
+    }
+    
+    private void refreshRepeatDropdownState() {
+        AutoCompleteTextView dd = findViewById(R.id.repeatInlineDropdown);
+        if (dd != null && dd.getAdapter() != null) {
+            // Force adapter to refresh
+            ((android.widget.ArrayAdapter<?>) dd.getAdapter()).notifyDataSetChanged();
+            
+            // Restore the correct text
+            int saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getInt("repeat.count", 1);
+            if (saved == -1) {
+                dd.setText("∞", false);
+            } else {
+                dd.setText(String.valueOf(saved), false);
+            }
+        }
+    }
 
     private void sendServiceAction(String action) {
+        sendServiceAction(action, null);
+    }
+    
+    private void sendServiceAction(String action, Float speed) {
         Intent intent = new Intent(this, PlaybackService.class);
         intent.setAction(action);
+        
+        if (speed != null && PlaybackService.ACTION_SET_SPEED.equals(action)) {
+            intent.putExtra("speed", speed);
+        }
+
+        boolean needsForeground =
+                PlaybackService.ACTION_PLAY.equals(action) ||
+                PlaybackService.ACTION_LOAD_SINGLE.equals(action) ||
+                PlaybackService.ACTION_LOAD_RANGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_PAGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_SURAH.equals(action) ||
+                PlaybackService.ACTION_RESUME.equals(action) ||
+                PlaybackService.ACTION_SET_SPEED.equals(action);
+
         if (Build.VERSION.SDK_INT >= 26) {
-            if (PlaybackService.ACTION_START.equals(action)) {
-                // Warmup doesn't need foreground; avoid startForeground timeout
-                startService(intent);
-            } else {
+            if (needsForeground) {
                 startForegroundService(intent);
+            } else {
+                // Non-foreground actions: avoid startForeground timeout risk
+                startService(intent);
             }
         } else {
             startService(intent);
@@ -190,11 +274,53 @@ public class MainActivity extends AppCompatActivity {
     private void setupRepeatDropdown() {
         AutoCompleteTextView dropdown = findViewById(R.id.repeatInlineDropdown);
         TextInputLayout inputLayout = findViewById(R.id.repeatInlineLayout);
+        if (dropdown == null || inputLayout == null) return;
+        
         String[] labels = getResources().getStringArray(R.array.repeat_labels);
         final int[] values = getResources().getIntArray(R.array.repeat_values);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, labels);
+        
+        // Use standard dropdown layout for maximum compatibility
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
+            android.R.layout.simple_dropdown_item_1line, 
+            labels);
+        
+        // Configure the AutoCompleteTextView properly for Material Design
         dropdown.setAdapter(adapter);
-        dropdown.setThreshold(0);
+        dropdown.setThreshold(Integer.MAX_VALUE); // Disable text filtering to show all items
+        dropdown.setDropDownHeight(android.widget.ListPopupWindow.WRAP_CONTENT);
+        
+        // Allow editing but also support dropdown behavior
+        dropdown.setKeyListener(android.text.method.DigitsKeyListener.getInstance("0123456789∞"));
+        dropdown.setCursorVisible(true);
+        dropdown.setCompletionHint(null);
+        
+        // Force dropdown to show on click/focus
+        dropdown.setOnClickListener(v -> {
+            dropdown.requestFocus();
+            dropdown.showDropDown();
+        });
+        
+        dropdown.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // Post to ensure the view is ready
+                dropdown.post(() -> {
+                    if (dropdown.hasFocus()) {
+                        dropdown.showDropDown();
+                    }
+                });
+            } else {
+                validateAndPersistTyped(dropdown, inputLayout, getSharedPreferences("rq_prefs", MODE_PRIVATE));
+            }
+        });
+        
+        // Handle touch events to ensure dropdown shows
+        dropdown.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                dropdown.requestFocus();
+                dropdown.showDropDown();
+            }
+            return false;
+        });
 
         SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
         int selectedValue = prefs.getInt("repeat.count", 1);
@@ -209,12 +335,6 @@ public class MainActivity extends AppCompatActivity {
             persistRepeat(prefs, value);
             clearError(inputLayout);
             dropdown.clearFocus();
-        });
-
-        dropdown.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                validateAndPersistTyped(dropdown, inputLayout, prefs);
-            }
         });
 
         dropdown.setOnEditorActionListener((v, actionId, event) -> {
@@ -240,25 +360,90 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupSpeedDropdown() {
         AutoCompleteTextView dd = findViewById(R.id.speedInlineDropdown);
-        if (dd == null) return;
+        com.google.android.material.textfield.TextInputLayout layout = findViewById(R.id.speedInlineLayout);
+        if (dd == null || layout == null) return;
+        
         String[] labels = new String[]{"0.5×","0.75×","1.0×","1.25×","1.5×","1.75×","2.0×"};
         final float[] values = new float[]{0.5f,0.75f,1.0f,1.25f,1.5f,1.75f,2.0f};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, labels);
+        
+        // Use standard dropdown layout for maximum compatibility
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
+            android.R.layout.simple_dropdown_item_1line, 
+            labels);
+        
+        // Configure the AutoCompleteTextView properly for Material Design
         dd.setAdapter(adapter);
+        dd.setThreshold(Integer.MAX_VALUE); // Disable text filtering to show all items
+        dd.setDropDownHeight(android.widget.ListPopupWindow.WRAP_CONTENT);
+        
+        // Make it behave like an exposed dropdown menu (non-editable)
+        dd.setKeyListener(null);
+        dd.setCursorVisible(false);
+        dd.setCompletionHint(null);
+        
+        // Force dropdown to show on click/focus
+        dd.setOnClickListener(v -> {
+            dd.requestFocus();
+            dd.showDropDown();
+        });
+        
+        dd.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // Post to ensure the view is ready
+                dd.post(() -> {
+                    if (dd.hasFocus()) {
+                        dd.showDropDown();
+                    }
+                });
+            }
+        });
+        
+        // Handle touch events to ensure dropdown shows
+        dd.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                dd.requestFocus();
+                dd.showDropDown();
+            }
+            return false;
+        });
+        
+        // Restore selected speed from preferences
         float saved = getSharedPreferences("rq_prefs", MODE_PRIVATE).getFloat("playback.speed", 1.0f);
-        int sel = 2; float min = Float.MAX_VALUE;
-        for (int i = 0; i < values.length; i++) { float d = Math.abs(values[i]-saved); if (d < min) { min = d; sel = i; } }
+        int sel = 2; 
+        float min = Float.MAX_VALUE;
+        for (int i = 0; i < values.length; i++) { 
+            float d = Math.abs(values[i] - saved); 
+            if (d < min) { min = d; sel = i; } 
+        }
+        
+        // Set the text without triggering dropdown
         dd.setText(labels[sel], false);
+        
+        // Set up selection listener
         dd.setOnItemClickListener((parent, view, position, id) -> {
-            float v = values[position];
-            getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putFloat("playback.speed", v).apply();
-            java.util.Map<String, Object> ev = new java.util.HashMap<>();
-            ev.put("source", "home"); ev.put("speed", String.valueOf(v));
-            com.repeatquran.analytics.AnalyticsLogger.get(this).log("speed_changed", ev);
-            Intent i = new Intent(this, PlaybackService.class);
-            i.setAction(PlaybackService.ACTION_SET_SPEED);
-            i.putExtra("speed", v);
-            if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(i); else startService(i);
+            if (position >= 0 && position < values.length) {
+                float v = values[position];
+                getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putFloat("playback.speed", v).apply();
+                
+                // Analytics
+                java.util.Map<String, Object> ev = new java.util.HashMap<>();
+                ev.put("source", "home"); 
+                ev.put("speed", String.valueOf(v));
+                com.repeatquran.analytics.AnalyticsLogger.get(this).log("speed_changed", ev);
+                
+                // Apply speed change
+                sendServiceAction(PlaybackService.ACTION_SET_SPEED, v);
+                
+                // Update UI
+                dd.setText(labels[position], false);
+                dd.dismissDropDown();
+                dd.clearFocus();
+                
+                // Clear the parent layout focus to hide keyboard
+                if (layout != null) {
+                    layout.clearFocus();
+                }
+            }
         });
     }
 
@@ -273,11 +458,7 @@ public class MainActivity extends AppCompatActivity {
             };
         }
         android.content.IntentFilter f = new android.content.IntentFilter(PlaybackService.ACTION_PLAYBACK_STATE);
-        if (android.os.Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(playbackStateReceiver, f, android.content.Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(playbackStateReceiver, f);
-        }
+        androidx.core.content.ContextCompat.registerReceiver(this, playbackStateReceiver, f, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
         // Also refresh recent history list
         renderRecentHistory();
     }
@@ -595,7 +776,7 @@ public class MainActivity extends AppCompatActivity {
         }
         
         // Sort pairs alphabetically by name (case-insensitive)
-        reciterPairs.sort((a, b) -> a.getKey().compareToIgnoreCase(b.getKey()));
+        java.util.Collections.sort(reciterPairs, (a, b) -> a.getKey().compareToIgnoreCase(b.getKey()));
         
         // Extract sorted names and ids
         String[] names = new String[reciterPairs.size()];

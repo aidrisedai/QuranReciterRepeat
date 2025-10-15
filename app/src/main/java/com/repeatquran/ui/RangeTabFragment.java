@@ -297,7 +297,7 @@ public class RangeTabFragment extends BaseTabFragment {
         intent.putExtra("repeat", repeat);
         intent.putExtra("halfSplit", half);
         
-        sendService(null, intent);
+        sendService(PlaybackService.ACTION_LOAD_RANGE, intent);
         
         // Set button to loading state with cooldown
         setButtonLoadingState(1200);

@@ -1,0 +1,385 @@
+package com.repeatquran.ui;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputLayout;
+import com.repeatquran.R;
+import com.repeatquran.playback.PlaybackService;
+import com.repeatquran.playback.PlaybackStateManager;
+
+public class PageTabFragment extends Fragment implements PlaybackStateManager.FragmentStateChangeListener {
+    private com.google.android.exoplayer2.ExoPlayer player;
+    private boolean isCurrentlyPlaying = false; // Track play state locally
+    private MaterialButton playPauseButton;
+    private long reenableAtMs = 0L; // debounce window for Play button
+    private boolean justStopped = false; // Flag to prevent periodic updater from overriding stop state
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.fragment_page_tab, container, false);
+        setupUi(v);
+        return v;
+    }
+
+    private void setupUi(View root) {
+        TextInputLayout pageLayout = root.findViewById(R.id.pageInputLayout);
+        AutoCompleteTextView ddPage = root.findViewById(R.id.pageDropdown);
+        
+        // Set up page dropdown with common pages (1-604)
+        setupPageDropdown(ddPage, pageLayout);
+        
+        // Restore last selected page
+        int last = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("last.page", 1);
+        ddPage.setText(String.valueOf(last), false);
+        
+        // Get button reference
+        playPauseButton = root.findViewById(R.id.btnPlayPause);
+        playPauseButton.setOnClickListener(v -> {
+            Log.d("PageTabFragment", "Play/Pause button clicked!");
+            handlePlayPauseToggle(root, ddPage, pageLayout);
+        });
+        
+        // Register for centralized state updates instead of individual periodic updates
+        PlaybackStateManager.getInstance().addListener(this);
+        
+        // Stop button
+        root.findViewById(R.id.btnStop).setOnClickListener(v -> {
+            Log.d("PageTabFragment", "STOP clicked - resetting state");
+            sendService(PlaybackService.ACTION_STOP);
+            // Reset local state when stopping
+            isCurrentlyPlaying = false;
+            reenableAtMs = 0L;
+            player = null; // Clear player reference so next getPlayerReference() fetches fresh state
+            justStopped = true; // Prevent periodic updater from overriding our state
+            Log.d("PageTabFragment", "State reset: isCurrentlyPlaying=false, reenableAtMs=0, player=null, justStopped=true");
+            // Update button UI immediately
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+            playPauseButton.setEnabled(true);
+            android.widget.Toast.makeText(requireContext(), "Stopped", android.widget.Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    @Override 
+    public void onResume() {
+        super.onResume();
+        Log.d("PageTabFragment", "onResume - requesting immediate state update");
+        // Force an immediate state update when fragment becomes visible
+        PlaybackStateManager.getInstance().forceStateUpdate();
+    }
+
+    @Override 
+    public void onPause() {
+        super.onPause();
+        Log.d("PageTabFragment", "onPause called");
+    }
+    
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Remove listener from centralized manager
+        PlaybackStateManager.getInstance().removeListener(this);
+        Log.d("PageTabFragment", "onDestroy - removed from PlaybackStateManager");
+    }
+
+    private void sendService(String action) {
+        sendService(action, null);
+    }
+    
+    private void sendService(String action, Intent baseIntent) {
+        Intent intent = baseIntent != null ? new Intent(baseIntent) : new Intent(requireContext(), PlaybackService.class);
+        intent.setAction(action);
+
+        boolean needsForeground =
+                PlaybackService.ACTION_PLAY.equals(action) ||
+                PlaybackService.ACTION_LOAD_SINGLE.equals(action) ||
+                PlaybackService.ACTION_LOAD_RANGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_PAGE.equals(action) ||
+                PlaybackService.ACTION_LOAD_SURAH.equals(action) ||
+                PlaybackService.ACTION_RESUME.equals(action) ||
+                PlaybackService.ACTION_SET_SPEED.equals(action);
+
+        if (Build.VERSION.SDK_INT >= 26) {
+            if (needsForeground) {
+                requireContext().startForegroundService(intent);
+            } else {
+                // Non-foreground actions: avoid startForeground timeout risk
+                requireContext().startService(intent);
+            }
+        } else {
+            requireContext().startService(intent);
+        }
+    }
+
+    private void showError(TextInputLayout layout, String msg) { layout.setError(msg); }
+    private void clearError(TextInputLayout layout) { layout.setError(null); layout.setErrorEnabled(false); }
+    private int parseIntSafe(AutoCompleteTextView edit) { try { return Integer.parseInt(edit.getText()==null?"":edit.getText().toString().trim()); } catch (Exception e) { return -1; } }
+    
+    private void hideKeyboard(View view) {
+        try {
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+            if (imm != null && view != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        } catch (Exception ignored) {}
+    }
+    
+    private void setupPageDropdown(AutoCompleteTextView ddPage, TextInputLayout pageLayout) {
+        // Create list of common page numbers (we'll make it searchable)
+        java.util.List<String> pageNumbers = new java.util.ArrayList<>();
+        // Add common page ranges for easy selection
+        for (int i = 1; i <= 604; i += 10) {
+            pageNumbers.add(String.valueOf(i));
+        }
+        // Add last 10 pages individually for common use
+        for (int i = 595; i <= 604; i++) {
+            if (!pageNumbers.contains(String.valueOf(i))) {
+                pageNumbers.add(String.valueOf(i));
+            }
+        }
+        
+        // Create adapter with filtering support - use dropdown layout for rotation resistance
+        ArrayAdapter<String> pageAdapter = new ArrayAdapter<String>(requireContext(), android.R.layout.simple_dropdown_item_1line, pageNumbers) {
+            @Override
+            public android.widget.Filter getFilter() {
+                return new android.widget.Filter() {
+                    @Override
+                    protected FilterResults performFiltering(CharSequence constraint) {
+                        FilterResults results = new FilterResults();
+                        java.util.List<String> allPages = new java.util.ArrayList<>();
+                        for (int i = 1; i <= 604; i++) {
+                            allPages.add(String.valueOf(i));
+                        }
+                        
+                        if (constraint == null || constraint.length() == 0) {
+                            results.values = pageNumbers; // Show common pages by default
+                            results.count = pageNumbers.size();
+                        } else {
+                            java.util.List<String> filtered = new java.util.ArrayList<>();
+                            String filterString = constraint.toString().toLowerCase();
+                            for (String page : allPages) {
+                                if (page.startsWith(filterString)) {
+                                    filtered.add(page);
+                                }
+                            }
+                            results.values = filtered;
+                            results.count = filtered.size();
+                        }
+                        return results;
+                    }
+                    
+                    @Override
+                    protected void publishResults(CharSequence constraint, FilterResults results) {
+                        if (results.values != null) {
+                            clear();
+                            addAll((java.util.List<String>) results.values);
+                            notifyDataSetChanged();
+                        }
+                    }
+                };
+            }
+        };
+        
+        ddPage.setAdapter(pageAdapter);
+        ddPage.setThreshold(Integer.MAX_VALUE); // Disable text filtering to show all items
+        ddPage.setDropDownHeight(android.widget.ListPopupWindow.WRAP_CONTENT);
+        
+        // When page is selected from dropdown, dismiss keyboard
+        ddPage.setOnItemClickListener((p, v, pos, id) -> {
+            // Dismiss dropdown and keyboard reliably
+            ddPage.dismissDropDown();
+            hideKeyboard(ddPage);
+            ddPage.clearFocus();
+            View rootView = getView();
+            if (rootView != null) rootView.requestFocus();
+        });
+        
+        pageLayout.setHelperText("Enter page 1–604");
+    }
+    
+    private void loadAndPlayPage(View root, View btn, AutoCompleteTextView ddPage, TextInputLayout pageLayout) {
+        clearError(pageLayout);
+        int page = parseIntSafe(ddPage);
+        if (page < 1 || page > 604) { showError(pageLayout, "Enter 1–604"); return; }
+        
+        // Check for reciter selection before proceeding
+        String savedOrder = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getString("reciters.order", "");
+        if (savedOrder == null || savedOrder.trim().isEmpty()) {
+            android.widget.Toast.makeText(requireContext(), "Select at least one reciter first", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).edit().putInt("last.page", page).apply();
+        int repeat = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getInt("repeat.count", 1);
+        boolean half = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE).getBoolean("ui.half.split", false);
+        
+        Intent intent = new Intent(requireContext(), PlaybackService.class);
+        intent.setAction(PlaybackService.ACTION_LOAD_PAGE);
+        intent.putExtra("page", page);
+        intent.putExtra("repeat", repeat);
+        intent.putExtra("halfSplit", half);
+        
+        // Use sendService to properly handle foreground requirements
+        sendService(PlaybackService.ACTION_LOAD_PAGE, intent);
+        
+        android.widget.Toast.makeText(requireContext(), "Loading page " + page + "…", android.widget.Toast.LENGTH_SHORT).show();
+        
+        // Set expected playing state and update button
+        isCurrentlyPlaying = true;
+        playPauseButton.setText("Pause");
+        playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+        
+        // Debounce: disable button briefly to prevent double-taps
+        reenableAtMs = android.os.SystemClock.uptimeMillis() + 1200;
+        playPauseButton.setEnabled(false);
+    }
+    
+    
+    private void handlePlayPauseToggle(View root, AutoCompleteTextView ddPage, TextInputLayout pageLayout) {
+        // Check if in cooldown period - if so, ignore click to prevent issues during service startup
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now < reenableAtMs) {
+            Log.d("PageTabFragment", "Button click ignored - still in cooldown");
+            return;
+        }
+        
+        getPlayerReference();
+        
+        // Check actual player state
+        boolean actuallyPlaying = player != null && player.isPlaying();
+        boolean hasContent = player != null && player.getMediaItemCount() > 0;
+        
+        Log.d("PageTabFragment", "=== PLAY/PAUSE TOGGLE ===");
+        Log.d("PageTabFragment", "actuallyPlaying=" + actuallyPlaying + ", hasContent=" + hasContent + ", localState=" + isCurrentlyPlaying);
+        Log.d("PageTabFragment", "justStopped=" + justStopped);
+        // Clear justStopped flag when user interacts (they're ready to play again)
+        justStopped = false;
+        
+        if (actuallyPlaying) {
+            // Currently playing - pause it
+            Log.d("PageTabFragment", "Pausing playback");
+            sendService(PlaybackService.ACTION_PAUSE);
+            isCurrentlyPlaying = false;
+            reenableAtMs = 0L; // allow immediate interaction after pause
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        } else if (hasContent) {
+            // Has content but not playing - check if it belongs to this fragment
+            if (isContentForThisFragment()) {
+                Log.d("PageTabFragment", "Resuming page playback");
+                sendService(PlaybackService.ACTION_PLAY);
+                isCurrentlyPlaying = true;
+                playPauseButton.setText("Pause");
+                playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+                // Add cooldown to prevent periodic updater from overriding this immediately
+                reenableAtMs = android.os.SystemClock.uptimeMillis() + 800;
+                playPauseButton.setEnabled(false);
+            } else {
+                Log.d("PageTabFragment", "Content belongs to different tab - loading page content");
+                loadAndPlayPage(root, playPauseButton, ddPage, pageLayout);
+            }
+        } else {
+            // No content - load new
+            Log.d("PageTabFragment", "Loading new content");
+            loadAndPlayPage(root, playPauseButton, ddPage, pageLayout);
+        }
+    }
+    
+    private void getPlayerReference() {
+        try {
+            player = PlaybackStateManager.getInstance().getPlayer();
+            if (player != null) {
+                Log.d("PageTabFragment", "Got player reference successfully");
+            } else {
+                Log.w("PageTabFragment", "Player reference is null");
+            }
+        } catch (Exception e) {
+            Log.e("PageTabFragment", "Error getting player reference", e);
+            player = null;
+        }
+    }
+    
+    /**
+     * Centralized state change listener - replaces individual periodic updates
+     */
+    @Override
+    public void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying, com.google.android.exoplayer2.ExoPlayer player) {
+        // Update player reference from centralized manager
+        this.player = player;
+        
+        if (playPauseButton == null) return;
+        
+        // If we just stopped, don't let centralized updater override our state for a brief moment
+        if (justStopped) {
+            Log.d("PageTabFragment", "onPlaybackStateChanged: just stopped, skipping update to preserve stop state");
+            // Clear the flag after a short delay to allow user interaction
+            playPauseButton.postDelayed(() -> {
+                justStopped = false;
+                Log.d("PageTabFragment", "justStopped flag cleared");
+            }, 1000);
+            return;
+        }
+        
+        // Respect cooldown window - don't update UI during debounce period
+        long now = android.os.SystemClock.uptimeMillis();
+        boolean inCooldown = now < reenableAtMs;
+        
+        if (inCooldown) {
+            // During cooldown, keep button disabled and don't change its state
+            // This prevents flickering when service is starting up
+            playPauseButton.setEnabled(false);
+            Log.d("PageTabFragment", "onPlaybackStateChanged: in cooldown, skipping update");
+            return;
+        }
+        
+        // Only sync state when not in cooldown
+        isCurrentlyPlaying = isPlaying;
+        
+        Log.d("PageTabFragment", "onPlaybackStateChanged: isPlaying=" + isPlaying + ", hasQueue=" + hasQueue);
+        
+        // Update button UI based on centralized state
+        playPauseButton.setEnabled(true);
+        
+        if (isPlaying) {
+            playPauseButton.setText("Pause");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_pause));
+        } else {
+            playPauseButton.setText("Play");
+            playPauseButton.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.ic_play_arrow));
+        }
+    }
+    
+    /**
+     * Check if the currently loaded content belongs to this Page fragment
+     */
+    private boolean isContentForThisFragment() {
+        try {
+            // Check the resume state from SharedPreferences
+            android.content.SharedPreferences prefs = requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE);
+            String sourceType = prefs.getString("resume.sourceType", "");
+            
+            // This fragment handles "page" content
+            boolean isPageType = "page".equals(sourceType);
+            Log.d("PageTabFragment", "Content validation: sourceType=" + sourceType + ", isPage=" + isPageType);
+            
+            return isPageType;
+        } catch (Exception e) {
+            Log.e("PageTabFragment", "Error checking content ownership", e);
+            return false;
+        }
+    }
+}

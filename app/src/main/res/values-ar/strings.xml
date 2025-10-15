@@ -11,4 +11,6 @@
     <string name="desc_split_halves">عند التفعيل، يتم تقسيم المقطع على عدة أجزاء متتالية موزعة على القراء المختارين بالترتيب. مثال: مع قارئين، النصف الأول بصوت القارئ أ والنصف الثاني بصوت القارئ ب.</string>
     <string name="example_two_reciters">مثال (قارئان):</string>
     <string name="example_three_reciters">مثال (ثلاثة قراء):</string>
+    <string name="open_downloads">فتح التحميلات</string>
+    <string name="title_downloads">التحميلات</string>
 </resources>
