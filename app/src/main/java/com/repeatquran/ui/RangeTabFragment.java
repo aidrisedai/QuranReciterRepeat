@@ -299,9 +299,8 @@ public class RangeTabFragment extends BaseTabFragment {
         
         sendService(null, intent);
         
-        // Set expected playing state and update button
-        isCurrentlyPlaying = true;
-        reenableAtMs = android.os.SystemClock.uptimeMillis() + 1200;
+        // Set button to loading state with cooldown
+        setButtonLoadingState(1200);
     }
 
     @Override

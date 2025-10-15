@@ -157,9 +157,8 @@ public class PageTabFragment extends BaseTabFragment {
             "Loading page " + page + "…", 
             android.widget.Toast.LENGTH_SHORT).show();
         
-        // Set expected playing state and update button
-        isCurrentlyPlaying = true;
-        reenableAtMs = android.os.SystemClock.uptimeMillis() + 1200;
+        // Set button to loading state with cooldown
+        setButtonLoadingState(1200);
     }
 
     @Override
