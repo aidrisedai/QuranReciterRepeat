@@ -83,6 +83,7 @@ public class MemorizationSessionActivity extends AppCompatActivity {
     private LocalSpeechRecognizer localRecognizer;
     private QuranVerseProvider verseProvider;
     private String currentExpectedVerseText;
+    private String currentExpectedVerseNormalized;
     private StringBuilder currentTranscript = new StringBuilder();
     
     private boolean isSessionActive = false;
@@ -285,7 +286,9 @@ public class MemorizationSessionActivity extends AppCompatActivity {
             @Override
             public void onVerseLoaded(String arabicText) {
                 currentExpectedVerseText = arabicText;
+                currentExpectedVerseNormalized = VerseMatchingEngine.normalizeArabicPublic(arabicText);
                 Log.d(TAG, "Loaded verse " + currentSurah + ":" + currentAyah + " - " + arabicText);
+                Log.d(TAG, "Normalized expected: " + currentExpectedVerseNormalized);
                 
                 // Prefetch next few verses for smoother experience
                 int endAyah = Math.min(currentAyah + 5, currentGoal.targetAyahEnd);
@@ -330,9 +333,8 @@ public class MemorizationSessionActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     int currentVerseNum = currentGoal.targetAyahStart + currentVerseIndex;
                     String expectedPreview = currentExpectedVerseText != null ? 
-                        currentExpectedVerseText.substring(0, Math.min(50, currentExpectedVerseText.length())) + "..." : 
-                        "Loading...";
-                    feedbackText.setText(String.format("📖 Verse %d\n\nExpected:\n%s\n\n🎤 Hearing:\n%s...", 
+                        currentExpectedVerseText : "Loading...";
+                    feedbackText.setText(String.format("📖 Verse %d\n\nExpected:\n%s\n\n🎤 Hearing:\n%s", 
                         currentVerseNum, expectedPreview, text));
                 });
             }
@@ -365,52 +367,34 @@ public class MemorizationSessionActivity extends AppCompatActivity {
                     return;
                 }
                 
-                // Simple length-based check: if transcript is at least 40% of expected length
+                // Normalize for strict comparison without diacritics/Bismillah
                 String normalizedTranscript = VerseMatchingEngine.normalizeArabicPublic(transcriptSoFar);
-                String normalizedExpected = VerseMatchingEngine.normalizeArabicPublic(currentExpectedVerseText);
+                String normalizedExpected = currentExpectedVerseNormalized != null ? currentExpectedVerseNormalized : VerseMatchingEngine.normalizeArabicPublic(currentExpectedVerseText);
                 
-                double lengthRatio = (double) normalizedTranscript.length() / normalizedExpected.length();
+                double lengthRatio = normalizedExpected.length() > 0 ? (double) normalizedTranscript.length() / normalizedExpected.length() : 0.0;
                 Log.d(TAG, "Length ratio: " + (lengthRatio * 100) + "%");
                 
-                // If we've recited at least 40% of the verse length, check similarity
-                if (lengthRatio >= 0.4) {
-                    double similarity = VerseMatchingEngine.calculateSimilarity(
-                        transcriptSoFar,
-                        currentExpectedVerseText
-                    );
-                    
-                    Log.d(TAG, "Verse match similarity: " + (similarity * 100) + "%");
-                    
-                    // VERY LENIENT: Accept 30% match OR just enable Next button
-                    if (similarity >= 0.30) {
-                        // Good enough match - advance verse
-                        onVerseCompleted(true, similarity);
-                    } else {
-                        // Show score and enable manual advance (always)
-                        runOnUiThread(() -> {
-                            int currentVerse = currentGoal.targetAyahStart + currentVerseIndex;
-                            feedbackText.setText(String.format(
-                                "📖 Verse %d: %.0f%% match\n\nExpected:\n%s\n\n🎤 You said:\n%s\n\n👉 Tap Next Verse when ready",
-                                currentVerse, 
-                                similarity * 100,
-                                currentExpectedVerseText.substring(0, Math.min(80, currentExpectedVerseText.length())) + "...",
-                                transcriptSoFar));
-                            nextVerseButton.setVisibility(View.VISIBLE);
-                        });
-                    }
+                // Primary rule: if normalized transcription contains most of expected words in any order
+                double similarity = VerseMatchingEngine.calculateSimilarity(normalizedTranscript, normalizedExpected);
+                Log.d(TAG, "Word match similarity: " + (similarity * 100) + "%");
+                
+                // Secondary rule: transcript contains expected as substring (helps for full-verse recitation)
+                boolean containsExpected = normalizedTranscript.contains(normalizedExpected);
+                Log.d(TAG, "Contains expected substring: " + containsExpected);
+                
+                if (containsExpected || similarity >= 0.60 || (lengthRatio >= 0.6 && similarity >= 0.40)) {
+                    onVerseCompleted(true, similarity);
                 } else {
-                    Log.d(TAG, "Keep reciting (length: " + lengthRatio * 100 + "%)...");
-                    // Show real-time progress
+                    // Show real-time progress and guidance
                     runOnUiThread(() -> {
                         int currentVerseNum = currentGoal.targetAyahStart + currentVerseIndex;
-                        String expectedShort = currentExpectedVerseText.length() > 60 ? 
-                            currentExpectedVerseText.substring(0, 60) + "..." : currentExpectedVerseText;
+                        String expectedShort = currentExpectedVerseText;
                         feedbackText.setText(String.format(
-                            "📖 Verse %d (%.0f%% length)\n\nExpected:\n%s\n\n🎤 You:\n%s\n\nKeep reciting...",
+                            "📖 Verse %d\n\nExpected:\n%s\n\n🎤 You:\n%s\n\n(%.0f%% words matched)",
                             currentVerseNum,
-                            lengthRatio * 100,
                             expectedShort,
-                            transcriptSoFar));
+                            transcriptSoFar,
+                            similarity * 100));
                     });
                 }
             }
@@ -477,14 +461,16 @@ public class MemorizationSessionActivity extends AppCompatActivity {
             @Override
             public void onVerseLoaded(String arabicText) {
                 currentExpectedVerseText = arabicText;
+                currentExpectedVerseNormalized = VerseMatchingEngine.normalizeArabicPublic(arabicText);
                 Log.d(TAG, "Loaded next verse: " + nextSurah + ":" + nextAyah);
+                Log.d(TAG, "Normalized expected: " + currentExpectedVerseNormalized);
                 
                 // Reset transcript and continue listening
                 currentTranscript.setLength(0);
                 
                 runOnUiThread(() -> {
                     statusText.setText("🎤 Listening...");
-                    feedbackText.setText(String.format("📖 Verse %d\n\nListening...", nextAyah));
+                    feedbackText.setText(String.format("📖 Verse %d\n\nExpected:\n%s\n\nListening...", nextAyah, currentExpectedVerseText));
                 });
             }
             

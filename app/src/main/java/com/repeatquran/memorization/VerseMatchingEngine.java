@@ -13,41 +13,47 @@ public class VerseMatchingEngine {
     
     /**
      * Calculate similarity between transcribed text and expected verse
-     * Uses multiple methods and returns the BEST score
+     * Simple word-based matching algorithm
      * @return Match percentage (0.0 to 1.0)
      */
     public static double calculateSimilarity(String transcribed, String expected) {
-        if (transcribed == null || expected == null) return 0.0;
+        if (transcribed == null || expected == null || transcribed.isEmpty() || expected.isEmpty()) {
+            return 0.0;
+        }
         
-        // Normalize: lowercase, remove diacritics, trim
+        // Normalize text: remove diacritics and normalize characters
         String normalizedTranscribed = normalizeArabic(transcribed);
         String normalizedExpected = normalizeArabic(expected);
         
-        Log.d(TAG, "\n===== VERSE COMPARISON =====");
-        Log.d(TAG, "Original Transcribed: " + transcribed);
-        Log.d(TAG, "Original Expected: " + expected);
-        Log.d(TAG, "Normalized Transcribed: " + normalizedTranscribed);
-        Log.d(TAG, "Normalized Expected: " + normalizedExpected);
+        Log.d(TAG, "=== Verse Matching ===");
+        Log.d(TAG, "Expected: " + normalizedExpected);
+        Log.d(TAG, "You said: " + normalizedTranscribed);
         
-        // Method 1: Word matching (most important)
-        double wordMatchScore = calculateWordMatchScore(normalizedTranscribed, normalizedExpected);
-        Log.d(TAG, "Word Match Score: " + (wordMatchScore * 100) + "%");
+        // Split both into word arrays
+        String[] expectedWords = normalizedExpected.split("\\s+");
+        String[] transcribedWords = normalizedTranscribed.split("\\s+");
         
-        // Method 2: Character containment (does transcript contain the expected text?)
-        double containmentScore = calculateContainmentScore(normalizedTranscribed, normalizedExpected);
-        Log.d(TAG, "Containment Score: " + (containmentScore * 100) + "%");
+        // Count how many words match
+        int matchedWords = 0;
+        for (String expectedWord : expectedWords) {
+            if (expectedWord.length() < 2) continue; // Skip very short words
+            
+            for (String transcribedWord : transcribedWords) {
+                if (expectedWord.equals(transcribedWord)) {
+                    matchedWords++;
+                    break;
+                }
+            }
+        }
         
-        // Method 3: Levenshtein distance (edit distance)
-        double levenshteinScore = calculateLevenshteinScore(normalizedTranscribed, normalizedExpected);
-        Log.d(TAG, "Levenshtein Score: " + (levenshteinScore * 100) + "%");
+        // Calculate similarity as percentage of words matched
+        double similarity = expectedWords.length > 0 ? (double) matchedWords / expectedWords.length : 0.0;
         
-        // Take the BEST score (most lenient)
-        double finalScore = Math.max(wordMatchScore, Math.max(containmentScore, levenshteinScore));
+        Log.d(TAG, "Words matched: " + matchedWords + "/" + expectedWords.length);
+        Log.d(TAG, "Match percentage: " + (similarity * 100) + "%");
+        Log.d(TAG, "==================");
         
-        Log.d(TAG, "FINAL SCORE: " + (finalScore * 100) + "%");
-        Log.d(TAG, "============================\n");
-        
-        return finalScore;
+        return similarity;
     }
     
     /**
@@ -127,26 +133,22 @@ public class VerseMatchingEngine {
     
     /**
      * Check if transcribed text likely contains the complete verse
+     * Simple word-based check
      */
     public static boolean containsCompleteVerse(String transcribed, String expected) {
-        String normalizedTranscribed = normalizeArabic(transcribed);
-        String normalizedExpected = normalizeArabic(expected);
-        
-        // Check if transcription contains most of the expected verse
-        String[] expectedWords = normalizedExpected.split("\\s+");
-        int matchedWords = 0;
-        
-        for (String word : expectedWords) {
-            if (word.length() > 2 && normalizedTranscribed.contains(word)) {
-                matchedWords++;
-            }
+        if (transcribed == null || expected == null || transcribed.isEmpty() || expected.isEmpty()) {
+            return false;
         }
         
-        double wordMatchRatio = (double) matchedWords / expectedWords.length;
+        // Get similarity score
+        double similarity = calculateSimilarity(transcribed, expected);
         
-        Log.d(TAG, "Word match: " + matchedWords + "/" + expectedWords.length + " = " + (wordMatchRatio * 100) + "%");
+        // Consider verse complete if at least 60% of words match
+        boolean isComplete = similarity >= 0.60;
         
-        return wordMatchRatio >= 0.5; // 50% of words present (reduced for testing)
+        Log.d(TAG, "Verse complete check: " + (isComplete ? "YES" : "NO"));
+        
+        return isComplete;
     }
     
     /**
@@ -157,13 +159,51 @@ public class VerseMatchingEngine {
     }
     
     /**
+     * Generates a detailed word-by-word comparison for visualization
+     * Returns text showing which words matched
+     */
+    public static String getWordComparison(String transcribed, String expected) {
+        if (transcribed == null || expected == null) return "";
+        
+        String normalizedTranscribed = normalizeArabic(transcribed);
+        String normalizedExpected = normalizeArabic(expected);
+        
+        String[] expectedWords = normalizedExpected.split("\\s+");
+        String[] transcribedWords = normalizedTranscribed.split("\\s+");
+        
+        StringBuilder diff = new StringBuilder("\nWORDS: ");
+        for (int i = 0; i < expectedWords.length; i++) {
+            String word = expectedWords[i];
+            boolean wordMatched = i < transcribedWords.length && word.equals(transcribedWords[i]);
+            diff.append(wordMatched ? "[✔] " : "[ ] ").append(word);
+            if (i < expectedWords.length - 1) diff.append(" ");
+        }
+        
+        int matched = 0;
+        for (String expectedWord : expectedWords) {
+            for (String transcribedWord : transcribedWords) {
+                if (expectedWord.equals(transcribedWord)) {
+                    matched++;
+                    break;
+                }
+            }
+        }
+        diff.append("\n\n").append("Matched: ").append(matched).append("/").append(expectedWords.length);
+        diff.append(" (")
+            .append((matched * 100.0) / expectedWords.length)
+            .append("%)");
+        
+        return diff.toString();
+    }
+    
+    /**
      * Normalize Arabic text for comparison - AGGRESSIVE MODE
      * - Remove ALL diacritics
      * - Normalize ALL character variations
      * - Remove punctuation and numbers
      * - Trim and normalize spacing
      */
-    private static String normalizeArabic(String text) {
+    public static String normalizeArabic(String text) {
         if (text == null || text.isEmpty()) return "";
         
         String normalized = text;
