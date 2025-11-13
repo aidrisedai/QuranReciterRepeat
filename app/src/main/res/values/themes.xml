@@ -19,7 +19,9 @@
         <item name="shapeAppearanceMediumComponent">@style/Shape.Medium</item>
         <item name="shapeAppearanceLargeComponent">@style/Shape.Large</item>
 
-        <!-- Typography: leave default; Arabic font can be applied later in UI-11 -->
+        <!-- Typography: Outfit font for modern, friendly appearance -->
+        <item name="fontFamily">@font/outfit</item>
+        <item name="android:fontFamily">@font/outfit</item>
     </style>
 
     <style name="Shape.Small" parent="ShapeAppearance.MaterialComponents.SmallComponent">

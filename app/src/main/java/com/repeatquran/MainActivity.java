@@ -74,7 +74,10 @@ public class MainActivity extends AppCompatActivity {
             android.view.MenuItem menuItem = bar.getMenu().findItem(R.id.action_remember_mode);
             if (menuItem != null) menuItem.setChecked(rememberInit);
             bar.setOnMenuItemClickListener(mi -> {
-                if (mi.getItemId() == R.id.action_remember_mode) {
+                if (mi.getItemId() == R.id.action_memorization) {
+                    startActivity(new android.content.Intent(this, com.repeatquran.memorization.MemorizationActivity.class));
+                    return true;
+                } else if (mi.getItemId() == R.id.action_remember_mode) {
                     boolean newVal = !mi.isChecked();
                     mi.setChecked(newVal);
                     getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putBoolean("ui.remember.mode", newVal).apply();
@@ -133,6 +136,9 @@ public class MainActivity extends AppCompatActivity {
         if (chipReciters != null) {
             chipReciters.setOnClickListener(v -> showReciterPicker());
         }
+        
+        // Setup bottom navigation
+        setupBottomNavigation();
 
         // Request notifications permission on Android 13+ so we can show the media notification
         if (Build.VERSION.SDK_INT >= 33) {
@@ -760,59 +766,62 @@ public class MainActivity extends AppCompatActivity {
     private void showTabbedReciterPicker() {
         SharedPreferences prefs = getSharedPreferences("rq_prefs", MODE_PRIVATE);
         String saved = prefs.getString("reciters.order", "");
-        java.util.List<String> currentSelection = new java.util.ArrayList<>();
+        
+        // Preserve existing order
+        java.util.List<String> selectionOrder = new java.util.ArrayList<>();
         if (!saved.isEmpty()) {
-            for (String s : saved.split(",")) if (!s.isEmpty()) currentSelection.add(s);
+            for (String s : saved.split(",")) if (!s.isEmpty()) selectionOrder.add(s);
         }
         
-        // Get reciter data
-        String[] originalNames = getResources().getStringArray(R.array.reciter_names);
-        String[] originalIds = getResources().getStringArray(R.array.reciter_ids);
+        // Get reciter data and sort alphabetically for easy finding
+        String[] names = getResources().getStringArray(R.array.reciter_names);
+        String[] ids = getResources().getStringArray(R.array.reciter_ids);
+        java.util.List<java.util.AbstractMap.SimpleEntry<String, String>> pairs = new java.util.ArrayList<>();
+        for (int i = 0; i < names.length; i++) {
+            pairs.add(new java.util.AbstractMap.SimpleEntry<>(names[i], ids[i]));
+        }
+        java.util.Collections.sort(pairs, (a, b) -> a.getKey().compareToIgnoreCase(b.getKey()));
         
-        // Create pairs to maintain name-id relationship while sorting
-        java.util.List<java.util.AbstractMap.SimpleEntry<String, String>> reciterPairs = new java.util.ArrayList<>();
-        for (int i = 0; i < originalNames.length; i++) {
-            reciterPairs.add(new java.util.AbstractMap.SimpleEntry<>(originalNames[i], originalIds[i]));
+        // Build display items with numbers for selected reciters
+        String[] displayItems = new String[pairs.size()];
+        boolean[] checked = new boolean[pairs.size()];
+        for (int i = 0; i < pairs.size(); i++) {
+            String id = pairs.get(i).getValue();
+            String name = pairs.get(i).getKey();
+            int orderIndex = selectionOrder.indexOf(id);
+            checked[i] = orderIndex >= 0;
+            displayItems[i] = checked[i] ? "[" + (orderIndex + 1) + "] " + name : name;
         }
         
-        // Sort pairs alphabetically by name (case-insensitive)
-        java.util.Collections.sort(reciterPairs, (a, b) -> a.getKey().compareToIgnoreCase(b.getKey()));
-        
-        // Extract sorted names and ids
-        String[] names = new String[reciterPairs.size()];
-        String[] ids = new String[reciterPairs.size()];
-        for (int i = 0; i < reciterPairs.size(); i++) {
-            names[i] = reciterPairs.get(i).getKey();
-            ids[i] = reciterPairs.get(i).getValue();
-        }
-        
-        // Create boolean array for current selections
-        boolean[] checkedItems = new boolean[names.length];
-        for (int i = 0; i < ids.length; i++) {
-            checkedItems[i] = currentSelection.contains(ids[i]);
-        }
-        
-        // Create simple multi-choice dialog
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Select Reciters")
-            .setMultiChoiceItems(names, checkedItems, (dialog, which, isChecked) -> {
-                // Handle individual item clicks
-                checkedItems[which] = isChecked;
-            })
-            .setPositiveButton("OK", (dialog, which) -> {
-                // Save selections
-                java.util.List<String> selectedIds = new java.util.ArrayList<>();
-                for (int i = 0; i < checkedItems.length; i++) {
-                    if (checkedItems[i]) {
-                        selectedIds.add(ids[i]);
-                    }
+        // Create dialog
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Select Reciters (in order)")
+            .setMultiChoiceItems(displayItems, checked, (d, which, isChecked) -> {
+                String id = pairs.get(which).getValue();
+                if (isChecked) {
+                    if (!selectionOrder.contains(id)) selectionOrder.add(id);
+                } else {
+                    selectionOrder.remove(id);
                 }
-                String joined = android.text.TextUtils.join(",", selectedIds);
-                prefs.edit().putString("reciters.order", joined).apply();
+                // Refresh display with updated numbers
+                androidx.appcompat.app.AlertDialog alertDialog = (androidx.appcompat.app.AlertDialog) d;
+                for (int i = 0; i < pairs.size(); i++) {
+                    String itemId = pairs.get(i).getValue();
+                    String itemName = pairs.get(i).getKey();
+                    int orderIndex = selectionOrder.indexOf(itemId);
+                    displayItems[i] = orderIndex >= 0 ? "[" + (orderIndex + 1) + "] " + itemName : itemName;
+                }
+                // Force ListView refresh
+                android.widget.ListView listView = alertDialog.getListView();
+                ((android.widget.ArrayAdapter) listView.getAdapter()).notifyDataSetChanged();
+            })
+            .setPositiveButton("OK", (d, w) -> {
+                prefs.edit().putString("reciters.order", android.text.TextUtils.join(",", selectionOrder)).apply();
                 renderSelectedReciters();
             })
             .setNegativeButton("Cancel", null)
-            .show();
+            .create();
+        dialog.show();
     }
     
 
@@ -855,5 +864,35 @@ public class MainActivity extends AppCompatActivity {
             case 3: return "surah";
         }
         return String.valueOf(pos);
+    }
+    
+    private void setupBottomNavigation() {
+        com.google.android.material.bottomnavigation.BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.nav_learn);
+            
+            bottomNav.setOnItemSelectedListener(item -> {
+                int itemId = item.getItemId();
+                
+                if (itemId == R.id.nav_home) {
+                    // Go to home
+                    startActivity(new android.content.Intent(this, HomeActivity.class));
+                    return true;
+                } else if (itemId == R.id.nav_learn) {
+                    // Already here
+                    return true;
+                } else if (itemId == R.id.nav_progress) {
+                    // Open memorization activity
+                    startActivity(new android.content.Intent(this, com.repeatquran.memorization.MemorizationActivity.class));
+                    return true;
+                } else if (itemId == R.id.nav_profile) {
+                    // Open settings
+                    startActivity(new android.content.Intent(this, com.repeatquran.settings.SettingsActivity.class));
+                    return true;
+                }
+                
+                return false;
+            });
+        }
     }
 }

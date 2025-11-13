@@ -404,3 +404,15 @@
 - **Test Coverage**: All 37 unit tests passing; no regressions introduced.
 - Version: 1.2.2 (versionCode 6)
 - Proof: Build successful, all tests passing, Range tab now works correctly across tab switches.
+
+### UHW-PR-47: Auto Continue Feature (2025-10-15)
+- **Auto Continue Setting**: Added "Auto Continue to Next" checkbox in Settings to automatically navigate to the next verse/page/surah when playback ends.
+- **Implementation**: Uses explicit broadcast (Android 8.0+ compatible) from PlaybackService when playback ends; BaseTabFragment receives broadcast and navigates to next content if enabled.
+- **Fragment Ownership**: Auto-continue only works when the owning fragment is visible, preventing unexpected navigation when user switches tabs.
+- **Boundary Behavior**: Auto-continue stops at the last verse/page/surah (no wrap-around).
+- **Security**: Uses RECEIVER_NOT_EXPORTED flag on Android 13+ for app-internal broadcasts.
+- **Error Handling**: Comprehensive try-catch blocks prevent crashes; graceful handling if navigation fails.
+- **Analytics**: Tracks auto-continue setting changes ("auto_continue_set" event).
+- **Production Ready**: Code reviewed, excessive logging removed, error handling validated, production checklist completed.
+- Version: 1.3.0 (versionCode 7)
+- Proof: Feature tested across verse/page/surah navigation; works seamlessly with existing playback system.

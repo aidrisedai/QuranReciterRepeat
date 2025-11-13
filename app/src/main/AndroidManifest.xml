@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:targetApi="33" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:name=".RepeatQuranApp"
@@ -16,16 +17,27 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RepeatQuran">
-        <activity android:name=".settings.SettingsActivity" android:exported="false" />
+        <!-- New Home Screen -->
         <activity
-            android:name=".MainActivity"
+            android:name=".HomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- Other Activities -->
+        <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".settings.SettingsActivity" android:exported="false" />
+        <activity android:name=".memorization.MemorizationActivity" android:exported="false" />
+        <activity android:name=".memorization.PerformanceDashboardActivity" android:exported="false" />
+        <activity android:name=".memorization.TimelineSettingsActivity" android:exported="false" />
+        <activity android:name=".memorization.GoalInputActivity" android:exported="false" />
+        <activity android:name=".memorization.GoalListActivity" android:exported="false" />
+        <activity android:name=".memorization.MemorizationSessionActivity" android:exported="false" />
         <activity android:name=".onboarding.OnboardingActivity" android:exported="false" />
+        <activity android:name=".recitation.RecitationRecorderActivity" android:exported="false" />
 
         <service
             android:name=".playback.PlaybackService"

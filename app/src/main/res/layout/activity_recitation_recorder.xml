@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/md_theme_background"
+    android:fitsSystemWindows="true">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Header -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recitation Practice 🎙️"
+                android:textSize="28sp"
+                android:textColor="@color/md_theme_primary"
+                android:fontFamily="@font/outfit_bold"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AI will analyze your recitation automatically"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:fontFamily="@font/outfit"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Comprehension Level Selector -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#F5F5F5">
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📚 Feedback Level"
+                        android:textSize="14sp"
+                        android:textColor="#666666"
+                        android:fontFamily="@font/outfit_semibold"
+                        android:layout_marginBottom="8dp"/>
+                    
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/comprehensionLevelButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🌿 Medium - Detailed feedback"
+                        android:textSize="15sp"
+                        android:fontFamily="@font/outfit_semibold"
+                        app:cornerRadius="8dp"
+                        app:backgroundTint="@android:color/white"
+                        android:textColor="@color/md_theme_primary"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/md_theme_primary"
+                        android:gravity="start|center_vertical"
+                        app:icon="@android:drawable/arrow_down_float"
+                        app:iconGravity="end"
+                        app:iconTint="@color/md_theme_primary"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Live Teacher Mode Toggle -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/liveTeacherButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="🎧 Start Live Teacher"
+                android:textSize="16sp"
+                android:fontFamily="@font/outfit_bold"
+                app:cornerRadius="16dp"
+                app:backgroundTint="#FF6B35"
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Recording Status Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/md_theme_primary">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/statusText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ready to Record"
+                        android:textSize="18sp"
+                        android:textColor="@android:color/white"
+                        android:fontFamily="@font/outfit_semibold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:id="@+id/timerText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="00:00"
+                        android:textSize="36sp"
+                        android:textColor="@android:color/white"
+                        android:fontFamily="@font/outfit_bold"
+                        android:layout_marginBottom="16dp"/>
+
+                    <!-- Recording Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/recordButton"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:text="🎙️"
+                        android:textSize="32sp"
+                        app:cornerRadius="36dp"
+                        app:backgroundTint="@android:color/white"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Playback Controls (hidden initially) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/playbackCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/playButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="▶️ Play"
+                        android:fontFamily="@font/outfit_semibold"
+                        app:cornerRadius="12dp"
+                        android:layout_marginEnd="8dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/deleteButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🗑️ Delete"
+                        android:fontFamily="@font/outfit_semibold"
+                        app:cornerRadius="12dp"
+                        app:backgroundTint="#FF5252"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Analyze Button (hidden initially) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/analyzeButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="✨ Get AI Feedback"
+                android:textSize="16sp"
+                android:fontFamily="@font/outfit_bold"
+                android:visibility="gone"
+                app:cornerRadius="16dp"
+                app:backgroundTint="@color/md_theme_secondary"
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Feedback Card (hidden initially) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/feedbackCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🌟 Your Feedback"
+                        android:textSize="20sp"
+                        android:textColor="@color/md_theme_primary"
+                        android:fontFamily="@font/outfit_bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- Verse Identification -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/verseIdentificationCard"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="gone"
+                        app:cardCornerRadius="12dp"
+                        app:cardBackgroundColor="#FFF4E0"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📖 Detected Verses"
+                                android:textSize="12sp"
+                                android:textColor="#4D3800"
+                                android:fontFamily="@font/outfit_semibold"
+                                android:layout_marginBottom="4dp"/>
+
+                            <TextView
+                                android:id="@+id/verseIdentificationText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Al-Fatihah (1:1-7)"
+                                android:textSize="15sp"
+                                android:textColor="#2E2618"
+                                android:fontFamily="@font/outfit_bold"/>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="8dp"
+                                android:weightSum="2">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/hearTeacherButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_weight="1"
+                                    android:text="🗣️ Hear Teacher"
+                                    android:textSize="13sp"
+                                    android:fontFamily="@font/outfit_semibold"
+                                    android:layout_marginEnd="4dp"
+                                    app:cornerRadius="12dp"
+                                    app:backgroundTint="#4CAF50"
+                                    android:textColor="@android:color/white"/>
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/playCorrectRecitationButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_weight="1"
+                                    android:text="🔊 Audio"
+                                    android:textSize="13sp"
+                                    android:fontFamily="@font/outfit_semibold"
+                                    android:layout_marginStart="4dp"
+                                    app:cornerRadius="12dp"
+                                    app:backgroundTint="@color/md_theme_secondary"
+                                    android:textColor="@android:color/white"/>
+                            </LinearLayout>
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxHeight="400dp">
+
+                        <TextView
+                            android:id="@+id/feedbackText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="14sp"
+                            android:textColor="@color/greeting_text"
+                            android:fontFamily="@font/outfit"
+                            android:lineSpacingExtra="4dp"/>
+                    </ScrollView>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Loading Indicator (hidden initially) -->
+            <LinearLayout
+                android:id="@+id/loadingLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <ProgressBar
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:indeterminateTint="@color/md_theme_primary"
+                    android:layout_marginBottom="16dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Analyzing your recitation..."
+                    android:textSize="16sp"
+                    android:textColor="@color/greeting_text"
+                    android:fontFamily="@font/outfit_semibold"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Bottom Navigation -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@android:color/white"
+        app:menu="@menu/bottom_navigation_menu"
+        app:labelVisibilityMode="labeled"
+        app:itemIconTint="@color/bottom_nav_selector"
+        app:itemTextColor="@color/bottom_nav_selector"/>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

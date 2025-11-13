@@ -39,6 +39,20 @@ public class SettingsActivity extends AppCompatActivity {
                 com.repeatquran.analytics.AnalyticsLogger.get(this).log("half_split_set", ev);
             });
         }
+        
+        // Auto Continue setting
+        android.view.View autoContinueView = findViewById(R.id.switchAutoContinue);
+        if (autoContinueView instanceof android.widget.CheckBox) {
+            android.widget.CheckBox checkbox = (android.widget.CheckBox) autoContinueView;
+            boolean autoContinue = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("playback.auto_continue", false);
+            checkbox.setChecked(autoContinue);
+            checkbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                getSharedPreferences("rq_prefs", MODE_PRIVATE).edit().putBoolean("playback.auto_continue", isChecked).apply();
+                java.util.Map<String,Object> ev = new java.util.HashMap<>();
+                ev.put("enabled", String.valueOf(isChecked));
+                com.repeatquran.analytics.AnalyticsLogger.get(this).log("auto_continue_set", ev);
+            });
+        }
 
         // Downloads (merged)
         cacheManager = com.repeatquran.data.CacheManager.get(this);

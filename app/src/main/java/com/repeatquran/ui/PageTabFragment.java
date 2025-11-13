@@ -29,7 +29,9 @@ public class PageTabFragment extends BaseTabFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_page_tab, container, false);
         setupUi(v);
-        setupCommonButtons(v);
+        setupCommonButtons(v); // Must be after setupUi so dropdown is initialized
+        // Update navigation buttons after both UI and buttons are ready
+        updateNavigationButtons();
         return v;
     }
 
@@ -117,6 +119,13 @@ public class PageTabFragment extends BaseTabFragment {
             updateNavigationButtons();
         });
         
+        // Also update when text changes manually
+        ddPage.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                updateNavigationButtons();
+            }
+        });
+        
         pageLayout.setHelperText("Enter page 1–604");
     }
 
@@ -170,12 +179,19 @@ public class PageTabFragment extends BaseTabFragment {
             android.content.SharedPreferences prefs = requireContext()
                 .getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE);
             String sourceType = prefs.getString("resume.sourceType", "");
+            int resumePage = prefs.getInt("resume.page", -1);
+            int currentPage = getCurrentPage();
             
-            // This fragment handles "page" content
+            // This fragment handles "page" content AND the page number must match current selection
             boolean isPageType = "page".equals(sourceType);
-            Log.d(getFragmentTag(), "Content validation: sourceType=" + sourceType + ", isPage=" + isPageType);
+            boolean pageMatches = (resumePage == currentPage);
+            boolean isOwner = isPageType && pageMatches;
             
-            return isPageType;
+            Log.d(getFragmentTag(), "Content validation: sourceType=" + sourceType + 
+                  ", resumePage=" + resumePage + ", currentPage=" + currentPage + 
+                  ", isOwner=" + isOwner);
+            
+            return isOwner;
         } catch (Exception e) {
             Log.e(getFragmentTag(), "Error checking content ownership", e);
             return false;

@@ -24,4 +24,21 @@ public class SessionRepository {
     public java.util.List<SessionEntity> getLastSessions(int n) {
         return dao.getLastN(n);
     }
+    
+    // NEW: Session type specific methods
+    public java.util.List<SessionEntity> getSessionsByType(String type, int limit) {
+        return dao.getByType(type, limit);
+    }
+    
+    public java.util.List<SessionEntity> getSessionsByGoal(long goalId) {
+        return dao.getByGoal(goalId);
+    }
+    
+    public java.util.List<SessionEntity> getSessionsByTypeSince(String type, long startTime) {
+        return dao.getByTypeSince(type, startTime);
+    }
+    
+    public int countSessionsByTypeSince(String type, long startTime) {
+        return dao.countByTypeSince(type, startTime);
+    }
 }

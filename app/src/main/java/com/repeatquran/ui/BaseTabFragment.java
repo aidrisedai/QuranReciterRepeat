@@ -16,6 +16,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.repeatquran.R;
 import com.repeatquran.playback.PlaybackService;
 import com.repeatquran.playback.PlaybackStateManager;
+import android.content.Intent;
 
 /**
  * Base class for all tab fragments (Verse, Range, Surah, Page).
@@ -40,10 +41,21 @@ public abstract class BaseTabFragment extends Fragment
     // ==================== COMMON STATE ====================
     
     protected com.google.android.exoplayer2.ExoPlayer player;
+    
+    // Cached button references - set during setupCommonButtons(), nulled in onDestroyView()
+    // This prevents cross-fragment button interference by ensuring each fragment only
+    // accesses its own buttons, never using findViewById() after initial setup
     protected MaterialButton playPauseButton;
+    protected MaterialButton stopButton;
+    protected MaterialButton previousButton;  // Only non-null for fragments with Previous button
+    protected MaterialButton nextButton;      // Only non-null for fragments with Next button
+    
     protected boolean isCurrentlyPlaying = false;
     protected long reenableAtMs = 0L; // Debounce cooldown
     protected boolean justStopped = false; // Prevent state override after stop
+    
+    // Auto-continue broadcast receiver
+    private android.content.BroadcastReceiver autoContinueReceiver;
     
     // ==================== ABSTRACT METHODS ====================
     
@@ -132,20 +144,22 @@ public abstract class BaseTabFragment extends Fragment
     /**
      * Update navigation button states based on current selection.
      * Call this after loading content or changing selection.
+     * 
+     * Uses cached button references to prevent cross-fragment interference.
+     * Buttons that don't exist in this fragment (null references) are safely skipped.
      */
     protected void updateNavigationButtons() {
-        View root = getView();
-        if (root == null) return;
-        
-        MaterialButton btnPrev = root.findViewById(R.id.btnPrevious);
-        MaterialButton btnNext = root.findViewById(R.id.btnNext);
-        
-        if (btnPrev != null) {
-            btnPrev.setEnabled(canNavigatePrevious());
+        // Use cached references - no findViewById() means no cross-contamination
+        if (previousButton != null) {
+            boolean canGoPrev = canNavigatePrevious();
+            previousButton.setEnabled(canGoPrev);
+            Log.d(getFragmentTag(), "Previous button enabled: " + canGoPrev);
         }
         
-        if (btnNext != null) {
-            btnNext.setEnabled(canNavigateNext());
+        if (nextButton != null) {
+            boolean canGoNext = canNavigateNext();
+            nextButton.setEnabled(canGoNext);
+            Log.d(getFragmentTag(), "Next button enabled: " + canGoNext);
         }
     }
     
@@ -163,12 +177,87 @@ public abstract class BaseTabFragment extends Fragment
         Log.d(getFragmentTag(), "onResume - requesting immediate state update");
         // Force an immediate state update when fragment becomes visible
         PlaybackStateManager.getInstance().forceStateUpdate();
+        
+        // Register auto-continue receiver
+        try {
+            if (autoContinueReceiver == null) {
+                autoContinueReceiver = new android.content.BroadcastReceiver() {
+                    @Override
+                    public void onReceive(android.content.Context context, Intent intent) {
+                        try {
+                            Log.d(getFragmentTag(), "Auto-continue broadcast received");
+                            
+                            // Check fragment state
+                            boolean added = isAdded();
+                            boolean detached = isDetached();
+                            Log.d(getFragmentTag(), "Fragment state: added=" + added + ", detached=" + detached);
+                            
+                            if (!added || detached) {
+                                Log.w(getFragmentTag(), "Fragment not in valid state for auto-continue");
+                                return;
+                            }
+                            
+                            // Check content ownership
+                            boolean ownsContent = isContentForThisFragment();
+                            Log.d(getFragmentTag(), "Content ownership check: " + ownsContent);
+                            
+                            if (!ownsContent) {
+                                Log.d(getFragmentTag(), "Content does not belong to this fragment, ignoring auto-continue");
+                                return;
+                            }
+                            
+                            // Check if can navigate next
+                            boolean canGoNext = canNavigateNext();
+                            Log.d(getFragmentTag(), "Can navigate next: " + canGoNext);
+                            
+                            if (!canGoNext) {
+                                Log.d(getFragmentTag(), "Cannot navigate to next, end of content");
+                                return;
+                            }
+                            
+                            // All checks passed - navigate and play
+                            Log.d(getFragmentTag(), "All checks passed, navigating to next and auto-playing");
+                            if (navigateNext()) {
+                                Log.d(getFragmentTag(), "Navigation successful");
+                                updateNavigationButtons();
+                                loadAndPlay();
+                                Log.d(getFragmentTag(), "Auto-continue completed successfully");
+                            } else {
+                                Log.w(getFragmentTag(), "Navigation returned false");
+                            }
+                        } catch (Exception e) {
+                            Log.e(getFragmentTag(), "Auto-continue failed with exception", e);
+                        }
+                    }
+                };
+            }
+            android.content.IntentFilter filter = new android.content.IntentFilter("com.repeatquran.action.AUTO_CONTINUE");
+            // Use RECEIVER_NOT_EXPORTED for Android 13+ (API 33+) to receive app-internal broadcasts
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requireContext().registerReceiver(autoContinueReceiver, filter, android.content.Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                // For API < 33, the flag is not required (this is app-internal broadcast only)
+                //noinspection UnspecifiedRegisterReceiverFlag
+                requireContext().registerReceiver(autoContinueReceiver, filter);
+            }
+        } catch (Exception e) {
+            Log.e(getFragmentTag(), "Failed to register auto-continue receiver", e);
+        }
     }
     
     @Override
     public void onPause() {
         super.onPause();
         Log.d(getFragmentTag(), "onPause called");
+        
+        // Unregister auto-continue receiver
+        if (autoContinueReceiver != null) {
+            try {
+                requireContext().unregisterReceiver(autoContinueReceiver);
+            } catch (Exception ignored) {
+                // Receiver may not be registered
+            }
+        }
     }
     
     @Override
@@ -182,13 +271,25 @@ public abstract class BaseTabFragment extends Fragment
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Clean up view references to prevent memory leaks
+        // Clean up ALL button references to prevent memory leaks and cross-fragment interference
         if (playPauseButton != null) {
             playPauseButton.setOnClickListener(null);
+            playPauseButton = null;
         }
-        playPauseButton = null;
+        if (stopButton != null) {
+            stopButton.setOnClickListener(null);
+            stopButton = null;
+        }
+        if (previousButton != null) {
+            previousButton.setOnClickListener(null);
+            previousButton = null;
+        }
+        if (nextButton != null) {
+            nextButton.setOnClickListener(null);
+            nextButton = null;
+        }
         player = null;
-        Log.d(getFragmentTag(), "onDestroyView - cleaned up view references");
+        Log.d(getFragmentTag(), "onDestroyView - cleaned up all button references");
     }
     
     // ==================== STATE PERSISTENCE ====================
@@ -226,6 +327,9 @@ public abstract class BaseTabFragment extends Fragment
             // Let subclass restore its specific state
             onRestoreFragmentState(savedInstanceState);
             
+            // Update navigation buttons after state is fully restored
+            updateNavigationButtons();
+            
             Log.d(getFragmentTag(), "onViewStateRestored: restored common + fragment state");
         }
     }
@@ -233,12 +337,16 @@ public abstract class BaseTabFragment extends Fragment
     // ==================== SETUP HELPERS ====================
     
     /**
-     * Setup common UI elements (Play/Pause and Stop buttons).
+     * Setup common UI elements (Play/Pause, Stop, Previous, Next buttons).
      * Must be called by subclass after inflating the view.
+     * 
+     * Caches all button references to prevent cross-fragment interference.
+     * Buttons that don't exist in the layout will remain null.
      * 
      * @param root The fragment's root view
      */
     protected void setupCommonButtons(View root) {
+        // Cache Play/Pause button
         playPauseButton = root.findViewById(R.id.btnPlayPause);
         if (playPauseButton != null) {
             playPauseButton.setOnClickListener(v -> {
@@ -247,7 +355,8 @@ public abstract class BaseTabFragment extends Fragment
             });
         }
         
-        View stopButton = root.findViewById(R.id.btnStop);
+        // Cache Stop button
+        stopButton = root.findViewById(R.id.btnStop);
         if (stopButton != null) {
             stopButton.setOnClickListener(v -> {
                 Log.d(getFragmentTag(), "STOP clicked - resetting state");
@@ -255,22 +364,24 @@ public abstract class BaseTabFragment extends Fragment
             });
         }
         
-        // Setup navigation buttons (Previous/Next) if they exist
-        MaterialButton btnPrevious = root.findViewById(R.id.btnPrevious);
-        MaterialButton btnNext = root.findViewById(R.id.btnNext);
-        
-        if (btnPrevious != null) {
-            btnPrevious.setOnClickListener(v -> {
+        // Cache Previous button (only exists in some fragments like Page)
+        previousButton = root.findViewById(R.id.btnPrevious);
+        if (previousButton != null) {
+            previousButton.setOnClickListener(v -> {
                 Log.d(getFragmentTag(), "Previous button clicked!");
                 handlePreviousButton();
             });
+            Log.d(getFragmentTag(), "Previous button found and cached");
         }
         
-        if (btnNext != null) {
-            btnNext.setOnClickListener(v -> {
+        // Cache Next button (only exists in some fragments like Page)
+        nextButton = root.findViewById(R.id.btnNext);
+        if (nextButton != null) {
+            nextButton.setOnClickListener(v -> {
                 Log.d(getFragmentTag(), "Next button clicked!");
                 handleNextButton();
             });
+            Log.d(getFragmentTag(), "Next button found and cached");
         }
         
         // Initial navigation button state
@@ -282,16 +393,14 @@ public abstract class BaseTabFragment extends Fragment
     
     /**
      * Handle Previous button press.
-     * Navigates to previous content and optionally resumes playback.
+     * Navigates to previous content and always starts playback.
      */
     private void handlePreviousButton() {
         if (navigatePrevious()) {
             Log.d(getFragmentTag(), "Successfully navigated to previous");
             updateNavigationButtons();
-            // Auto-play after navigation if currently playing
-            if (isCurrentlyPlaying) {
-                loadAndPlay();
-            }
+            // Always load and play after navigation
+            loadAndPlay();
         } else {
             Log.d(getFragmentTag(), "Cannot navigate to previous (at boundary)");
             android.widget.Toast.makeText(requireContext(), 
@@ -302,16 +411,14 @@ public abstract class BaseTabFragment extends Fragment
     
     /**
      * Handle Next button press.
-     * Navigates to next content and optionally resumes playback.
+     * Navigates to next content and always starts playback.
      */
     private void handleNextButton() {
         if (navigateNext()) {
             Log.d(getFragmentTag(), "Successfully navigated to next");
             updateNavigationButtons();
-            // Auto-play after navigation if currently playing
-            if (isCurrentlyPlaying) {
-                loadAndPlay();
-            }
+            // Always load and play after navigation
+            loadAndPlay();
         } else {
             Log.d(getFragmentTag(), "Cannot navigate to next (at boundary)");
             android.widget.Toast.makeText(requireContext(), 
@@ -446,10 +553,33 @@ public abstract class BaseTabFragment extends Fragment
     @Override
     public void onPlaybackStateChanged(boolean hasQueue, boolean isPlaying, 
                                       com.google.android.exoplayer2.ExoPlayer player) {
+        // CRITICAL: Only update buttons if this fragment owns the currently playing content
+        // This prevents all fragments from updating when only one fragment's content is playing
+        if (!isAdded() || isDetached()) {
+            Log.d(getFragmentTag(), "onPlaybackStateChanged: skipping - fragment not attached");
+            return;
+        }
+        
         // Update player reference from centralized manager
         this.player = player;
         
         if (playPauseButton == null) return;
+        
+        // Check if this fragment owns the current content
+        boolean ownsContent = isContentForThisFragment();
+        Log.d(getFragmentTag(), "onPlaybackStateChanged: hasQueue=" + hasQueue + 
+              ", isPlaying=" + isPlaying + ", ownsContent=" + ownsContent);
+        
+        // Only update UI if this fragment owns the content OR there's no content playing
+        if (!ownsContent && hasQueue) {
+            Log.d(getFragmentTag(), "onPlaybackStateChanged: skipping - content belongs to different fragment");
+            // Reset this fragment's state since content doesn't belong to it
+            if (isCurrentlyPlaying) {
+                isCurrentlyPlaying = false;
+                updateButtonUI(false);
+            }
+            return;
+        }
         
         // If we just stopped, don't let centralized updater override our state
         if (justStopped) {
@@ -477,8 +607,7 @@ public abstract class BaseTabFragment extends Fragment
         // Only sync state when not in cooldown
         isCurrentlyPlaying = isPlaying;
         
-        Log.d(getFragmentTag(), "onPlaybackStateChanged: isPlaying=" + 
-              isPlaying + ", hasQueue=" + hasQueue);
+        Log.d(getFragmentTag(), "onPlaybackStateChanged: updating UI - isPlaying=" + isPlaying);
         
         // Update button UI based on centralized state
         playPauseButton.setEnabled(true);

@@ -1,28 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Islamic-inspired palette (Light) -->
-    <color name="md_theme_primary">#0E5C4A</color>
+    <!-- Fun, vibrant palette inspired by language learning apps -->
+    <color name="md_theme_primary">#FF6B82</color>
     <color name="md_theme_onPrimary">#FFFFFF</color>
-    <color name="md_theme_primaryVariant">#094536</color>
+    <color name="md_theme_primaryVariant">#E85570</color>
 
-    <color name="md_theme_secondary">#C9A227</color>
-    <color name="md_theme_onSecondary">#1D1600</color>
+    <color name="md_theme_secondary">#FFB84D</color>
+    <color name="md_theme_onSecondary">#2E2618</color>
 
-    <color name="md_theme_background">#FAFBF7</color>
-    <color name="md_theme_onBackground">#0D1B1E</color>
+    <color name="md_theme_background">#F5F3EE</color>
+    <color name="md_theme_onBackground">#2E2618</color>
 
     <color name="md_theme_surface">#FFFFFF</color>
-    <color name="md_theme_onSurface">#0D1B1E</color>
+    <color name="md_theme_onSurface">#2E2618</color>
 
-    <color name="md_theme_outline">#D9E2DE</color>
+    <color name="md_theme_outline">#E6E3DD</color>
 
-    <color name="ic_launcher_background">#0E5C4A</color>
+    <color name="ic_launcher_background">#FF6B82</color>
 
-    <!-- Container variants for visuals -->
-    <color name="md_theme_primaryContainer">#BFE3D8</color>
-    <color name="md_theme_onPrimaryContainer">#07372B</color>
-    <color name="md_theme_secondaryContainer">#F5E4A6</color>
-    <color name="md_theme_onSecondaryContainer">#3A2F00</color>
-    <color name="md_theme_tertiaryContainer">#D6E6F5</color>
-    <color name="md_theme_onTertiaryContainer">#062433</color>
+    <!-- Friendly card colors -->
+    <color name="md_theme_primaryContainer">#FFE5E9</color>
+    <color name="md_theme_onPrimaryContainer">#6B2D3B</color>
+    <color name="md_theme_secondaryContainer">#FFF4E0</color>
+    <color name="md_theme_onSecondaryContainer">#4D3800</color>
+    <color name="md_theme_tertiaryContainer">#E8F0FF</color>
+    <color name="md_theme_onTertiaryContainer">#1A2E4D</color>
+    
+    <!-- Additional fun colors -->
+    <color name="streak_dark">#3D2A23</color>
+    <color name="card_coral">#FF6B82</color>
+    <color name="card_light_gray">#F5F3F0</color>
+    <color name="greeting_text">#2E2618</color>
+    <color name="greeting_subtitle">#7A7165</color>
 </resources>

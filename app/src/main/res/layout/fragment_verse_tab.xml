@@ -52,50 +52,84 @@
             android:imeOptions="actionDone" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Single row with all playback controls -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="20dp"
         android:gravity="center"
-        android:paddingHorizontal="24dp">
+        android:paddingHorizontal="16dp">
 
+        <!-- Previous button (icon only) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPrevious"
+            style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
+            android:padding="0dp"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:enabled="false"
+            app:icon="@drawable/ic_skip_previous"
+            app:iconGravity="textStart"
+            app:iconSize="24dp"
+            app:iconPadding="0dp" />
+
+        <!-- Play/Pause button (icon only) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPlayPause"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
+            style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
             android:layout_marginEnd="8dp"
-            android:paddingVertical="8dp"
-            android:paddingHorizontal="16dp"
+            android:padding="0dp"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
             app:icon="@drawable/ic_play_arrow"
             app:iconGravity="textStart"
-            app:iconSize="18dp"
-            app:iconPadding="8dp"
-android:backgroundTint="@color/md_theme_surface"
-            android:textColor="@color/md_theme_primary"
-            app:iconTint="@color/md_theme_primary"
-            app:strokeColor="@color/md_theme_primary"
-            app:strokeWidth="1dp" />
+            app:iconSize="28dp"
+            app:iconPadding="0dp" />
 
+        <!-- Stop button (icon only) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStop"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:paddingVertical="8dp"
-            android:paddingHorizontal="16dp"
-            android:text="STOP"
-            android:textAllCaps="true"
-            android:textSize="14sp"
-            android:maxLines="1"
-            android:ellipsize="end"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="8dp"
+            android:padding="0dp"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:backgroundTint="#C15150"
             app:icon="@drawable/ic_stop"
             app:iconGravity="textStart"
-            app:iconSize="18dp"
-            app:iconPadding="8dp"
-            android:backgroundTint="#C15150" />
+            app:iconSize="28dp"
+            app:iconPadding="0dp"
+            app:iconTint="@android:color/white" />
+
+        <!-- Next button (icon only) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNext"
+            style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="0dp"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:enabled="false"
+            app:icon="@drawable/ic_skip_next"
+            app:iconGravity="textStart"
+            app:iconSize="24dp"
+            app:iconPadding="0dp" />
     </LinearLayout>
 
 </LinearLayout>

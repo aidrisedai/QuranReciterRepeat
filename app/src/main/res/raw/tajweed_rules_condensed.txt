@@ -1,0 +1,63 @@
+ESSENTIAL TAJWEED RULES FOR REAL-TIME FEEDBACK
+===============================================
+Use ONLY these rules for live recitation correction. Cite rule numbers when giving feedback.
+
+1. NOON SAKINAH & TANWEEN RULES (ن◌ْ and ◌ً ◌ٍ ◌ٌ)
+   1.1 IZHHAR: Clear pronunciation before throat letters: ء ه ع ح غ خ
+   1.2 IDGHAAM with Ghunnah (2 beats): before ي ن م و
+   1.3 IDGHAAM without Ghunnah: before ل ر
+   1.4 IQLAAB: Convert to hidden Meem before ب
+   1.5 IKHFAA: Hide with Ghunnah (2 beats) before remaining 15 letters
+
+2. MEEM SAKINAH RULES (م◌ْ)
+   2.1 IKHFAA SHAFAWI: Hide with Ghunnah before ب
+   2.2 IDGHAAM SHAFAWI: Merge with Ghunnah before م
+   2.3 IZHAAR SHAFAWI: Clear before all other letters
+
+3. MUSHADDAD (◌ّ)
+   - Noon/Meem Mushaddad: Always 2 beats Ghunnah
+
+4. QALQALAH (ق ط ب ج د)
+   - Vibration when Sakin or stopping on these letters
+   - Strongest: Stopping on Mushaddad (الْحَقّ)
+   - Strong: Stopping on Sakin
+   - Weak: In middle of word
+
+5. MADD (PROLONGATION)
+   5.1 Natural (2 beats): Normal Alif/Waw/Ya
+   5.2 Muttasil (4-5 beats): Madd + Hamzah same word
+   5.3 Munfasil (4-5 beats): Madd + Hamzah next word
+   5.4 Lazim (6 beats): Madd + Mushaddad/Sakin
+   5.5 'Aridh (2-6 beats): When stopping on word with Madd
+
+6. HEAVY LETTERS (خ ص ض غ ط ق ظ)
+   - Back of tongue rises, deep sound
+   - CRITICAL: Must be pronounced heavy, not light
+
+7. LAM IN ALLAH (اللّٰه)
+   - Heavy after Fathah/Dhammah: قَالَ اللّٰهُ
+   - Light after Kasrah: بِسْمِ اللّٰهِ
+
+8. RA RULES (ر)
+   Heavy: with Fathah/Dhammah or Sakin after Fathah/Dhammah
+   Light: with Kasrah or Sakin after Kasrah
+
+9. COMMON MISTAKES
+   - Mixing ض (edge of tongue) with ظ (tongue tip between teeth)
+   - Light pronunciation of heavy letters
+   - Short Madd Muttasil (must be 4-5 beats)
+   - Missing Ghunnah or wrong duration
+   - Not doing Qalqalah when stopping
+
+10. WAQF (STOPPING)
+    - Tanween Fathah → becomes Alif: رَحِيمًا → رَحِيمَا
+    - Taa Marbuta (ة) → becomes Haa: رَحْمَةً → رَحْمَهْ
+    - Drop final Harakah → add Sukoon
+
+INSTRUCTION FOR AI:
+- Focus on MAJOR mistakes only during recitation
+- Let student recite 2-3 verses before interrupting
+- When correcting, SPEAK the Arabic aloud clearly
+- Use simple terms: "That letter should be heavier/lighter"
+- Be encouraging: "Good, continue" when correct
+- Only interrupt for mistakes that change meaning or are very obvious

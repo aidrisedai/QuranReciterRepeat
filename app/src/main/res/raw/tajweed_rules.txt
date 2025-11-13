@@ -1,0 +1,792 @@
+COMPREHENSIVE TAJWEED RULES - REACH THE GOAL VIA TAJWEED RULES
+==================================================================
+Compiled by Maha Rashed (1st Edition)
+
+This document contains authoritative Tajweed rules based on classical Islamic scholarship.
+Use ONLY these rules when providing feedback on Quran recitation.
+
+SOURCE: "Reach the Goal Via Tajweed Rules" - Teacher's Class Notes
+Based on: Al-Jazariyyah, Tuhfat al-Atfal, Hidayat al-Qari, and other classical sources
+
+================================================================================
+1. MAKHARIJ AL-HURUF (ARTICULATION POINTS OF LETTERS)
+================================================================================
+
+1.1 AL-JAWF (The Empty Space - Throat/Mouth Cavity)
+   Letters: ا (Alif), و (Waw with Dhammah), ي (Ya with Kasrah)
+   - These are the Madd letters (elongation letters)
+   - Pronounced from the empty space in throat/mouth
+
+1.2 AL-HALQ (The Throat) - 6 Letters
+   Upper Throat: ء (Hamzah), ه (Ha)
+   Middle Throat: ع ('Ayn), ح (Ha)
+   Lower Throat: غ (Ghayn), خ (Kha)
+
+1.3 AL-LISAN (The Tongue) - 18 Letters
+   
+   a) Aqsa al-Lisan (Base of Tongue):
+      - ق (Qaf): From furthest back part of tongue touching soft palate
+      - ك (Kaf): Slightly forward from Qaf
+   
+   b) Wasat al-Lisan (Middle of Tongue):
+      - ج (Jeem), ش (Sheen), ي (Ya): Middle of tongue against hard palate
+   
+   c) Tarful-Lisan (Tip of Tongue):
+      - ض (Dhad): Edge of tongue against upper molars (UNIQUE to Arabic)
+      - ل (Lam): Tip of tongue against gum line of upper front teeth
+      - ن (Noon): Tip just below Lam position
+      - ر (Ra): Tip vibrating slightly above Noon position
+   
+   d) Tathal-Lisan (Tip touching upper teeth):
+      - ط (Ta), د (Dal), ت (Ta): Tip against upper front teeth
+   
+   e) Between tip and teeth edge:
+      - ص (Sad), ز (Zay), س (Seen): Tip near but not touching teeth
+   
+   f) Tip between upper and lower teeth:
+      - ظ (Dha), ذ (Thal), ث (Tha): Tongue tip visible between teeth
+
+1.4 ASH-SHAFATAIN (The Two Lips) - 4 Letters
+   - و (Waw): Both lips rounded
+   - ف (Fa): Lower lip touching upper teeth
+   - ب (Ba), م (Meem): Both lips pressed together
+
+================================================================================
+2. SIFAT AL-HURUF (CHARACTERISTICS OF LETTERS)
+================================================================================
+
+2.1 SIFAT LAZIMAH (Essential Characteristics with Opposites) - 5 Pairs
+
+   a) AL-HAMS vs AL-JAHR (Whispering vs Loud)
+      Hams (10 letters): ف ح ث ه ش خ ص س ك ت
+      Mnemonic: "فَحَثَّهُ شَخْصٌ سَكَتَ"
+      Jahr (rest of letters): Voiced/loud pronunciation
+
+   b) ASH-SHIDDAH vs AR-RAKHAWAH (Hardness vs Softness)
+      Shiddah (8 letters): أ ج د ق ط ب ك ت
+      Mnemonic: "أَجِدُ قَطٍ بَكَتْ"
+      Rakhawah (rest): Soft, flowing pronunciation
+      BAYNIYYAH (Between): ل ن ع م ر - neither hard nor soft
+
+   c) AL-ISTI'LAA vs AL-ISTIFAL (Elevation vs Lowering)
+      Isti'laa (7 letters - Heavy): خ ص ض غ ط ق ظ
+      Mnemonic: "خُصَّ ضَغْطٍ قِظْ"
+      Istifal (rest): Tongue lowered, lighter sound
+
+   d) AL-ITBAQ vs AL-INFITAH (Enclosing vs Opening)
+      Itbaq (4 letters): ص ض ط ظ
+      Tongue pressed toward roof of mouth, creates echoing
+      Infitah (rest): Tongue released
+
+   e) AL-IDHLAAQ vs AL-ISMAT (Fluidity vs Retention)
+      Idhlaaq (6 letters): ف ر م ن ل ب
+      Mnemonic: "فَرَّ مِنْ لُبِّ"
+      Flow easily off tongue
+      Ismat (rest): Require more effort
+
+2.2 SIFAT LAZIMAH (Without Opposites) - 7 Characteristics
+
+   a) AS-SAFIR (Whistling): ص ز س
+   b) AL-QALQALAH (Echoing/Bouncing): ق ط ب ج د
+      Mnemonic: "قُطْبُ جَدٍ"
+      Greater Qalqalah: ط ق
+      Lesser Qalqalah: ب ج د
+   c) AL-LEEN (Softness): و ي when preceded by Fathah and followed by Sukoon
+   d) AL-INHIRAF (Deviation): ل ر
+   e) AT-TAKRIR (Repetition): ر only
+   f) AT-TAFASHI (Spreading): ش only
+   g) AL-ISTITAALAH (Elongation): ض only
+
+2.3 TAFKHIM vs TARQIQ (Heavy vs Light Pronunciation)
+
+ALWAYS HEAVY (Tafkhim):
+   - Letters of Isti'laa: خ ص ض غ ط ق ظ
+   - ل in لله (Allah) only when preceded by Fathah or Dhammah
+
+CONDITIONAL (Ra ر):
+   Heavy when:
+      - Has Fathah: رَبِّ
+      - Has Dhammah: رُسُل
+      - Has Sukoon after Fathah: مَرْضَاةِ
+      - Has Sukoon after Dhammah: غُرْفَة
+   Light when:
+      - Has Kasrah: رِجَال
+      - Has Sukoon after Kasrah: مِرْيَة
+      - Has Sukoon after broken Hamzah: أَأَنْذَرْتَهُمْ
+
+================================================================================
+3. AHKAM AN-NOON AS-SAAKINAH WAL-TANWEEN
+   (Rules of Noon with Sukoon and Tanween)
+================================================================================
+
+3.1 AL-IDHHAR (Clear Pronunciation)
+   When followed by throat letters: ء ه ع ح غ خ
+   Example: مِنْ هَادٍ (clear noon with Haa)
+
+3.2 AL-IDGHAAM (Merging)
+   Letters: ي ر م ل و ن
+   Mnemonic: "يَرْمَلُونَ"
+   
+   a) Idghaam with Ghunnah (nasal sound): ي ن م و
+      Example: مَنْ يَقُولُ (noon merges with Ya with nasal)
+   
+   b) Idghaam without Ghunnah: ل ر
+      Example: مِنْ رَبِّهِمْ (noon merges with Ra, no nasal)
+
+3.3 AL-IQLAAB (Conversion)
+   When followed by: ب (Ba)
+   Noon/Tanween converted to hidden Meem with Ghunnah
+   Example: أَنْبِئْهُمْ (noon becomes like Meem)
+
+3.4 AL-IKHFAA (Hiding)
+   Remaining 15 letters: ص ذ ث ك ج ش ق س د ط ز ف ت ض ظ
+   Noon/Tanween hidden with nasal sound
+   Example: مِنْ شَيْءٍ (noon hidden with nasal)
+
+================================================================================
+4. AHKAM AL-MEEM AS-SAAKINAH (Rules of Meem with Sukoon)
+================================================================================
+
+4.1 IDHHAR SHAFAWI (Labial Clarity)
+   Before all letters EXCEPT م and ب
+   Example: هُمْ فِيهَا (clear Meem)
+
+4.2 IDGHAAM SHAFAWI (Labial Merging)
+   When followed by another م (Meem)
+   Example: كَمْ مِنْ (first Meem merges into second with Ghunnah)
+
+4.3 IKHFAA SHAFAWI (Labial Hiding)
+   When followed by ب (Ba)
+   Example: تَرْمِيهِمْ بِحِجَارَةٍ (Meem hidden with Ghunnah)
+
+================================================================================
+5. AHKAM AL-MADD (Rules of Prolongation)
+================================================================================
+
+Madd Letters: ا (preceded by Fathah), و (preceded by Dhammah), ي (preceded by Kasrah)
+
+5.1 MADD TABEE'I (Natural Prolongation)
+   Duration: 2 counts (1 Alif)
+   Example: قَالَ (Alif after Qaf with Fathah)
+
+5.2 MADD WAAJIB MUTTASIL (Obligatory Connected)
+   When Hamzah follows Madd in same word
+   Duration: 4-5 counts
+   Example: السَّمَاء (Alif before Hamzah in same word)
+
+5.3 MADD JA'IZ MUNFASIL (Permissible Separated)
+   When Hamzah follows Madd in next word
+   Duration: 2, 4, or 5 counts (most common: 4)
+   Example: بِمَا أُنْزِلَ (Alif in first word, Hamzah in second)
+
+5.4 MADD LAZIM (Necessary Prolongation)
+   When Madd followed by doubled letter (Mushaddad) or Sukoon
+   Duration: 6 counts
+   
+   a) Madd Lazim Kalimi (In word): الصَّاخَّة
+   b) Madd Lazim Harfi (In letters): الم (start of Surah)
+
+5.5 MADD 'ARIDH LIS-SUKOON (Presented Stopping)
+   When stopping on a word that has Madd
+   Duration: 2, 4, or 6 counts
+   Example: الْعَالَمِينَ (if stopping)
+
+5.6 MADD LEEN
+   و or ي with Sukoon preceded by Fathah
+   Duration: 2, 4, or 6 counts when stopping
+   Example: بَيْت (if stopping on it)
+
+5.7 MADD SILAH (Connecting Prolongation)
+   Haa of pronoun (هُ، هِ) between two moving letters
+   
+   a) Silah Sughra: 2 counts (not followed by Hamzah)
+      Example: لَهُ ما
+   
+   b) Silah Kubra: 4-5 counts (followed by Hamzah)
+      Example: مَالَهُ أَخْلَدَهُ
+
+================================================================================
+6. AHKAM AL-WAQF WAL-IBTIDA' (Stopping and Starting Rules)
+================================================================================
+
+6.1 TYPES OF WAQF (Stopping)
+
+   a) Waqf Lazim (Necessary): م
+      MUST stop here, meaning incomplete if continuing
+   
+   b) Waqf Mamnoo' (Prohibited): لا
+      MUST NOT stop here, damages meaning
+   
+   c) Waqf Ja'iz (Permissible): ج
+      May stop, but continuing is better
+   
+   d) Waqf Mujawwaz (Allowed): ز
+      May stop or continue equally
+   
+   e) Waqf Murakhkhas (Conceded): صلى
+      Better not to stop, but allowed due to breath
+   
+   f) Waqf Mutlaq (Unrestricted): 
+      May stop anywhere breath runs out
+
+6.2 RULES WHEN STOPPING
+
+   a) Tanween becomes Sukoon (drop the -n sound)
+      رَحِيمًا → رَحِيمْ
+   
+   b) Ta Marbuta (ة) becomes Ha with Sukoon
+      رَحْمَةً → رَحْمَهْ
+   
+   c) Silent letters stay silent
+      رَأَوْا → رَأَوْ (Alif silent)
+
+6.3 IBTIDA' (Starting Rules)
+
+   - Never start with Sukoon letter
+   - Never start in middle of Idghaam
+   - Never start on pronoun separated from reference
+   - Start should complete meaning
+
+================================================================================
+7. AHKAM AL-LAM (Rules of Lam)
+================================================================================
+
+7.1 LAM ASH-SHAMSIYYAH (Solar Lam)
+   Silent Lam before solar letters: ت ث د ذ ر ز س ش ص ض ط ظ ل ن
+   Example: الشَّمْس (Lam not pronounced, Sheen has Shaddah)
+
+7.2 LAM AL-QAMARIYYAH (Lunar Lam)
+   Clear Lam before lunar letters: ا ب ج ح خ ع غ ف ق ك م ه و ي
+   Example: الْقَمَر (Lam pronounced clearly)
+
+7.3 LAM LAFDHUL-JALALAH (Lam in word Allah)
+   Heavy (Tafkhim): After Fathah or Dhammah
+      Example: قَالَ اللَّهُ (heavy Lam)
+   Light (Tarqiq): After Kasrah
+      Example: بِسْمِ اللَّهِ (light Lam)
+
+================================================================================
+8. AHKAM AR-RA (Rules of Ra)
+================================================================================
+
+See Section 2.3 for comprehensive Ra rules.
+
+Additional context:
+- The letter after Ra may influence it
+- If Ra has Sukoon, look at letter BEFORE it
+- In case of doubt, Tafkhim (heavy) is default
+
+================================================================================
+9. COMMON MISTAKES (LAHN AL-KHAFI - Hidden Errors)
+================================================================================
+
+9.1 MAKHARIJ ERRORS
+   - Mixing ض with ظ
+   - Making ق sound like ك
+   - Not distinguishing ح from ه
+   - Weak pronunciation of ع and غ
+
+9.2 SIFAT ERRORS
+   - Not maintaining Qalqalah at stopping points
+   - Light pronunciation of heavy letters
+   - Heavy pronunciation of light letters
+   - Insufficient Ghunnah duration
+
+9.3 MADD ERRORS
+   - Shortening Madd Muttasil
+   - Over-extending Madd Tabee'i
+   - Incorrect Madd Lazim duration
+
+9.4 NOON/MEEM ERRORS
+   - Clear pronunciation when should be hidden
+   - Wrong Ghunnah duration
+   - Forgetting Iqlaab
+
+9.5 WAQF ERRORS
+   - Stopping at prohibited places
+   - Not dropping Tanween
+   - Continuing where must stop
+
+================================================================================
+10. DETAILED CHARACTERISTICS WITHOUT OPPOSITES
+================================================================================
+
+10.1 AL-QALQALAH (The Echoing/Bouncing)
+   Definition: A vibration or echoing sound at the end of pronunciation
+   Letters: ق ط ب ج د (Mnemonic: قُطْبُ جَدٍ)
+   
+   THREE LEVELS OF STRENGTH:
+   a) STRONGEST (Qalqalah Kubra): When stopping on Mushaddad Qalqalah letter
+      Example: الْحَقّ (when stopping)
+   
+   b) STRONG (Qalqalah Kubra): When stopping on Sakin Qalqalah letter
+      Example: صَدْرَكَ (when stopping on Qaf)
+   
+   c) WEAK (Qalqalah Sughra): When Sakin Qalqalah letter in middle of word
+      Example: يَقْطَعُ (Qaf in middle)
+   
+   NOTE: Qalqalah is ONLY pronounced when letter is Sakin (has Sukoon or
+         assigned Sukoon due to stopping)
+
+10.2 AS-SAFIR (The Whistling)
+   Definition: Natural whistle-like sound emitted while pronouncing
+   Letters: س ز ص
+   Example: صِرَاطَ، زَيْنٌ، سَبِيلِ
+
+10.3 AL-LEEN (The Softness)
+   Definition: Articulation with natural ease and softness
+   Conditions:
+   - Waw Sakin (و) with Fathah on letter before it
+   - Ya Sakin (ي) with Fathah on letter before it
+   Examples: خَوْف، بَيْت
+   When stopping: Can be prolonged 2, 4, or 6 counts
+
+10.4 AL-INHIRAF (The Deviation)
+   Definition: Slight deviation of tongue toward another makhraj
+   Letters: ل ر
+   - Lam: Tongue deviates slightly toward Ra's makhraj
+   - Ra: Tongue deviates slightly toward Lam's makhraj
+
+10.5 AT-TAKRIR (The Repetition)
+   Definition: Trilling of tongue causing letter to repeat
+   Letter: ر ONLY
+   IMPORTANT: Unlike other qualities, we must ABSTAIN from this quality
+              Do NOT trill the Ra excessively - pronounce once
+
+10.6 AT-TAFASHI (The Spreading)
+   Definition: Spreading of sound in mouth while pronouncing
+   Letter: ش ONLY
+   Example: شَهِدَ
+
+10.7 AL-ISTITAALAH (The Prolongation)
+   Definition: Prolongation of sound throughout makhraj (1.5-1.75 beats)
+   Letter: ض ONLY
+   Applies when: Letter has Sukoon or Shaddah
+   Example: أَرْضٍ
+
+================================================================================
+11. RULES OF NOON AND MEEM MUSHADDAD
+================================================================================
+
+11.1 NOON MUSHADDAD (نّ)
+   Pronunciation: Make Ghunnah (nasal sound) for 2 beats
+   Example: إِنَّ، ثُمَّ، عَمَّ
+   NOTE: If reader stops on word ending with Noon Mushaddad, the Ghunnah
+         must still be applied
+
+11.2 MEEM MUSHADDAD (مّ)
+   Pronunciation: Make Ghunnah (nasal sound) for 2 beats
+   Example: أَمَّا، لَمَّا، ثُمَّ
+   NOTE: If reader stops on word ending with Meem Mushaddad, the Ghunnah
+         must still be applied
+
+================================================================================
+12. HEAVY AND LIGHT LETTERS (DETAILED)
+================================================================================
+
+12.1 ALWAYS HEAVY LETTERS
+   The seven Isti'laa letters: خ ص ض غ ط ق ظ
+   Mnemonic: "خُصَّ ضَغْطٍ قِظْ"
+   Pronunciation: Back of tongue rises toward roof, creating heavy sound
+
+12.2 ALWAYS LIGHT LETTERS
+   All letters except: Heavy letters, Lam in Allah, Ra, Alif Madd
+   Pronunciation: Tongue lowered (Istifal quality)
+
+12.3 TEMPORARY HEAVY/LIGHT: LAM IN ALLAH
+   a) HEAVY (Tafkhim):
+      - When preceded by Fathah: قَالَ اللَّهُ
+      - When preceded by Dhammah: يَشَاءُ اللَّهُ
+      - When starting with Allah: اللَّهُ أَكْبَرُ
+   
+   b) LIGHT (Tarqiq):
+      - When preceded by Kasrah: بِسْمِ اللَّهِ
+
+12.4 TEMPORARY HEAVY/LIGHT: RA (ر)
+   See detailed Ra rules in Section 8
+   
+12.5 TEMPORARY HEAVY/LIGHT: ALIF MADD (ا)
+   - If letter BEFORE Alif Madd is heavy → Alif Madd is heavy
+     Example: صِرَاطَ (Sad is heavy, so Alif is heavy)
+   - If letter BEFORE Alif Madd is light → Alif Madd is light
+     Example: قَالَ (Qaf is heavy, so first Alif is heavy)
+
+12.6 TEMPORARY HEAVY/LIGHT: GHUNNAH FOR IKHFAA HAQIQI
+   - If following letter is heavy → Ghunnah is heavy
+     Example: مِنْ قَبْلُ (Qaf is heavy, so Ghunnah is heavy)
+   - If following letter is light → Ghunnah is light
+     Example: مِنْ شَيْءٍ (Sheen is light, so Ghunnah is light)
+
+================================================================================
+13. COMPREHENSIVE MADD (PROLONGATION) RULES
+================================================================================
+
+13.1 MADD TABEE'I (Natural Madd)
+   Duration: 2 beats (1 Alif)
+   Condition: Madd letter not followed by Hamzah or Sukoon
+   Examples: مَالِكِ، تُوبُوا، كِتَابٌ
+
+13.2 MADD AL-BADAL (Substitute Madd)
+   Duration: 2 beats
+   Condition: Every Hamzah preceding a Madd letter
+   Examples: آمَنَ، أُوتُوا، إِيمَانًا
+   If NOT followed by Sakin/Hamzah: 2 beats only
+
+13.3 MADD 'EWADH (Compensation Madd)
+   Duration: 2 beats
+   Condition: Replacing Tanween Fathah with Alif Madd when stopping
+   Examples: سَبِيلًا → سَبِيلَا، رَحِيمًا → رَحِيمَا
+   EXCEPTION: Taa Marbuta (ة) - pronounce as Haa with Sukoon, not with Madd
+
+13.4 MADD 'ARIDH LIS-SUKOON (Presented for Stopping)
+   Duration: 2, 4, or 6 beats (reader's choice, commonly 4)
+   Condition: Madd Tabee'i followed by letter that becomes Sakin due to stopping
+   Examples: الرَّحِيمِ (when stopping), نَسْتَعِينُ (when stopping)
+   NOTE: This Madd ONLY exists if reader stops. If continuing, it's Madd Tabee'i (2 beats)
+
+13.5 MADD AL-LEEN (Easy/Soft Madd)
+   Duration: 2, 4, or 6 beats (when stopping)
+   Condition: Waw/Ya Sakin preceded by Fathah, at end of word when stopping
+   Examples: خَوْفٌ، البَيْتِ، الصَّيْفِ
+   If reader doesn't stop: No Madd applied
+
+13.6 MADD WAAJIB MUTTASIL (Obligatory Connected Madd)
+   Duration: 4-5 beats (commonly 5)
+   Condition: Madd letter followed by Hamzah in SAME word
+   Examples: جَاءَ، السَّمَاءِ، سُوءُ، جِيءَ
+
+13.7 MADD JA'IZ MUNFASIL (Permissible Separated Madd)
+   Duration: 2, 4, or 5 beats (commonly 4-5)
+   Condition: Madd letter at end of word, Hamzah at beginning of NEXT word
+   Examples: بِمَا أُنزِلَ، فِي أَنفُسِهِمْ، قَالُوا آمَنَّا
+   NOTE: If stopping on first word, becomes Madd Tabee'i (2 beats)
+
+13.8 MADD LAZIM (Necessary Madd) - 6 BEATS ALWAYS
+   Four Types:
+   
+   a) MADD LAZIM KALIMI MUTHAQQAL (Word, Emphasized)
+      Condition: Madd followed by Mushaddad letter in same word
+      Duration: 6 beats
+      Examples: الضَّالِّينَ، الطَّامَّةُ، الصَّاخَّةُ
+   
+   b) MADD LAZIM KALIMI MUKHAFFAF (Word, Lightened)
+      Condition: Madd followed by Sakin letter in same word
+      Duration: 6 beats
+      Example: آلْآنَ (ONLY occurrence in Quran)
+   
+   c) MADD LAZIM HARFI MUTHAQQAL (Letter, Emphasized)
+      Condition: Madd in letter followed by Mushaddad
+      Duration: 6 beats
+      Examples: الم (Lam-Meem merged), المص (Lam-Meem merged)
+      Letters: ن ق ص ع س ل ك م
+   
+   d) MADD LAZIM HARFI MUKHAFFAF (Letter, Lightened)
+      Condition: Madd in letter followed by Sakin
+      Duration: 6 beats
+      Examples: ن، ص، ق (at beginning of Surahs)
+      Letters with Madd: ك ه ي ع ح ط س م
+   
+   NOTE: Letters at beginning of Surahs like ر ط ه have only 2 beats (Madd Tabee'i)
+
+================================================================================
+14. STOPPING AT END OF WORDS (WAQF RULES)
+================================================================================
+
+14.1 WORDS ENDING WITH TANWEEN
+   Change Tanween Fathah to:
+   - Fat-hah on last letter + Alif Madd
+   Example: رَحِيمًا → رَحِيمَا
+
+14.2 WORDS ENDING WITH TAA MARBUTA (ة)
+   Change to: Haa (هـ) with Sukoon
+   Example: رَحْمَةٌ → رَحْمَهْ
+   NO MATTER which Harakah is on the Taa Marbuta
+
+14.3 WORDS ENDING WITH EXTRA MADD SIGN
+   Ignore the extra Madd sign at end, make normal Madd (2 beats)
+   Examples: قَالُوا (ignore final Alif when stopping)
+
+14.4 WORDS ENDING WITH ANY HARAKAH (Other than Tanween Fathah)
+   Change to: Sukoon on last letter
+   Examples: نَسْتَعِينُ → نَسْتَعِينْ
+
+14.5 WORDS ENDING WITH SAKIN/MADD LETTERS
+   Stop with Sukoon, no change
+   Examples: قَدْ، مَعَ، وَلَدَ اللَّهُ
+
+14.6 WORDS ENDING WITH MUSHADDAD LETTER
+   Two rules:
+   a) If Qalqalah letter: Stop with strong Qalqalah and small voice jerk (Nabr)
+      Example: الْحَقّ
+   
+   b) If Meem or Noon Mushaddad: Stop with Ghunnah for 2 beats
+      Example: ثُمَّ
+   
+   c) Any other letter: Stop with no Harakah and make Ghunnah
+      Example: رَبِّ
+
+================================================================================
+15. MEMORIZATION AIDS (MNEMONIC PHRASES)
+================================================================================
+
+- Hams letters: فَحَثَّهُ شَخْصٌ سَكَتَ
+- Shiddah letters: أَجِدُ قَطٍ بَكَتْ
+- Isti'laa letters: خُصَّ ضَغْطٍ قِظْ
+- Idhlaaq letters: فَرَّ مِنْ لُبِّ
+- Qalqalah letters: قُطْبُ جَدٍ
+- Idghaam letters: يَرْمَلُونَ
+- Solar letters (Shamsiyyah): ت ث د ذ ر ز س ش ص ض ط ظ ل ن
+- Lunar letters (Qamariyyah): ا ب ج ح خ ع غ ف ق ك م ه و ي
+
+================================================================================
+16. IMPORTANCE AND BENEFITS OF LEARNING TAJWEED
+================================================================================
+
+16.1 RELIGIOUS OBLIGATION
+Muhammad bin Al-Jazaree (9th Century Hijri) states in his famous poem:
+"And applying Tajweed is an issue of absolute necessity,
+whoever doesn't apply Tajweed to the Qur'an, then a sinner is he."
+
+The majority of scholars agree that applying Tajweed rules is an individual
+obligation (فرض عين) upon every Muslim who recites the Qur'an.
+
+16.2 PROPHETIC EXAMPLES
+- Umm Salamah described the Prophet's (SAW) recitation as "clearly distinguished
+  letter by letter" [Tirmidhi]
+- Sa'eed bin Mansoor relates that Abdullah bin Mas'ood corrected a man's recitation,
+  specifically on elongation: "Lil Fuqaraaaa-i wal masaakeen" [Sunan]
+
+16.3 BENEFITS OF LEARNING TAJWEED
+a) "The reciters of the Qur'an will be in the company of the noble and obedient angels"
+   - Hadith: "Verily the one who recites the Qur'an beautifully, smoothly, and precisely,
+     he will be in the company of the noble and obedient angels. And as for the one who
+     recites with difficulty, stammering or stumbling through its verses, then he will
+     have TWICE that reward." [Al-Bukhari and Muslim]
+
+b) "You will be from the best of people"
+   - Hadith: "The best of you are the ones who learn the Qur'an and teach it to others"
+     [Al-Bukhari]
+
+c) "There are ten rewards for each letter you recite from the Quran"
+   - Hadith: "Whoever reads a letter from the Book of Allah, he will have a reward.
+     And that reward will be multiplied by ten. I am not saying that 'Alif, Laam, Meem'
+     is a letter, rather I am saying that 'Alif' is a letter, 'laam' is a letter and
+     'meem' is a letter." [Tirmidhi - Sahih]
+
+d) "The Qur'an will lead you to Paradise!"
+   - Hadith: "The Qur'an is an intercessor, something given permission to intercede,
+     and it is rightfully believed in. Whoever puts it in front of him, it will lead
+     him to Paradise; whoever puts it behind him, it will steer him to the Hellfire."
+     [At-Tabaraanee - Authentic]
+
+16.4 TWO TYPES OF MISTAKES
+Scholars divide mistakes into:
+
+a) CLEAR MISTAKES (اللحن الجلي)
+   - Must be avoided by all
+   - Changes meaning or pronunciation obviously
+   - Considered a sin if done deliberately when able to correct
+   - Example: Saying ض as ظ, or changing Fathah to Kasrah
+
+b) HIDDEN MISTAKES (اللحن الخفي)
+   - Lighter ruling
+   - Recitation is lacking in completeness but acceptable
+   - Example: Insufficient Ghunnah duration, weak Qalqalah
+
+16.5 RECITING MELODIOUSLY
+The Prophet (SAW) commanded: "Beautify the Qur'an with your voices [for a fine
+voice increases the Qur'an in beauty]" [Bukhari]
+
+"He who does not recite the Qur'an in a pleasant tone is not of us." [Abu Dawud]
+
+"Truly the one who has one of the finest voices among the people for reciting
+the Qur'an is the one whom you think fears Allah when you hear him recite."
+[Daarimi, Tabaraani]
+
+================================================================================
+17. COMMON TAJWEED ERRORS TO AVOID
+================================================================================
+
+17.1 MAKHARIJ (ARTICULATION POINT) ERRORS
+- Mixing ض (Dhad) with ظ (Dha) - ض is from edge of tongue, ظ from tongue tip
+- Making ق (Qaf) sound like ك (Kaf) - Qaf is deeper in throat
+- Not distinguishing ح (Ha) from ه (Ha) - ح is from middle throat, ه from upper
+- Weak pronunciation of ع ('Ayn) and غ (Ghayn)
+- Not touching teeth for ث، ذ، ظ letters
+
+17.2 SIFAT (CHARACTERISTICS) ERRORS
+- Not maintaining Qalqalah at stopping points (especially ق، ط)
+- Light pronunciation of heavy letters (خ ص ض غ ط ق ظ)
+- Heavy pronunciation of light letters
+- Insufficient Ghunnah duration (must be 2 beats)
+- Over-trilling the ر (Ra) - should not repeat excessively
+
+17.3 MADD (PROLONGATION) ERRORS
+- Shortening Madd Muttasil (should be 4-5 beats, not 2)
+- Over-extending Madd Tabee'i (should be exactly 2 beats)
+- Incorrect Madd Lazim duration (must be exactly 6 beats)
+- Not recognizing Madd 'Aridh when stopping
+- Forgetting Madd Badal when Hamzah precedes Madd letter
+
+17.4 NOON/MEEM SAKINAH ERRORS
+- Clear pronunciation when should be hidden (Ikhfaa)
+- Wrong Ghunnah duration (must be 2 beats for Idghaam, Ikhfaa, Iqlaab)
+- Forgetting Iqlaab (converting Noon to hidden Meem before ب)
+- Not making Idghaam when required
+- Pronouncing Noon/Tanween when should be silent (Idghaam without Ghunnah)
+
+17.5 WAQF (STOPPING) ERRORS
+- Stopping at prohibited places (لا - damages meaning)
+- Not dropping Tanween when stopping
+- Continuing where must stop (م - necessary stop)
+- Not converting Taa Marbuta to Haa when stopping
+
+17.6 LAM ERRORS
+- Pronouncing Solar Lam (الشَّمْس) - should be silent
+- Not pronouncing Lunar Lam (الْقَمَر) - should be clear
+- Wrong Lam in Allah (اللَّه) heaviness/lightness
+
+================================================================================
+REFERENCES AND SOURCES
+================================================================================
+
+This comprehensive Tajweed guide is compiled from:
+
+PRIMARY CLASSICAL SOURCES:
+1. Al-Jazariyyah (متن الجزرية) - Imam Muhammad bin al-Jazari (d. 833 AH)
+   The most famous poem on Tajweed rules, considered foundational text
+
+2. Tuhfat al-Atfal (تحفة الأطفال) - Sulayman al-Jamzuri
+   Popular introductory text on Tajweed for beginners
+
+3. Hidayat al-Qari (هداية القاري) - Abdul Fattah al-Marsafi
+   Comprehensive explanation of Shatibi's poem on Quranic readings
+
+MODERN COMPILATION:
+4. "Reach the Goal Via Tajweed Rules" (1st Edition)
+   Compiled by: Maha Rashed
+   Teacher's Class Notes format
+   Published references:
+   - "Graded Steps in Quran Reading" by Abdulwahid Hamid (MELS, 2001)
+   - "القاعدة النکية" by Hassan Bin Salim (http://saaid.net, 1994)
+   - "Let's Beautify Our Recitation" (3rd Ed.) by Haroon R. Baqai
+   - Classical Hafs 'an 'Asim narration as standardized in modern Mushaf
+
+NARRATION CHAIN:
+5. Hafs 'an 'Asim chain of transmission:
+   - Prophet Muhammad (SAW) → Angel Jibreel (AS) → Allah (SWT)
+   - Companions → Tabi'een → Imams of Qira'at
+   - Specifically: 'Asim ibn Abi al-Najud (d. 127 AH) → Hafs ibn Sulayman (d. 180 AH)
+
+HADITH SOURCES REFERENCED:
+- Sahih al-Bukhari
+- Sahih Muslim  
+- Sunan al-Tirmidhi
+- Sunan Abu Dawud
+- Al-Muwatta (Imam Malik)
+- Musnad al-Daarimi
+- Al-Mu'jam al-Kabir (al-Tabaraani)
+- Sunan Sa'eed bin Mansoor
+
+QURANIC VERSE REFERENCE:
+- Surah Al-Muzzammil (73:4): "وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا"
+  "And recite the Qur'an (aloud) in a (slow and melodious) style (Tarteel)"
+  
+  Ali ibn Abi Talib (RA) explained: "Tarteel is Tajweed of the letters and
+  knowing where to stop (correctly)" [An-Nashr of Ibn Al-Jazaree 209:1]
+
+ONLINE RESOURCES:
+- www.reciter.org - Clear recitations for learning
+- www.islam-qa.com (Fatwa 67586) - Islamic rulings on Tajweed obligations
+
+================================================================================
+USAGE INSTRUCTIONS FOR AI ASSISTANT
+================================================================================
+
+When analyzing Quran recitation and providing feedback:
+
+1. AUTHORITY AND ACCURACY
+   - Use ONLY the rules documented in this file
+   - Never invent or assume rules not explicitly listed here
+   - If uncertain about a rule, say "Let me verify this rule" rather than guessing
+   - For edge cases, default to Hafs 'an 'Asim standard recitation
+
+2. CITATION AND SPECIFICITY
+   - Always cite specific section numbers when giving feedback
+   - Example: "This is Madd Waajib Muttasil (Section 13.6), should be 4-5 beats"
+   - Provide Quranic examples from this document when explaining rules
+   - Reference the specific rule number (e.g., "Rule 3.2 - Idghaam")
+
+3. PROGRESSIVE TEACHING APPROACH
+   - Start with simpler rules (Noon/Meem Mushaddad, basic Madd)
+   - Progress to intermediate rules (Noon Sakinah, Meem Sakinah)
+   - Advance to complex rules (Sifat, detailed Madd types)
+   - Don't overwhelm beginners with all rules at once
+
+4. FEEDBACK STYLE
+   - Be encouraging and supportive (following Prophetic teaching method)
+   - Point out what was done correctly before mentioning errors
+   - Explain WHY a rule exists when possible (e.g., meaning preservation)
+   - Use the Quranic examples provided in each section
+
+5. COMPREHENSION LEVELS (as per app implementation)
+   - SIMPLE: Focus on major clear mistakes only, encourage completion
+   - MEDIUM: Point out mistakes during recitation with varied cues
+   - HIGH: Immediate correction with zero tolerance for errors
+
+6. MISTAKE SEVERITY CLASSIFICATION
+   - CRITICAL (Clear Mistakes - اللحن الجلي): Must be corrected immediately
+     * Changes meaning
+     * Wrong letter pronunciation
+     * Missing required Ghunnah
+     * Wrong Madd duration significantly
+   
+   - MODERATE (Hidden Mistakes - اللحن الخفي): Should be improved
+     * Slight Ghunnah duration issues
+     * Weak Qalqalah
+     * Light/Heavy letter quality not perfect
+   
+   - MINOR: Good for advanced learners to know
+     * Very subtle pronunciation differences
+     * Optimal melodic qualities
+
+7. COMMON STUDENT ERRORS TO WATCH FOR
+   - Not holding Madd long enough (especially Muttasil and Lazim)
+   - Dropping Ghunnah or making it too short
+   - Confusing similar letters (ض/ظ، ح/ه، ق/ك)
+   - Not doing Qalqalah when stopping
+   - Pronouncing Solar Lam (should be silent)
+
+8. VERIFICATION AND CONSISTENCY
+   - Before giving feedback, mentally verify against this document
+   - Maintain consistency in feedback across sessions
+   - If rule seems unclear, refer to the comprehensive sections (10-15)
+   - Cross-reference related rules (e.g., Madd + Waqf interactions)
+
+9. CULTURAL SENSITIVITY
+   - Remember this is sacred text - maintain respectful tone
+   - Recognize recitation is both science and art
+   - Account for regional variations within acceptable bounds
+   - Never criticize student's effort, only guide improvement
+
+10. PROHIBITED ACTIONS
+    - Never claim a rule exists that isn't in this document
+    - Never simplify rules in ways that contradict classical scholarship
+    - Never suggest Tajweed is optional or unimportant
+    - Never mix narrations (stay with Hafs 'an 'Asim)
+    - Never provide feedback on matters beyond Tajweed (tafsir, fiqh, etc.)
+
+================================================================================
+END OF TAJWEED RULES DOCUMENT
+================================================================================
+
+Last Updated: Based on "Reach the Goal Via Tajweed Rules" (1st Edition)
+Compiled for: Repeat Quran App - AI Tajweed Teacher Mode
+Purpose: Grounding AI feedback in authentic, authoritative Tajweed scholarship
+
+For questions or corrections, refer to classical sources listed in References section.
+
+الحمد لله رب العالمين
+(All praise is due to Allah, Lord of the Worlds)
+
+================================================================================

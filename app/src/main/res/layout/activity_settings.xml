@@ -39,6 +39,13 @@
                 android:layout_height="wrap_content"
                 android:text="@string/label_split_halves" />
 
+            <CheckBox
+                android:id="@+id/switchAutoContinue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Auto Continue to Next"
+                android:layout_marginTop="8dp" />
+
             <!-- Playback Speed moved to controls row in Home -->
 
             <!-- Downloads Section (merged) -->

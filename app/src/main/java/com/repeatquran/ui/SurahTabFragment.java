@@ -58,7 +58,12 @@ public class SurahTabFragment extends BaseTabFragment {
             ddSurah.clearFocus();
             View rv = getView();
             if (rv != null) rv.requestFocus();
+            // Update navigation button states
+            updateNavigationButtons();
         });
+        
+        // Update navigation buttons after setup
+        updateNavigationButtons();
     }
 
     @Override
@@ -120,12 +125,19 @@ public class SurahTabFragment extends BaseTabFragment {
             android.content.SharedPreferences prefs = requireContext()
                 .getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE);
             String sourceType = prefs.getString("resume.sourceType", "");
+            int resumeSurah = prefs.getInt("resume.startSurah", -1);
+            int currentSurah = getCurrentSurah();
             
-            // This fragment handles "surah" content
+            // This fragment handles "surah" content AND the surah number must match current selection
             boolean isSurahType = "surah".equals(sourceType);
-            Log.d(getFragmentTag(), "Content validation: sourceType=" + sourceType + ", isSurah=" + isSurahType);
+            boolean surahMatches = (resumeSurah == currentSurah);
+            boolean isOwner = isSurahType && surahMatches;
             
-            return isSurahType;
+            Log.d(getFragmentTag(), "Content validation: sourceType=" + sourceType + 
+                  ", resumeSurah=" + resumeSurah + ", currentSurah=" + currentSurah + 
+                  ", isOwner=" + isOwner);
+            
+            return isOwner;
         } catch (Exception e) {
             Log.e(getFragmentTag(), "Error checking content ownership", e);
             return false;
@@ -147,5 +159,77 @@ public class SurahTabFragment extends BaseTabFragment {
         if (surah != null && ddSurah != null) {
             ddSurah.setText(surah, false);
         }
+    }
+    
+    // ==================== NAVIGATION ====================
+    
+    @Override
+    protected boolean navigatePrevious() {
+        int currentSurah = getCurrentSurah();
+        if (currentSurah > 1) {
+            setSurah(currentSurah - 1);
+            return true;
+        }
+        return false; // At first surah
+    }
+    
+    @Override
+    protected boolean navigateNext() {
+        int currentSurah = getCurrentSurah();
+        if (currentSurah < 114) {
+            setSurah(currentSurah + 1);
+            return true;
+        }
+        return false; // At last surah
+    }
+    
+    @Override
+    protected boolean canNavigatePrevious() {
+        int currentSurah = getCurrentSurah();
+        return currentSurah > 1;
+    }
+    
+    @Override
+    protected boolean canNavigateNext() {
+        int currentSurah = getCurrentSurah();
+        return currentSurah < 114;
+    }
+    
+    /**
+     * Get current surah number from dropdown.
+     * @return current surah number, or -1 if invalid
+     */
+    private int getCurrentSurah() {
+        if (ddSurah == null || ddSurah.getText() == null) return -1;
+        
+        String text = ddSurah.getText().toString().trim();
+        if (text.length() < 3) return -1;
+        
+        try {
+            int surah = Integer.parseInt(text.substring(0, 3));
+            return (surah >= 1 && surah <= 114) ? surah : -1;
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+    
+    /**
+     * Set surah in dropdown.
+     * @param surah surah number (1-114)
+     */
+    private void setSurah(int surah) {
+        if (surah < 1 || surah > 114) return;
+        
+        if (ddSurah != null) {
+            ddSurah.setText(com.repeatquran.util.SurahNames.display(surah), false);
+        }
+        
+        // Save to preferences
+        requireContext().getSharedPreferences("rq_prefs", requireContext().MODE_PRIVATE)
+            .edit()
+            .putInt("last.surah", surah)
+            .apply();
+        
+        Log.d(getFragmentTag(), "Surah set to: " + surah);
     }
 }

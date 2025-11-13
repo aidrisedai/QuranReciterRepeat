@@ -191,13 +191,13 @@ public class RangeTabFragment extends BaseTabFragment {
     /**
      * Ensures all UI elements are properly visible and laid out.
      * This fixes the issue where End Ayah and Play buttons may not appear.
+     * 
+     * IMPORTANT: Uses cached button references to prevent cross-fragment interference.
      */
     private void ensureUIElementsVisible(View root) {
         // Force visibility of all key UI elements
         View endAyahLayout = root.findViewById(R.id.endAyahLayout);
         View endSurahLayout = root.findViewById(R.id.endSurahLayout);
-        View btnPlayPause = root.findViewById(R.id.btnPlayPause);
-        View btnStop = root.findViewById(R.id.btnStop);
         
         if (endAyahLayout != null) {
             endAyahLayout.setVisibility(View.VISIBLE);
@@ -210,14 +210,16 @@ public class RangeTabFragment extends BaseTabFragment {
             endSurahLayout.requestLayout();
         }
         
-        if (btnPlayPause != null) {
-            btnPlayPause.setVisibility(View.VISIBLE);
-            btnPlayPause.requestLayout();
+        // Use cached button references instead of findViewById() to prevent
+        // accidentally accessing buttons from other fragments
+        if (playPauseButton != null) {
+            playPauseButton.setVisibility(View.VISIBLE);
+            playPauseButton.requestLayout();
         }
         
-        if (btnStop != null) {
-            btnStop.setVisibility(View.VISIBLE);
-            btnStop.requestLayout();
+        if (stopButton != null) {
+            stopButton.setVisibility(View.VISIBLE);
+            stopButton.requestLayout();
         }
         
         // Force the parent layout to refresh

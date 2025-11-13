@@ -56,10 +56,12 @@ public class PlaybackService extends Service {
     public static final String ACTION_RESUME = "com.repeatquran.action.RESUME";
     public static final String ACTION_SET_SPEED = "com.repeatquran.action.SET_SPEED";
     public static final String ACTION_PLAYBACK_STATE = "com.repeatquran.action.PLAYBACK_STATE";
+    public static final String ACTION_AUTO_CONTINUE = "com.repeatquran.action.AUTO_CONTINUE";
+    public static final String ACTION_SESSION_ENDED = "com.repeatquran.action.SESSION_ENDED";
     public static final String ACTION_RETRY_ITEM = "com.repeatquran.action.RETRY_ITEM";
     public static final String ACTION_SKIP_ITEM = "com.repeatquran.action.SKIP_ITEM";
     public static final String ACTION_SIMULATE_FOCUS_LOSS = "com.repeatquran.action.SIM_FOCUS_LOSS";
-    public static final String ACTION_SIMULATE_FOCUS_GAIN = "com.repeatquran.action.SIM_FOCUS_GAIN";
+    public static final String ACTION_SIMULATE_FOCUS_GAIN = "com.repeatquran.action.SIM_FOCUS_LOSS";
 
     private static final String CHANNEL_ID = "playback_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -79,6 +81,9 @@ public class PlaybackService extends Service {
     
     // Thread-safe state management
     private ThreadSafePlaybackState safeState;
+    
+    // Track recent load operations to suppress errors during auto-continue
+    private volatile long lastLoadTime = 0;
     
     
     private void startForegroundNowIfNeeded() {
@@ -154,7 +159,32 @@ public class PlaybackService extends Service {
                     final Integer cycles = currentCyclesRequested;
                     currentSessionId = null;
                     currentCyclesRequested = null;
-                    ioExecutor.execute(() -> sessionRepo.markEnded(id, System.currentTimeMillis(), cycles));
+                    ioExecutor.execute(() -> {
+                        sessionRepo.markEnded(id, System.currentTimeMillis(), cycles);
+                        
+                        // Broadcast that session ended so HomeActivity can update stats
+                        Intent sessionEndedIntent = new Intent(ACTION_SESSION_ENDED);
+                        sessionEndedIntent.setPackage(getPackageName());
+                        sendBroadcast(sessionEndedIntent);
+                        Log.d("PlaybackService", "Session ended broadcast sent");
+                    });
+                    
+                    // Check if auto-continue is enabled
+                    boolean autoContinue = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("playback.auto_continue", false);
+                    Log.d("PlaybackService", "Playback ended - auto-continue setting: " + autoContinue);
+                    if (autoContinue) {
+                        // Log current resume state for debugging
+                        ThreadSafePlaybackState.ResumeState resumeState = safeState.getResumeState();
+                        Log.d("PlaybackService", "Broadcasting auto-continue: sourceType=" + resumeState.sourceType + 
+                              ", page=" + resumeState.page + 
+                              ", surah=" + resumeState.startSurah + ":" + resumeState.startAyah);
+                        
+                        // Broadcast auto-continue request (explicit intent for Android 8.0+ compatibility)
+                        Intent autoContinueIntent = new Intent("com.repeatquran.action.AUTO_CONTINUE");
+                        autoContinueIntent.setPackage(getPackageName());
+                        sendBroadcast(autoContinueIntent);
+                        Log.d("PlaybackService", "Auto-continue broadcast sent");
+                    }
                 }
                 broadcastState();
             }
@@ -162,6 +192,9 @@ public class PlaybackService extends Service {
             @Override
             public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
                 int idx = player.getCurrentMediaItemIndex();
+                
+                // Track verse playback in real-time
+                trackCurrentVerse(mediaItem);
                 
                 // Use thread-safe loop detection
                 if (safeState.checkAndIncrementLoop(idx)) {
@@ -186,6 +219,31 @@ public class PlaybackService extends Service {
                 boolean online = com.repeatquran.util.NetworkUtil.isOnline(PlaybackService.this);
                 MediaItem mi = player.getCurrentMediaItem();
                 String uriStr = mi != null && mi.playbackProperties != null && mi.playbackProperties.uri != null ? mi.playbackProperties.uri.toString() : "";
+                
+                // Check if error occurred shortly after loading (likely during auto-continue)
+                long timeSinceLoad = System.currentTimeMillis() - lastLoadTime;
+                if (lastLoadTime > 0 && timeSinceLoad < 3000) {
+                    // Error within 3 seconds of loading - suppress notification for better auto-continue UX
+                    Log.w("PlaybackService", "Quick error after load (" + timeSinceLoad + "ms), skipping item silently for seamless auto-continue");
+                    java.util.Map<String, Object> evQuick = new java.util.HashMap<>();
+                    evQuick.put("timeSinceLoad", timeSinceLoad);
+                    evQuick.put("uri", uriStr);
+                    evQuick.put("online", online);
+                    com.repeatquran.analytics.AnalyticsLogger.get(PlaybackService.this).log("error_quick_skip", evQuick);
+                    
+                    mainHandler.post(() -> {
+                        if (player.hasNextMediaItem()) {
+                            player.seekToNextMediaItem();
+                        } else {
+                            player.stop();
+                        }
+                        cancelErrorNotification();
+                    });
+                    broadcastState();
+                    return;
+                }
+                
+                // Log error for normal (non-quick) failures
                 {
                     java.util.Map<String, Object> evErr = new java.util.HashMap<>();
                     evErr.put("online", online);
@@ -650,36 +708,19 @@ public class PlaybackService extends Service {
         int K = reciters.size();
         int N = verses.size();
 
-        if (!halfSplit || K <= 1) {
-            // Reciter-first ordering: all verses per reciter
-            for (int r = 0; r < K; r++) {
-                String rid = reciters.get(r);
-                for (int i = 0; i < N; i++) {
-                    int[] v = verses.get(i);
-                    String sss = String.format("%03d", v[0]);
-                    String aaa = String.format("%03d", v[1]);
-                    String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-                    java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
-                    if (cached.exists()) items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
-                    else { items.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
-                }
+        // Reciter-first ordering: all verses per reciter
+        // NOTE: halfSplit logic for ranges is now handled in handleLoadRange
+        for (int r = 0; r < K; r++) {
+            String rid = reciters.get(r);
+            for (int i = 0; i < N; i++) {
+                int[] v = verses.get(i);
+                String sss = String.format("%03d", v[0]);
+                String aaa = String.format("%03d", v[1]);
+                String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                if (cached.exists()) items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
+                else { items.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
             }
-            return items;
-        }
-
-        // Half-split: first half to reciters[0], second half to reciters[1] (fallback to [0] if only one)
-        String rA = reciters.get(0);
-        String rB = reciters.size() > 1 ? reciters.get(1) : reciters.get(0);
-        int split = N / 2;
-        for (int i = 0; i < N; i++) {
-            String rid = (i < split) ? rA : rB;
-            int[] v = verses.get(i);
-            String sss = String.format("%03d", v[0]);
-            String aaa = String.format("%03d", v[1]);
-            String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-            java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
-            if (cached.exists()) items.add(MediaItem.fromUri(android.net.Uri.fromFile(cached)));
-            else { items.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
         }
         return items;
     }
@@ -864,22 +905,28 @@ public class PlaybackService extends Service {
             }
         } else {
             if (K % 2 == 0) {
-                // Even K: one split-cycle; repeat N times
-                java.util.List<int[]> pairs = buildPairsForCycle(0, K);
-                logPairs("split-cycle (even, x" + repeat + ")", pairs, reciterNames);
-                for (int[] p : pairs) {
-                    String rA = reciters.get(p[0]);
-                    String rB = reciters.get(p[1]);
-                    for (int i = 0; i < N; i++) {
-                        String rid = (i < fSplit) ? rA : rB;
-                        String sss = fVerses.get(i)[0]; String aaa = fVerses.get(i)[1];
-                        String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
-                        java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
-                        if (cached.exists()) { targetItems.add(MediaItem.fromUri(android.net.Uri.fromFile(cached))); out.cachedCount++; }
-                        else { targetItems.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                // Even K: build K split-cycles to ensure all reciters participate; repeat N times
+                // Each split-cycle uses different pair rotations, so after K cycles all reciters have read
+                // This ensures repeat=1 means "all reciters read once" not "just first half read once"
+                int reps = Math.max(1, repeat);
+                for (int c = 0; c < reps; c++) {
+                    int s0 = c % K;
+                    java.util.List<int[]> pairs = buildPairsForCycle(s0, K);
+                    logPairs("split-cycle " + (c + 1) + "/" + (reps * (K / 2)) + " (even, x" + repeat + ")", pairs, reciterNames);
+                    for (int[] p : pairs) {
+                        String rA = reciters.get(p[0]);
+                        String rB = reciters.get(p[1]);
+                        for (int i = 0; i < N; i++) {
+                            String rid = (i < fSplit) ? rA : rB;
+                            String sss = fVerses.get(i)[0]; String aaa = fVerses.get(i)[1];
+                            String url = "https://everyayah.com/data/" + rid + "/" + sss + aaa + ".mp3";
+                            java.io.File cached = cacheManager.getTargetFile(rid, sss, aaa);
+                            if (cached.exists()) { targetItems.add(MediaItem.fromUri(android.net.Uri.fromFile(cached))); out.cachedCount++; }
+                            else { targetItems.add(MediaItem.fromUri(url)); cacheManager.cacheAsync(url, rid, sss, aaa); }
+                        }
                     }
                 }
-                out.recommendedRepeat = Math.max(1, repeat);
+                out.recommendedRepeat = 1; // already expanded into full cycles
             } else {
                 // Odd K: flatten repeat cycles with s0 advancing by +1 each cycle
                 int reps = Math.max(1, repeat);
@@ -1489,6 +1536,9 @@ public class PlaybackService extends Service {
                     try {
                         transitionTo(PlaybackServiceState.EXECUTING_PLAYBACK);
                         
+                        // Track load time for error suppression during auto-continue
+                        lastLoadTime = System.currentTimeMillis();
+                        
                         // Capture state for resume
                         safeState.captureSelectionForResume("single", null, sura, ayah, null, null, repeat);
                         
@@ -1699,6 +1749,9 @@ public class PlaybackService extends Service {
         try {
             transitionTo(PlaybackServiceState.EXECUTING_PLAYBACK);
             
+            // Track load time for error suppression during auto-continue
+            lastLoadTime = System.currentTimeMillis();
+            
             // Capture state for resume
             boolean halfSplit = getSharedPreferences("rq_prefs", MODE_PRIVATE).getBoolean("ui.half.split", false);
             safeState.captureSelectionForResume("page", page, null, null, null, null, originalRepeat);
@@ -1869,6 +1922,9 @@ public class PlaybackService extends Service {
         try {
             transitionTo(PlaybackServiceState.EXECUTING_PLAYBACK);
             
+            // Track load time for error suppression during auto-continue
+            lastLoadTime = System.currentTimeMillis();
+            
             // Capture state for resume
             safeState.captureSelectionForResume("surah", null, surah, null, null, null, originalRepeat);
             
@@ -1977,7 +2033,25 @@ public class PlaybackService extends Service {
             try {
                 java.util.List<String> reciters = getSelectedReciterIds();
                 java.util.List<int[]> verses = buildVersesForRange(ss, sa, es, ea);
-                java.util.List<MediaItem> items = buildRangeCycle(reciters, verses, halfSplit);
+                
+                // Build items and determine actual repeat based on split mode
+                java.util.List<MediaItem> items;
+                int actualRepeat;
+                
+                if (halfSplit && reciters.size() >= 2) {
+                    // For split-halves, use buildHalfSplit which handles all reciters with rotation
+                    java.util.List<String[]> versesAsStrings = new java.util.ArrayList<>();
+                    for (int[] v : verses) {
+                        versesAsStrings.add(new String[]{String.format("%03d", v[0]), String.format("%03d", v[1])});
+                    }
+                    SplitBuildResult sbr = buildHalfSplit(reciters, versesAsStrings, repeat);
+                    items = sbr.items;
+                    actualRepeat = sbr.recommendedRepeat;  // Already expanded if needed
+                } else {
+                    // For normal mode, use simple buildRangeCycle
+                    items = buildRangeCycle(reciters, verses, false);
+                    actualRepeat = repeat;
+                }
 
                 // Check connectivity: if offline and no cached audio, abort gracefully
                 int cachedCount = 0;
@@ -1997,8 +2071,8 @@ public class PlaybackService extends Service {
                 }
 
                 // Execute playback on main thread
-                final int fSs = ss, fSa = sa, fEs = es, fEa = ea, fRepeat = repeat;
-                mainHandler.post(() -> executeRangePlayback(fSs, fSa, fEs, fEa, fRepeat, items, fRepeat));
+                final int fSs = ss, fSa = sa, fEs = es, fEa = ea, fRepeat = repeat, fActualRepeat = actualRepeat;
+                mainHandler.post(() -> executeRangePlayback(fSs, fSa, fEs, fEa, fRepeat, items, fActualRepeat));
 
                 // Save session on background thread
                 SessionEntity e = new SessionEntity();
@@ -2027,6 +2101,9 @@ public class PlaybackService extends Service {
     private void executeRangePlayback(int ss, int sa, int es, int ea, int originalRepeat, java.util.List<MediaItem> items, int actualRepeat) {
         try {
             transitionTo(PlaybackServiceState.EXECUTING_PLAYBACK);
+            
+            // Track load time for error suppression during auto-continue
+            lastLoadTime = System.currentTimeMillis();
 
             // Capture state for resume (kept for future resume support)
             safeState.captureSelectionForResume("range", null, ss, sa, es, ea, originalRepeat);
@@ -2121,5 +2198,88 @@ public class PlaybackService extends Service {
      */
     private void resetToIdle() {
         transitionTo(PlaybackServiceState.IDLE);
+    }
+    
+    /**
+     * Track verse playback in real-time for immediate stats update
+     */
+    private void trackCurrentVerse(MediaItem mediaItem) {
+        if (mediaItem == null || mediaItem.playbackProperties == null) {
+            return;
+        }
+        
+        // Extract surah and ayah from the media URI
+        // Format: https://everyayah.com/data/{reciter}/{surah}{ayah}.mp3
+        // or: file:///path/to/cache/{reciter}/{surah}{ayah}.mp3
+        String uri = mediaItem.playbackProperties.uri.toString();
+        
+        try {
+            // Extract surah and ayah from URI
+            // Match pattern like "001002.mp3" or "114006.mp3"
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d{3})(\\d{3})\\.mp3");
+            java.util.regex.Matcher matcher = pattern.matcher(uri);
+            
+            if (matcher.find()) {
+                int surah = Integer.parseInt(matcher.group(1));
+                int ayah = Integer.parseInt(matcher.group(2));
+                
+                // Extract reciter from URI (between /data/ and /surah)
+                String reciterId = extractReciterFromUri(uri);
+                
+                // Record verse progress on background thread
+                ioExecutor.execute(() -> {
+                    try {
+                        com.repeatquran.data.db.VerseProgressEntity progress = new com.repeatquran.data.db.VerseProgressEntity();
+                        progress.timestamp = System.currentTimeMillis();
+                        progress.surah = surah;
+                        progress.ayah = ayah;
+                        progress.activityType = "listening";
+                        progress.reciterId = reciterId;
+                        progress.sessionId = currentSessionId;
+                        
+                        RepeatQuranDatabase.get(this).verseProgressDao().insert(progress);
+                        
+                        Log.d("PlaybackService", "Tracked verse: " + surah + ":" + ayah);
+                        
+                        // Broadcast verse tracked event so HomeActivity can update in real-time
+                        Intent verseTrackedIntent = new Intent("com.repeatquran.action.VERSE_TRACKED");
+                        verseTrackedIntent.putExtra("surah", surah);
+                        verseTrackedIntent.putExtra("ayah", ayah);
+                        verseTrackedIntent.setPackage(getPackageName());
+                        sendBroadcast(verseTrackedIntent);
+                    } catch (Exception e) {
+                        Log.e("PlaybackService", "Failed to track verse", e);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            Log.e("PlaybackService", "Failed to parse verse from URI: " + uri, e);
+        }
+    }
+    
+    /**
+     * Extract reciter ID from media URI
+     */
+    private String extractReciterFromUri(String uri) {
+        try {
+            if (uri.contains("/data/")) {
+                // Format: .../data/{reciter}/{surah}{ayah}.mp3
+                int dataIndex = uri.indexOf("/data/");
+                String afterData = uri.substring(dataIndex + 6); // Skip "/data/"
+                int slashIndex = afterData.indexOf("/");
+                if (slashIndex > 0) {
+                    return afterData.substring(0, slashIndex);
+                }
+            } else if (uri.contains("/cache/")) {
+                // Format: .../cache/{reciter}/{surah}{ayah}.mp3
+                int cacheIndex = uri.lastIndexOf("/cache/");
+                String afterCache = uri.substring(cacheIndex + 7); // Skip "/cache/"
+                int slashIndex = afterCache.indexOf("/");
+                if (slashIndex > 0) {
+                    return afterCache.substring(0, slashIndex);
+                }
+            }
+        } catch (Exception ignored) {}
+        return "unknown";
     }
 }
