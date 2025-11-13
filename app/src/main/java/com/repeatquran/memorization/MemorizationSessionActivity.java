@@ -365,15 +365,15 @@ public class MemorizationSessionActivity extends AppCompatActivity {
                     return;
                 }
                 
-                // Simple length-based check: if transcript is at least 50% of expected length
+                // Simple length-based check: if transcript is at least 40% of expected length
                 String normalizedTranscript = VerseMatchingEngine.normalizeArabicPublic(transcriptSoFar);
                 String normalizedExpected = VerseMatchingEngine.normalizeArabicPublic(currentExpectedVerseText);
                 
                 double lengthRatio = (double) normalizedTranscript.length() / normalizedExpected.length();
                 Log.d(TAG, "Length ratio: " + (lengthRatio * 100) + "%");
                 
-                // If we've recited at least 70% of the verse length, check similarity
-                if (lengthRatio >= 0.7) {
+                // If we've recited at least 40% of the verse length, check similarity
+                if (lengthRatio >= 0.4) {
                     double similarity = VerseMatchingEngine.calculateSimilarity(
                         transcriptSoFar,
                         currentExpectedVerseText
@@ -381,29 +381,35 @@ public class MemorizationSessionActivity extends AppCompatActivity {
                     
                     Log.d(TAG, "Verse match similarity: " + (similarity * 100) + "%");
                     
-                    if (similarity >= 0.50) {
-                        // Good match - advance verse
+                    // VERY LENIENT: Accept 30% match OR just enable Next button
+                    if (similarity >= 0.30) {
+                        // Good enough match - advance verse
                         onVerseCompleted(true, similarity);
                     } else {
-                        // Poor match but length is good - show score and enable manual advance
+                        // Show score and enable manual advance (always)
                         runOnUiThread(() -> {
                             int currentVerse = currentGoal.targetAyahStart + currentVerseIndex;
                             feedbackText.setText(String.format(
-                                "⚠️ Verse %d: %.0f%% match\n\nClick Next Verse to continue",
-                                currentVerse, similarity * 100));
+                                "📖 Verse %d: %.0f%% match\n\nExpected:\n%s\n\n🎤 You said:\n%s\n\n👉 Tap Next Verse when ready",
+                                currentVerse, 
+                                similarity * 100,
+                                currentExpectedVerseText.substring(0, Math.min(80, currentExpectedVerseText.length())) + "...",
+                                transcriptSoFar));
                             nextVerseButton.setVisibility(View.VISIBLE);
                         });
                     }
                 } else {
-                    Log.d(TAG, "Verse not complete yet (length: " + lengthRatio * 100 + "%), continuing to listen...");
-                    // Show progress
+                    Log.d(TAG, "Keep reciting (length: " + lengthRatio * 100 + "%)...");
+                    // Show real-time progress
                     runOnUiThread(() -> {
                         int currentVerseNum = currentGoal.targetAyahStart + currentVerseIndex;
+                        String expectedShort = currentExpectedVerseText.length() > 60 ? 
+                            currentExpectedVerseText.substring(0, 60) + "..." : currentExpectedVerseText;
                         feedbackText.setText(String.format(
-                            "📖 Verse %d (%.0f%% complete)\n\nExpected:\n%s\n\n🎤 You:\n%s",
+                            "📖 Verse %d (%.0f%% length)\n\nExpected:\n%s\n\n🎤 You:\n%s\n\nKeep reciting...",
                             currentVerseNum,
                             lengthRatio * 100,
-                            currentExpectedVerseText.substring(0, Math.min(50, currentExpectedVerseText.length())) + "...",
+                            expectedShort,
                             transcriptSoFar));
                     });
                 }
